@@ -1,0 +1,1297 @@
+#!/usr/bin/perl -w
+use strict;
+
+my ($VERS, $HAS_ANY) = '1.00';
+
+#------------------------------------------------------------------------------
+package re;
+our $DSP = '\b(?:dsp->)?';
+
+our $bul_crl = '(?:\{(?:(?>[^\{\}]+)|(?-1))*\})';
+our $bal_par = $bul_crl =~ tr/{}/()/r;
+our $bal_sqr = $bul_crl =~ tr/{}/[]/r;
+
+sub qr		{ my $r = join '',@_; qr/$r/; }
+sub list	{ join '|', map "(?:$_)", @_; }
+sub chop2($)	{ substr $_[0], +1,-1 }
+sub chop2s($)	{ &chop2 =~ s/^\s+|\s+$//gr }
+
+sub split_args(_)
+{
+	my ($a, @a) = &chop2;
+	push @a, $& =~ s/^\s+|\s+$//gr
+		while $a =~ /(?: ($re::bal_par) | [^,])+/oxg;
+	return @a;
+}
+
+#------------------------------------------------------------------------------
+package perl::core;
+
+sub __s_class($) { $_[0].".TODO_CLASS" }
+
+sub __s_const($)
+{
+	return /^-?\d/ ? 2 : /^${re::DSP}[if]Const\d+$/o || 0
+		for $_[0];
+}
+sub __l_const($)
+{
+	my $r = 2;
+	for (&re::split_args) {
+		my $c = __s_const $_;
+		$r = $c if $c < $r;
+	}
+	$r;
+}
+sub __z_const($$)
+{
+	&__s_const;
+}
+
+sub __z_expr($$) { $_[0] }
+sub __z_size($$) { $_[1] }
+sub __z_pure($$) { &__z_map =~ /^\w+\[[^]]+\]$/ ? 1 : 0 }
+sub __z_iota($$) { &__z_map =~ /\bIOTA0\b/ ? 1 : 0 }
+
+sub __z_item($$$)
+{
+	my ($vec, $len, $idx) = @_;
+
+	$idx =~ s/^\(([+-]?\w+)\)$/$1/;
+	my $expr = &__z_map ||
+		return	$vec eq '0' || $idx eq '0' && $len eq '0' ?
+			$vec : die "bad delay line: '$vec' [$idx]\n";
+
+#	my @inp = pp_cpp::inputs($expr);
+#	warn "WARN! delay line '$vec' inputs: @inp\n" if @inp;
+
+	$expr =~ /\[(\(${re::DSP}IOTA0\s*-\s*)?/og;
+	my $full = $1 ? "$idx + $len - " : "$idx - $len + ";
+	$expr =~ s/\G(\Q$len\E\b)?/defined $1 ? $idx : $full/er;
+}
+
+sub __l_len($) { 0 + &re::split_args }
+
+sub __l_item($$)
+{
+	my @l = re::split_args (my $l = shift);
+	@_ == 1 && $_[0] =~ /^\(?(\d+)\)?$/ && $1 < @l
+		or die "bad list item: $l\[@_]\n";
+	$l[$1];
+}
+
+sub __l_for(&$$$)
+{
+	my ($l, $i, $v, $e) = @_;
+	my @l = re::split_args $l;
+	/\W/ and die "bad .for() arguments: ($i, $v, $e)\n"
+		for $i, $v;
+	my $re = qr/\b(?:($i)|($v))\b/;
+	join '; ', map $e =~ s/$re/$1?$_:$l[$_]/egr, 0..$#l;
+}
+
+package perl::user;
+
+sub if
+{
+	die "if(@_) bad argc\n" if @_<2 || @_>3;
+	my $r = eval $_[0] ? $_[1] : $_[2] // '';
+	die "if(@_) eval failed: $@\n" if $@;
+	$r =~ s/^\(\s*// and $r =~ s/\s*\)$//;
+	$r;
+}
+
+#------------------------------------------------------------------------------
+package pp_dsp;
+my  (%STRN, %FUNC, %DEPS);
+our ($CODE, $THIS);
+
+sub fix_strn(_)
+{
+	defined (wantarray)
+		? $_[0] =~ s/\STRN!(\d+)\b/$STRN{$1}||die/egr
+		: $_[0] =~ s/\STRN!(\d+)\b/$STRN{$1}||die/eg;
+}
+
+sub do_eval
+{
+	my ($pkg, $src, $uok) = @_;
+	my $ret = eval fix_strn "package $pkg; $src";
+	die "ERR!! eval of\n\n\t$src\n\nfailed: $@\n"
+		if $@ or !defined $ret and !$uok and
+		$@ = 'returns undef.';
+	$ret;
+}
+
+sub expand_perl; sub expand_perl
+{
+	my ($pkg, $src) = @_;
+
+	$src =~ s{\$\!([\w:]*)($re::bal_par)}{
+		if ($1 eq '') {
+			do_eval $pkg, expand_perl $pkg, re::chop2s
+				$2 =~ s/[\$@%]\K(?=::\w)/$pkg/gr;
+		} else {
+			no strict 'refs';
+			my $f = *{"$pkg\::$1"}{CODE} ||
+				*{"perl::user::$1"}{CODE} ||
+				*{$1}{CODE} ||
+				die "ERR!! undefined perl func: $1$2\n";
+			ord '&' != ord (prototype $f or '')
+				? $f->(re::split_args expand_perl $pkg, $2)
+				: expand_perl $pkg, $f->(re::split_args $2)
+		}
+	}oegr;
+}
+
+sub __expand_fpp; sub __expand_fpp
+{
+	my ($this, $code, $args) = @_;
+
+	my $name = $code->{name} // 0+$code;
+	my $pckg = 'perl::user' . ($name && "::$name");
+	my $dict = {};
+
+	CORE::state $seen = {};
+	CORE::state $uniq = {};
+
+	sub expand_dep; local *expand_dep = sub
+	{
+		local $^W; #no warnings 'redefine';
+		my $d = __expand_fpp $this, $_;
+
+		while (my ($k, $v) = each %$d) {
+			warn "WARN! \$$k redefined in $_->{name}\n"
+				if exists $dict->{$k};
+			$dict->{$k} = $v;
+		}
+	};
+
+	sub expand_zone; local *expand_zone = sub
+	{
+		my $zone = shift;
+
+		$zone =~ s{\$(\d+)\_\b}{
+			$dict->{$1} ||= $args->[$1];
+		}eg;
+
+		if ($_ eq 'PERL') {
+			do_eval $pckg, $zone, 1;
+			return;
+		}
+
+		$zone =~ s{\$(\w+)\b}{
+			$dict->{$1} ||= "$1__" . ++($uniq->{$1}||='00');
+		}eg;
+
+		$this->{$_} .= expand_perl $pckg, $zone;
+	};
+
+	sub expand; local *expand = sub
+	{
+		if (shift) {
+			if (my $d = $seen->{$name}) {
+				defined $d->{$_} and $d->{$_} ne $args->[$_]
+				and die "ERR!! can't rebind arg$_ from".
+					" '$d->{$_}' to '$args->[$_]'\n"
+					for 0 .. $#$args;
+				return $dict = $d;
+			}
+
+			if ($code->{deps}) { expand_dep for @{$code->{deps}} }
+
+			$seen->{$name} = $dict;
+		} else {
+			$dict = {%$dict};
+		}
+		expand_zone $code->{$_} // next for @_;
+	};
+
+	local ($CODE, $THIS) = ($code, $this);
+
+	expand 1, qw(PERL FILE DECL INIT LOOP POST AUTO);
+	expand 0, qw(     file decl init loop post auto exec);
+	$dict;
+}
+
+sub pp_cpp::expand_fpp
+{
+	my ($func, $args) = @_;
+	shift @$args if exists $func->{arg0};
+	__expand_fpp my $this={}, $func->{code}, $args;
+	$this;
+}
+
+sub pick_t
+{
+	$_[0] =~ /^(?:_float_|float|(?:(?:long\s+)?double)|quad)$/o
+		? $_[1] : $_[2];
+}
+sub mk_eval_t
+{
+	mk_ffunc($_[0],$_[1], $_[2], {eval => 0, code => {exec=>$_[3]}});
+}
+sub mk_eval
+{
+	mk_eval_t $_[0],$_[1],'_int_', $_[2];
+}
+
+sub mk_ffunc
+{
+	my ($pure, $argc, $type, $func) = @_;
+
+	if ($type =~ /^_(int|float)_$/)	{ $type = $1 }
+	else {
+		$func->{type} = $type;
+		$type = pick_t  $type, qw(float int);
+	}
+
+	my $arg0 = '';
+	if (0) {
+	} elsif (!$pure && $argc) {
+		CORE::state $kSamp = mk_eval 0,0,'BUG';
+		$arg0 = $kSamp;
+	} elsif ($pure && !$argc) {
+		$arg0 = '0';
+	}
+
+	if ($arg0 ne '') {
+		$argc++;
+		$func->{arg0} = undef;
+		$arg0 = "($arg0)";
+	}
+
+	CORE::state $uniq = '000';
+	my $name = 'fpp_func_' . ++$uniq;
+
+	$FUNC{$name} = $func;
+	my $atyp = $HAS_ANY ? 'any':'float';
+	my $args = join ',', ($atyp) x $argc;
+	qq{ffunction($type $name($args),"","")$arg0}
+}
+
+sub push_fpp_bus
+{
+	CORE::state $done; return if $done++;
+	my $b0 = mk_eval 1,0, '';
+	my $b1 = mk_eval 1,1, "\$0\_";
+	my $b2 = mk_eval 1,2, "\$0\_,\$1\_";
+	print main::FAUST "// ======== <push>\n",
+		"_fpp_bus_(0) = $b0; _fpp_bus_(1) = $b1;\n",
+		"_fpp_bus_(n) = _, _fpp_bus_(n-1) : $b2;\n";
+}
+
+sub expand_args
+{
+	my ($argn, $argz, $argl) = @_;
+
+	my $re_argn = join '|', keys %$argn;
+
+	while (/\$($re_argn)\b/g) {
+		my ($arg, $pos) = ($1, pos() - 1 - length $1);
+		my ($out, $type, $func, @args) = "\$$argn->{$arg}\_";
+
+		if (defined(my $z = $argz->{$arg})) {
+			($func, $type, @args) = ('__z_', 'dline', $out,$z);
+			if (/\G\s*($re::bal_sqr)/gc) {
+				($func, $type) = '__z_item';
+				my $i = re::chop2s $1;
+				push @args, "($i)";
+			}
+		}
+		elsif (exists $argl->{$arg}) {
+			@args = "($out)";
+			if (/\G\s*($re::bul_crl)/gc) {
+				$func = '__l_item';
+				my $i = re::chop2s $1;
+				push @args, "($i)";
+			} elsif (/\G\s*\./) {
+				($func, $type) = ('__l_', 'flist');
+			}
+		}
+		elsif (/\G\s*\.(const|class)\b/gc) {
+			($func, @args) = ('__s_'.$1, $out);
+		}
+
+		if ($type) {
+			my $err = '$'.$arg;
+			/\G\s*\.\s*(\w+)/gc or die "bad usage of $type arg: '$err'\n";
+			$func .= $1; $err .= $&;
+
+			my $args = length prototype (can perl::core:: $func
+							or die "bad $type op: '$err'\n");
+			if ($args -= @args) {
+				/\G\s*($re::bal_par)/gc or die "bad usage of $type op: '$err'\n";
+				push @args, re::chop2 $1; $err .= $&;
+				$args == re::split_args $1 or die "bad $type op argc: '$err'\n";
+			}
+		}
+
+		$out = "\$!perl::core::$func(${\join',',@args})" if $func;
+		substr $_, $pos, pos() - $pos, $out;
+		pos = $pos;
+	}
+}
+
+sub parse_args
+{
+	my $lambd;
+	my (%argn, %argz, %argl);
+	my (@args, @pass, @with);
+
+	for (re::split_args $_[0], @{$_[1]}) {
+		my ($with, $argn,$argv, $m,$z,$l) = s/^=\s*//;
+		s/^(?=\D)(\w+)\s*// or die "bad arg: '$_'";
+		exists $argn{$argn = $argv = $1} and die "dup arg: '$1'";
+
+		if (s/\s*(?:($re::bal_sqr)|($re::bul_crl))$//) {
+			$1 ? ($z = re::chop2s $1) : ($l = re::chop2s $2);
+			$m = s/\s*:$//;
+		}
+
+		if (!$with and $with = s/^=\s*//) {
+			push @with, "$argn=$_; ";
+		} elsif ($m ||= ord $_ == ord ':') {
+			$argv = "($argn$_)";
+		} elsif (length) {
+			die "bad arg '$argn' modifier: '$_'";
+		}
+
+		if (defined $z) {
+			$argv = "$argv@(int($z))" if $z;
+			$argz{$argn} = $z =~ /\D/
+				? '$'.(-1 + push @pass, "int($z)")."\_"
+				: ($z || 0);
+		} elsif (defined $l) {
+			push_fpp_bus;
+			$argl{$argn} = undef;
+			my ($n, $a) = ("outputs($argv)", ", $argv");
+			if (length $l) {
+				$n = "int($l)";
+				$a = '', $with = 1 unless $with || $m;
+			}
+			$argv = "_fpp_bus_($n$a)";
+		}
+
+		$argn{$argn} = @pass;
+		push @pass, $argv;
+
+		if (!$with) {
+			push @args, $argn;
+			$lambd ||= $m || $z || defined $l;
+		}
+	}
+
+	expand_args \%argn, \%argz, \%argl if %argn;
+
+	if ($lambd || @pass > @args) {
+		$lambd = join ',', @args;
+		$lambd = "\\($lambd)." if $lambd;
+		$lambd .= '(' . join ',', @pass;
+		$lambd .= " with { @with}" if @with;
+		fix_strn $lambd;
+	}
+
+	0+@pass, $lambd;
+}
+
+sub parse_zone
+{
+	my ($re_z, $zone) = @_;
+	$_[0] = $re_z = qr/(.*?)(?:\b($re_z):|$)/s
+		unless ref $re_z;
+
+	my $code = {};
+
+	for ($_ = re::chop2 $_;;) {
+		/$re_z/g;
+		my ($c, $z) = ($1, $2);
+		for ($c) {
+			/\S/ or last;
+			s/^\s*$//mg;
+			s/^\n+//; s/\s*$/\n/;
+			s/^(\s*)// and s/^$1//mg;
+			$code->{$zone} .= $_;
+		}
+		$zone = $z || return $code;
+	}
+}
+
+sub parse_code
+{
+	s/^\s*($re::bul_crl)//o or die "body";
+	local $_ = $1;
+
+	my ($with, %with) = [];
+	s/\$\K($re::bal_par)/
+		$with{$1} ||= do {
+			my ($n, $v) = ('_with__' . (0+@$with), $1);
+			$v .= '{}' if $v =~ m|^\(\s*\(.*?\)\s*\)$|;
+			push @$with, "$n = $v"; $n;
+		}
+	/oeg;
+
+	my @r = parse_args $_[0], $with;
+	CORE::state $re_zone =	'FILE|DECL|INIT|LOOP|POST|AUTO|PERL|'.
+				'file|decl|init|loop|post|auto|supp|exec';
+	@r, parse_zone $re_zone, 'exec';
+}
+
+sub __parse_deps
+{
+	s/^\s*:\s*// || return;
+	my $deps; do {
+		s/^(\w+)// or die "dep syntax";
+		push @$deps, $DEPS{$1} || die "bad dep name: $1\n";
+	} while s/^\s*,\s*//;
+	$deps;
+}
+
+sub parse_fpp
+{
+	my $func;
+
+	s/^\s*($re::bal_par)//o or die "arglist";
+	my $args = $1;
+
+	my $deps = __parse_deps;
+	my $pure = s/^\s*pure\b//;
+	$func->{eval} = 0 if s/^\s*eval\b//;
+
+	my @type; @type = map s/^\s+|\s+$//gr, split ',', $1
+		if s/^\s*(?=\S)([^\{]+)//;
+
+	my ($argc, $lambd, $code) = parse_code $args;
+	$code->{deps} = $deps if $deps;
+	$func->{code} = $code;
+
+	my $supp = $code->{supp} // '';
+	s/\s+/ /g, s/\s*$// for $supp;
+
+	my @rets; for ($code->{exec} // die "no 'exec:' zone.\n") {
+		s/\s+/ /g; s/\s*$//;
+		last if exists $func->{eval};
+		s/(\s*;)+$//g;
+		@rets = re::split_args $1 if
+			s/(?:^|[;}])\s*\K($re::bal_sqr)$//o;
+	}
+
+	if (@type) {
+		/^[\w\h*]+$/	# see typere in lift_const
+			or warn "WARN! suspicious type '$_'\n"
+			for @type;
+		@type == 1 && !@rets or @type == @rets
+			or die "type/ret lists do not match";
+	} elsif (@rets) {
+		@type = qw(_float_) x @rets;
+	}
+
+	my ($type, $postp) = $type[0] // '_float_';
+	if (!@rets) {
+		unless (exists $func->{eval}) {
+			$_ = /^\(.*\)$/ ? re::chop2s $_ : "({ $_; })"
+				for $code->{exec};
+		}
+
+		if ($supp) {
+			CORE::state $a_i = mk_eval_t 1,2,'_int_',   "\$0\_";
+			CORE::state $a_f = mk_eval_t 1,2,'_float_', "\$0\_";
+			CORE::state %a_t;
+
+			$postp = exists $func->{eval}
+				? pick_t $type, $a_f, $a_i
+				: ($a_t{$type} ||= mk_ffunc 1,2, $type,
+						{code => {exec => "\$0\_"}});
+
+			$code->{exec} = "$supp\e!$code->{exec}";
+			$func->{eval} = 1;
+		}
+	} else {
+		# mark for grep \_
+		CORE::state $a_i = mk_eval_t 1,3,'_int_',   '$!($1_->[$0_])';
+		CORE::state $a_f = mk_eval_t 1,3,'_float_', '$!($1_->[$0_])';
+
+		my (@auto, @init, @list, @accs); for my $i (0..$#rets) {
+			my ($t, $r, $v) = ($type[$i], $rets[$i], "\$aux$i");
+
+			push @accs, pick_t $t, "$a_f($i)", "$a_i($i)";
+
+			if ($r =~ s/^=\s*//) { push @list, $r; next; }
+
+			# OK, this is ugly, but lets do it here for now ...
+			$t =~ s/^_(?:(int)|float)_$/$1||$pp_cpp::O_FLOAT/e;
+			push @auto, "$t $v;";
+
+			push @init, "$v = $r;" if $v ne $r;
+			push @list, $v;
+		}
+
+		$func->{eval} = 0;
+		my $exec = "$code->{exec}@init";
+		if ($supp || $exec) {
+			$func->{eval} = 1;
+			$exec  = "{ $exec }"   if $exec;
+			$exec  = "$supp $exec" if $supp;
+			$exec .= "\e!";
+		}
+
+		$code->{auto} .= "@auto\n" if @auto;
+		$code->{exec}  = $exec . "[qw(@list)]";
+		$postp         = join ',', @accs;
+	}
+
+	my $ffunc = mk_ffunc $pure, $argc, $type, $func;
+	$ffunc = "($ffunc <: $postp)" if $postp;
+	$ffunc =  "$lambd  : $ffunc)" if $lambd;
+	$ffunc;
+}
+
+sub parse_dep
+{
+	s/^\s*\(\s*(\w*)\s*\)// or die 'dep name';
+	my $name = $1;
+
+	my $deps = __parse_deps;
+
+	s/^\s*($re::bul_crl)\s*(;)?//o or die "dep body";
+	$2 or die 'expected ;';
+
+	local $_ = $1;
+	CORE::state $re_zone = 'FILE|DECL|INIT|LOOP|POST|PERL';
+	my $code = parse_zone $re_zone, 'FILE';
+	$code->{name} = $name;
+
+	if ($name) {
+		die 'redefined' if $DEPS{$name};
+		$code->{deps} = $deps if $deps;
+		$DEPS{$name} = $code;
+	} else {
+		my $extra = $DEPS{''} ||= {};
+		push @{$extra->{deps}}, @$deps if $deps;
+		$extra->{$_} .= $code->{$_} for keys %$code;
+	}
+
+	'';
+}
+
+sub parse_lit
+{
+	my $r = s/^($re::bul_crl)//o ? re::chop2 $1 :
+		s/^(\w+)//o ? $1 : die "bad \$ expr";
+	fix_strn $r;
+	CORE::state $f; $f->{$r} ||= mk_eval 1,0, $r;
+}
+
+sub parse_dsp
+{
+	our $REGERROR;
+	s{
+		(" (*:string) (?:\\.|[^"])* (*SKIP) ") |
+		(?: \/\* (*:comment) (?:[^\*]+|\*(?!\/))* (*SKIP) \*\/) |
+		(?: \/\/ [^\n]*)
+	}{
+		if (defined $1) {
+			CORE::state $uniq = '000';
+			$STRN{++$uniq} = $1;
+			'STRN!'.$uniq;
+		}
+	}xegs;
+
+	die "unterminated $REGERROR" if $REGERROR && $REGERROR ne 1;
+	s/(?:\h*\n){3,}/\n\n/g; # unneeded
+
+	s{
+		\b (?:fpp_)(?:(import)|(library)) \b
+		(?: \s*\(\s* STRN!(\d+) \s*\)\s* (?(1);) )?
+	}{
+		my $n = $3 && $STRN{$3} //
+			do { /\G([^\n]*)/; die "syntax error: '$1'"; };
+		main::parse_file(re::chop2 $n, !$1);
+	}xeg;
+
+	my $dsp = ''; while (m{
+		\$		(?{\&parse_lit})	|
+		(?: \b (?:
+			__FPP	(?{\&parse_dep})	|
+			  FPP	(?{\&parse_fpp})
+		) \b )
+	}xo) {
+		substr $_, 0, length($`) + length($&), '';
+		$dsp .= fix_strn $`;
+		$dsp .= $^R->();
+	}
+	$dsp . fix_strn;
+}
+
+#------------------------------------------------------------------------------
+package pp_cpp;
+our ($O_FLOAT, $O_C, $O_OS) = 'float';
+our (%ZMAP, $FILE, $DECL, $INIT, $EXEC);
+
+my $TYPE = '(?: int | float | double | quad | fixpoint_t)';
+
+sub re_cast { qr/(\()? \b$_[0]\b (?(1)\)) \(($_[1])\)/x; }
+sub re_call { my $f = &re::list; "\\b($f)\\s*($re::bal_par)"; }
+sub re_this { my $t = &re::list; "${re::DSP}($t)\\b"; }
+
+sub uncast_one
+{
+	# just to avoid annoying float(inputX[i]) with -s
+	CORE::state $cast_inp = re_cast $O_FLOAT, 'input\d+\[\w+]';
+	s/^$cast_inp$/$2/o;
+	return if $HAS_ANY;
+
+	# wrong: float(a) + float(b) => a) + float(b
+	CORE::state $cast = re_cast $TYPE, '.*';
+	s/^$cast$/$2/o;
+}
+sub uncast_all
+{
+	# just to avoid annoying FAUSTFLOAT(typed) with -s
+	my $cast_out = re_cast 'FAUSTFLOAT', $_[0];
+	$EXEC =~ s/$cast_out/$2/g;
+	return if $HAS_ANY;
+
+	my $cast = re_cast $TYPE, $_[0];
+	for ($INIT, $EXEC) { 1 while s/$cast/$2/g; }
+}
+
+sub fix_types
+{
+	my $funcs = shift;
+
+	my %ftype; while (my ($n, $f) = each %$funcs) {
+		$ftype{$n} = exists $f->{eval} ? undef
+				  : $f->{type} // next
+	}
+
+	%ftype or return;
+	uncast_all my $calls = re_call keys %ftype;
+	my (%vtype, @evals, @stmts); for ($INIT, $EXEC) {
+		$vtype{$1} = $ftype{$2} // do {
+			push @{$funcs->{$2}{eval} ?
+				\@stmts : \@evals }, $1;
+			'void';
+		} while /\b (\w+) \s*=\s* $calls \s*;/xg;
+	}
+
+	%vtype or return;
+	uncast_all my $vtype = re_this keys %vtype;
+	s/\b $TYPE (?=\s+$vtype)/$vtype{$1}/xg
+		for $DECL, $INIT, $EXEC;
+
+	@stmts || @evals or return;
+	my $voids = re_this @stmts, @evals;
+	s/\h* void \h+ $voids \h*; \h*\v//xg
+		for $DECL;
+	s/$voids (?! \h*=[^=] )/_($1)/xg
+		for $INIT, $EXEC;
+
+	if (@stmts) {
+		my $stmts = re_this @stmts;
+		s/\b  (?:void\h+)? $stmts \h*=\h* (.+?) \h*;
+		 /_($1,($2),1)/xg
+			for $INIT, $EXEC;
+	}
+	if (@evals) {
+		my $evals = re_this @evals;
+		s/\h* (?:void\h+)? $evals \h*=\h* (.+?) \h*; \h*\v
+		 /_($1,($2))/xg
+			for $INIT, $EXEC;
+	}
+}
+
+sub kill_const
+{
+	my $re_c = qr/\b([if]Const\d+)\b/;
+	my %used = map  +($_,1),    $EXEC =~ /$re_c/g;
+	my @temp = grep	!$used{$_}, $DECL =~ /$re_c;\h*\v/g
+		   or return;
+
+	my %type;
+	my $temp = re::list @temp;
+	$DECL =~ s/\h*(.*)\b($temp);\h*\v/
+			$type{$2} = $1; ''/eg;
+	$INIT =~ s/\bdsp->(?=$temp\b)//g if $O_C;
+	$INIT =~ s/\b($temp)(?=\h*=[^=])/$type{$1}$1/g;
+}
+sub lift_const
+{
+	my $re_c = qr/\b((?:[if]Const|aux\d+__)\d+)\b/;
+	my %decl = map +($_,1), $DECL =~ /$re_c;/g;
+	my %init = map +($_,1), $INIT =~ /$re_c(?=\s*=[^=])/g;
+	my $lift = re::list my @ck = grep $init{$_} && !$decl{$_},
+		$EXEC =~ /$re_c/g
+		or return;
+
+	my %ck = map +($_,1), @ck;
+
+	$INIT =~ s{
+		(?:^|;|\G) \h* \K
+		(?=\S)([\w\h*]+) \b ($lift)	# see typere in parse_fpp
+		(?: (\h*;\h*) | (?=\s*=[^=]))
+	}{
+		defined delete $ck{$2}
+			or die "ERR!! already lifted const: $2\n";
+		$DECL .= "\t$1$2;\n"; !$3 && $2;
+	}xemg;
+
+	@ck = keys %ck and warn "WARN! unlifted const(s)? @ck\n";
+
+	if ($O_C) { s/(?=($lift))/dsp->/g for $INIT, $EXEC; }
+}
+
+sub fill_oobi
+{
+	my $oobi = shift;
+	$INIT = join '', map {
+		my @o; if (s/\e(\d+)\e/push @o, $1; ''/eg) {
+			my ($p) = /^(\h*)/;
+			my $i = join '', @$oobi[sort {$a<=>$b} @o];
+			$i =~ s/^(?=\h*\S)/$p/mg;
+			$_ = $i . $_;
+		}
+		$_;
+	} split /\n\K/, $INIT;
+}
+
+sub mark_body($$_)
+{
+	$_[2] =~ /^\h+(?=\S)/ or die;
+	my @m = map "$&#MARK $_[$_]\n", 0,1;
+	$_[2] = $m[0] . $_[2] . $m[1];
+}
+sub add_marks
+{
+	$FILE = "#MARK FILE\n";
+
+	$DECL =~ s/^\h+\K/#MARK CALL\n$`/ or die;
+
+	unless (defined $O_OS) {
+		$EXEC =~ s/\{\v\K .*? (?=\h+\})/
+		mark_body 'LOOP', 'POST', $&.'';
+		/exs or die;
+	} else {
+		mark_body 'LOOP', 'POST', $EXEC;
+	}
+
+	mark_body 'CALL', 'EXIT' for $INIT, $EXEC;
+}
+sub fill_mark
+{
+	my (undef, $mark, $code) = @_;
+	$_[0] =~ s/^(\h*)#MARK $mark\n/
+		my $i = $1;
+		$code =~ s|^(?=\h*\S)|$i|mgr;
+	/me or die;
+}
+
+sub del2str
+{
+	my $h = shift;
+	join '', grep defined, delete @$h{@_};
+}
+
+sub expand_all
+{
+	my ($extra, $funcs) = @_;
+
+	add_marks;
+	fix_types $funcs;
+
+	my %voids;
+	sub expand_void; local *expand_void = sub
+	{
+		return $voids{$_[0]} // die if @_==1;
+		my $void = my $stmt = re::chop2 $_[1];
+		if (@_ == 2) {
+			$stmt = '';
+			$void =~ s/\e\d+\e/$stmt .= $&; ''/eg;
+		} else {
+			$stmt =~ s/\e!(.*)//s;
+			$void = $1 // die;
+		}
+		$voids{$_[0]} = $void;
+		$stmt;
+	};
+
+	my ($zone, @oobi, %meta);
+	my @extra = expand_fpp { code => $extra };
+	sub expand_func; local *expand_func = sub
+	{
+		my ($name, $args) = @_;
+		if (!$HAS_ANY) {
+			s'^-?\d+\K(?:\.0|e\+?(\d+))[fL]?$'0 x ($1//0)'e
+				for @$args
+		}
+
+		my $func = $funcs->{$name};
+		my $this = expand_fpp $func, $args;
+		my $auto = [qw(INIT LOOP)]->[$zone];
+		my $meta = $meta{$name} //= {};
+
+		if (my $a = $this->{auto})
+			{ $this->{$auto} .= $a }
+		if (my $a = $meta->{AUTO} //= delete $this->{AUTO})
+			{ $meta->{$auto}++ or $this->{$auto} .= $a }
+
+		if (!$zone and my $o = del2str $this, qw(INIT init)) {
+			push @oobi, $o;
+			$this->{exec} =~ s/^/\e$#oobi\e/;
+		}
+
+		push @extra, $this if 1 < keys %$this;
+		$this->{exec};
+	};
+
+	my $calls = re::qr re_call '_', keys %$funcs;
+	sub expand_code; local *expand_code = sub {
+		s/$calls/
+			my ($f, @a) = ($1, re::split_args $2);
+			uncast_one, expand_code for @a;
+			$f eq '_' ? expand_void @a
+				  : expand_func $f,\@a;
+		/xge;
+	};
+
+	$zone = 0; expand_code, $zone++ for $INIT, $EXEC;
+
+	fill_oobi \@oobi if @oobi;
+
+	sub collect; local *collect = sub
+		{ join '', map { del2str $_, @_ } @extra };
+
+	fill_mark $INIT, 'CALL', del2str $extra[0],
+					 qw(INIT);
+	fill_mark $FILE, 'FILE', collect qw(FILE file);
+	fill_mark $DECL, 'CALL', collect qw(DECL decl);
+	fill_mark $INIT, 'EXIT', collect qw(INIT init);
+	fill_mark $EXEC, 'LOOP', collect qw(LOOP loop);
+	fill_mark $EXEC, 'POST', collect qw(POST post);
+
+	fill_mark $EXEC, $_,'' for qw(CALL EXIT);
+
+	kill_const; # complements faust commit a950fd41de
+	lift_const;
+}
+
+sub read_cpp
+{
+	my ($fd, %items) = @_;
+
+	my ($class, @code);
+
+	local $_;
+	sub getl; local *getl = sub {
+		push @code, $_ if defined;
+		defined ($_ = <$fd>);
+	};
+	sub mark; local *mark = sub {
+		push @code, $_ unless defined $_[1];
+		push @code, $_[1];
+		*{delete $items{$_[0]}} = \$code[-1];
+		undef $_;
+	};
+
+	while (getl) {
+		unless ($class) {
+			push @code, "Code generated with FPP   $VERS\n"
+				and next if /^Code generated with Faust/;
+			($class) = /^\s*\#define \s* FAUSTCLASS \s+(\w+)\s*$/x
+				or next;
+			1 while getl && /\S/;
+			mark -file;
+		} elsif (/^\s*typedef \s+ struct \s/x) {
+			die unless $O_C;
+			last;
+		} elsif (/^\s*class \s+ $class \s/x) {
+			die if $O_C;
+			/^\s* private: \s*$/x && last while getl;
+		}
+	}
+	eof and die "can't find the start of dsp declaration";
+
+	mark -decl;
+	while (<$fd>) {
+		last if $O_C
+			? m/^\s* \} \s* $class \s*;/x
+			: m/^\s* public:/x;
+		$code[-1] .= $_;
+	}
+	eof and die "can't find the end of dsp declaration";
+
+	$code[-2] .= $& if $code[-1] =~ s/\A(?:^\h*\v)+//m;
+	push @code,  $& if $code[-1] =~ s/(?:^\h*\v)+\z//m;
+
+	%items = map {$_.$class, $items{$_}} keys %items
+		if $O_C;
+
+	my $calls = re_call keys %items;
+	while (getl) {
+		# temporary hack
+		if (/^(\s*)instanceConstants\w*\(/) {
+			(my $i, $_) = $_;
+			1 while getl && !/^\s*instanceClear\w*/;
+			$_ .= $i; next;
+		}
+
+		my ($last, $func) = /^(\h*) .*? $calls \s+\{\s*$/x
+			or next;
+
+		$items{$func} or die "redefenition of $func()";
+
+		mark $func; $last .= "}\n";
+		while (<$fd>) {
+			last if $_ eq $last;
+			$code[-1] .= $_;
+		}
+		eof and die "can't find the end of $func()";
+	}
+
+	die "can't find funcs: ", join(',', map "$_()", keys %items)
+		if %items;
+
+	\@code;
+}
+
+# ----------------------------------------------------------------------------
+my ($ZVEC, $TEMP);
+
+sub inputs
+{
+	my %seen;
+	grep defined && !$seen{$_}++, $_[0] =~ /\b(?:
+		(?:$TYPE) | (?:IOTA0) | (?:[if]Const\d+) |
+		(?: (?:input|[if][VR]ec)\d+\b) |
+		((?=\D)\w+ (?! \(\s*[^\)] ))
+	)\b/oxg
+}
+
+sub __zmap($)
+{
+	my $v = $_[0]; # 1==(() = ($v =~ /$ZVEC/og))
+	return $v if $v =~ /$ZVEC/og ? $v !~ //g : do {
+		my ($c, $t) = 0;
+		$v =~ s{($TEMP)}{defined($t = $ZMAP{$1}) ? (++$c, $t) : $1}oeg;
+		$c == 1;
+	};
+}
+
+sub make_zmap
+{
+	$ZVEC = $re::DSP.'[if][VR]ec\d+\b';
+	$TEMP = '\b[if]Temp\d+\b';
+
+	for (split /(?:\h*;)?\n/, $EXEC) {
+		my ($l, $r) = /(.*\S) \s*=\s* (.*)/x
+			or next;
+		if (my ($t) = $l =~ /($TEMP)$/o) {
+			$ZMAP{$t} = __zmap $r || next;
+		} elsif (my ($v, $i) = $l =~ /($ZVEC)\[([^\]]+)\]$/o) {
+			$i eq 0 || $i =~ s/\bIOTA0\b/(IOTA0 - 0)/ or next;
+			$ZMAP{$r} = $v."[$i]";
+		}
+	}
+}
+
+sub perl::core::__z_map($$)
+{
+	my $expr = $_[0]; $ZMAP{$expr} //= __zmap $expr;
+}
+
+# ----------------------------------------------------------------------------
+sub kill_C99_loops
+{
+	1 while s{\h*/\* C99 loop \*/\s+($re::bul_crl)\h*\v}{
+		re::chop2($1) =~ s/\h*$//r =~ s/^\t//mgr
+	}e;
+}
+
+sub do_cpp
+{
+	my ($fd, $extra, $funcs) = @_;
+
+	my $code = read_cpp $fd,
+		-file			=> \*FILE,
+		-decl			=> \*DECL,
+		instanceConstants	=> \*INIT,
+		compute			=> \*EXEC;
+
+	# just because they annoy me so much
+	if ($O_C) { kill_C99_loops for $EXEC }
+
+	make_zmap;
+	expand_all	$extra, $funcs;
+
+	pp_dsp::fix_strn for $FILE, $INIT, $EXEC;
+
+	$code;
+}
+
+#------------------------------------------------------------------------------
+package main;
+
+my @INCDIR;
+
+sub slurp_file
+{
+	my ($name, $idir) = @_;
+
+	my $path; if (!$idir || $name =~ /^\.{0,2}\//) {
+		$path = $name if -f $name;
+	} else {
+		for (@$idir) {
+			my $n = "$_/$name";
+			$path = $n, last if -f $n;
+		}
+	}
+
+	$path // die !$idir
+		? "fpp: can't open '$name' : $!\n"
+		: join "\n\t", "ERR!! can't find '$name' in:\n",
+			@INCDIR, "\n";
+	open my $fd, '<', $path or die "can't open file '$path': $!";
+	local $/; <$fd>;
+}
+
+sub parse_file
+{
+	my ($name, $islib) = @_;
+	my ($isinc, $env) = defined $islib;
+
+	local $_;
+	if (defined $name) {
+		CORE::state %cache;
+		CORE::state $uniq = '00';
+		# import() after library() can't work anyway, but let's
+		# check $islib and return ''; this allows import(stdfaust)
+		# which does library(all) which in turn imports everything.
+		return $islib && $cache{$name} if exists $cache{$name};
+		$env = $cache{$name} = $islib && 'FPP_ENV_' . ++$uniq;
+		$_ = slurp_file $name, $isinc && \@INCDIR;
+	} else {
+		warn "reading from stdin ...\n" if -t STDIN;
+		$_ = do { local $/; <STDIN> };
+		$name = '<stdin>';
+	}
+
+	my $dsp = pp_dsp::parse_dsp;
+
+	print FAUST "\n" if tell FAUST;
+	print FAUST '// ======== ', $isinc?'INCLUDE: ':'CMDLINE: ', $name, "\n";
+	print FAUST $env, " = environment {\n" if $islib;
+	print FAUST $dsp;
+	print FAUST "};\n" if $islib;
+
+	$env;
+}
+
+my $usage = <<EOU;
+usage : fpp [fpp and/or faust options] file1 ...
+fpp options:
+  -faust	path-to-faust-executable
+  -I0		like -I but only for fpp_import/fpp_library
+  -k		don't remove the temporary files
+  -s		short output format for code inspection
+EOU
+
+sub ck_features
+{
+	return unless grep !defined, $HAS_ANY;
+
+	my $s = do {
+		local $^W; open my $fd, '-|', $_[0], -v
+			or die "ERR!! can't exec '$_[0]': $!\n";
+		readline $fd // '';
+	};
+
+	my ($v) = $s =~ /^FAUST Version\s*(\S+)\v/ or
+		die "ERR!! bad '@_' version header: '",
+			$s =~ /^(\V*)/, "'\n";
+	my @v = map {
+		s/^(\d+)// or die "ERR!! bad faust version: $v\n";
+		0 + $1 - ($_ ne '');
+	} split /\./, $v =~ s/^v//r;
+
+	my $cmp = sub {
+		for (0..$#v) { return $v[$_] <=> $_[$_] || next }
+		0;
+	};
+
+	$HAS_ANY //= $cmp->(2,47,0) >= 0;
+}
+
+sub narg { die "fpp: '$_' needs an arg.\n" }
+sub main
+{
+	our @TMPF; END { unlink @TMPF }
+	my ($faust, $dumb, $notc, $shrt, $ktf) = ('faust', '');
+	my (@opt, @inp, $OUT, $out);
+
+	if (my $dir = (readlink $0 or $0) =~ s|(?:/[^/]+){2}$||r) {
+		-d and push  @opt, '-A', $_ for $dir . '/arch';
+		-d and unshift @_, '-I', $_ for $dir . '/lib';
+	}
+
+	while (defined($_ = shift)) {
+		if (ord != ord '-')		{ push @inp, $_; next; }
+		elsif ($_ eq '-k')		{ $ktf = 1; next; }
+		elsif ($_ eq '-s')		{ $shrt = 1; next; }
+		elsif ($_ eq '-faust')		{ $faust = shift // narg; next; }
+		elsif ($_ eq '-O')		{ $OUT = shift // narg; next; }
+		elsif ($_ eq '-o')		{ $out = shift // narg; next; }
+		elsif ($_ eq '-I0')		{ push @INCDIR, shift // narg; next; }
+		elsif (/^-(I|-import-dir)$/)	{ push @INCDIR, $_[0] }
+		elsif (/^-{1,2}(double|quad)\b/){ $O_FLOAT = $1 }
+		elsif (/^-(fx|-fixed-point)$/)	{ $O_FLOAT = 'fixpoint_t' }
+		elsif (/^-os(\d*)$/)		{ $O_OS = $1 }
+		elsif (/^-(lang|-language)$/)	{
+			if (!$_[0] || $_[0] =~ /^o?cpp/ ) { $re::DSP = '\b' }
+			elsif ($_[0] eq 'c')		  { $O_C  = 1  }
+			else { die "ERR!! fpp: unsupported $_ $_[0]\n" }
+		}
+		elsif ($_ eq '-has') {
+			for (split /,/, shift // narg) {
+				my $v = !s/^([-+])// || $1 eq '+';
+				my $r =	$_ eq 'any' ? \$HAS_ANY :
+					die "ERR!! bad -has option: $_\n";
+				$$r = $v;
+			}
+			next;
+		}
+
+		push @opt, $_;
+
+		$notc = $_, next if /^(?:
+			-norm[1-2]? | --normalized-form[1-2]?	|
+			-e	    | --export-dsp		|
+		)$/x;
+
+		$dumb = $_, next if /^(?:
+			-archdir	| --archdir		|
+			-dspdir		| --dspdir		|
+			-h		| --help		|
+			-includedir	| --includedir		|
+			-libdir		| --libdir		|
+			-pathslist	| --pathslist		|
+			-v		| --version		|
+		)$/x;
+
+		next if /^(?:
+			-cir	| --check-integer-range		|
+			-cm	| --compute-mix			|
+			-d	| --details			|
+			-double	| --double-precision-floats	|
+			-exp10	| --generate-exp10		|
+			-flist	| --file-list			|
+			-fp	| --full-parentheses		|
+			-fui	| --freeze-ui			|
+			-fx	| --fixed-point			|
+			-i	| --inline-architecture-files	|
+			-inpl	| --in-place			|
+			-lcc	| --local-causality-check	|
+			-light	| --light-mode			|
+			-mapp	| --math-approximation		|
+			-me	| --math-exceptions		|
+			-mem	| --memory-manager		|
+			-nvi	| --no-virtual			|
+			-os0	| --one-sample0			|
+			-os1	| --one-sample1			|
+			-os2	| --one-sample2			|
+			-os3	| --one-sample3			|
+			-os	| --one-sample			|
+			-quad	| --quad-precision-floats	|
+			-rui	| --range-ui			|
+			-scal	| --scalar			|
+			-single	| --single-precision-floats	|
+			-sts	| --strict-select		|
+			-time	| --compilation-time		|
+			-wall	| --warning-all			|
+		)$/x;
+
+		die "fpp: unsupported option '$_'.\n" unless /^(?:
+			-a					|
+			-A	| --architecture-dir		|
+			-cn	| --class-name			|
+			-ct	| --check-table			|
+			-dlt	| --delay-line-threshold	|
+			-es	| --enable-semantics		|
+			-fm	| --fast-math			|
+			-ftz	| --flush-to-zero		|
+			-I	| --import-dir			|
+			-lang	| --language			|
+			-mcd	| --max-copy-delay		|
+			-ni	| --narrowing-iterations	|
+			-ns	| --namespace			|
+			-O	| --output-dir			|
+			-o					|
+			-pn	| --process-name		|
+			-scn	| --super-class-name		|
+			-t	| --timeout			|
+			-wi	| --widening-iterations		|
+		)$/x;
+		push @opt, shift // narg;
+	}
+
+	$out = "$OUT/$out" if defined $OUT and defined $out;
+
+	my ($name, $temp, $dsp, $cpp); if (!$dumb) {
+		ck_features $faust;
+
+		($name) = @inp
+			? $inp[0] =~ m|([^/]*?)(?:\.dsp)?$|
+			: '<stdin>';
+
+		# yes this sucks. but portable without modules.
+		my $TEMP = $ENV{TEMP} // '/tmp';
+		$temp = '__FPP__'; $temp .= $$.rand unless $ktf;
+		($dsp, $cpp) = map "$TEMP/$temp.$_", qw(dsp cpp);
+		push @TMPF, $dsp, $cpp unless $ktf;
+
+		defined and push @opt, '-o', $_ for $notc ? $out : $cpp;
+		push @opt, $dsp;
+
+		open FAUST, '>', $dsp or die "ERR!! can't open '$dsp': $!\n";
+		# parses STDIN if !@inp; so parse_file $_ for @inp won't work
+		do { parse_file shift @inp } while @inp;
+		close FAUST;
+	}
+
+	if ($dumb eq -v or $dumb eq '--version') {
+		print "FPP   Version $VERS\n";
+	} elsif ($dumb eq -h or $dumb eq '--help') {
+		print "FPP   faust pre/post processor version $VERS\n";
+		print "$usage\n";
+		return;
+	} elsif ($dumb =~ /^-{1,2}pathslist$/) {
+		print "FPP   fpp_import/library paths:\n";
+		print "$_\n" for @INCDIR;
+		print "\n";
+	}
+	system $faust, @opt and die "$faust error.\n";
+	exit if $dumb || $notc;
+
+	open my$fd, '<', $cpp or die "ERR!! can't open '$cpp': $!\n";
+	my $code = pp_cpp::do_cpp $fd, $DEPS{''}, \%FUNC;
+
+	open STDOUT,'>', $out or die "ERR!! can't open '$out': $!\n"
+		if defined $out;
+
+	if ($shrt) {
+		if ($O_C) { s/^(?!$)/\t/mg for $INIT, $EXEC }
+
+		length and $_ .= "\n" for $FILE, $DECL;
+
+		print	$FILE, $DECL,
+			"\tvoid instanceConstants(int sample_rate)\n\t{\n",
+			$INIT,
+			"\t}\n\n",
+			"\tvoid compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)\n\t{\n",
+			$EXEC,
+			"\t}\n";
+	} else {
+		print s/\b\Q$temp\E\b/$name/or for @$code;
+	}
+}
+
+main @ARGV;
