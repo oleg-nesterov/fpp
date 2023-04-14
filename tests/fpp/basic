@@ -1,0 +1,2724 @@
+#!/usr/bin/perl -w
+use strict;
+
+# This test:
+# - expects fpp in $PATH
+# - expects faust version >= 2.47.0
+# - probably won't work on non-Linux platforms
+# - !!! creates garbage in /tmp/ !!!
+
+die "ERR!! /tmp/ doesn't exist or not writable\n"
+	unless -d -w '/tmp/';
+
+sub rd { open my $f, '<', $_[0] or die; join  '', <$f>; }
+sub wr { open my $f, '>', $_[0] or die; print $f $_[1]; }
+
+sub do_test
+{
+	my $lnr = shift || return;
+	my ($dsp, $cpp, $o_c, $fst) = @_;
+
+	$dsp = $dsp->() if ref $dsp;
+	wr '/tmp/x.dsp', $dsp;
+
+	my @lng = qw(cpp c);
+	for my $chk ($cpp, $o_c) {
+		my $lng = shift @lng;
+
+		$chk || next;
+		system "fpp -k -s -lang $lng @ARGV </tmp/x.dsp >/tmp/x.cpp"
+			and die "COMPILE FAILED [$lnr]:\n\n$dsp\n";
+
+		my $res = rd '/tmp/x.cpp';
+		s/^\s*\n//mg for $chk, $res;
+		next if $res eq $chk;
+
+		wr '/tmp/x1.cpp', $chk;
+		wr '/tmp/x2.cpp', $res;
+		warn "ERROR [$lnr]!! ---------------------\n$dsp\n";
+		system 'diff -u /tmp/x1.cpp /tmp/x2.cpp >&2' or die;
+	}
+
+	if ($fst and $fst ne (my $fpp = rd '/tmp/__FPP__.dsp')) {
+		warn "ERROR [$lnr]!! ---------------------\n$dsp\n";
+		warn "expect:\n$fst",
+		     "result:\n$fpp";
+	}
+}
+
+sub test
+{
+	do_test @$_ for @_;
+}
+
+test
+
+[__LINE__, <<'DSP', <<'CPP'],
+process = FPP(){a} + FPP(){b} : FPP(x){ $x };
+DSP
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(({ ({ b; }) + ({ a; }); }));
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+	process = FPP() { func() } <: _,_;
+DSP
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			float fTemp0 = ({ func(); });
+			output0[i0] = FAUSTFLOAT(fTemp0);
+			output1[i0] = FAUSTFLOAT(fTemp0);
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+	process = FPP() pure { func(); } <: _,_;
+DSP
+	float fConst0;
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		fConst0 = ({ func(); });
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(fConst0);
+			output1[i0] = FAUSTFLOAT(fConst0);
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+	process = FPP() eval { func() } <: ==;
+DSP
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(func() == func());
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+	process = FPP(x) TYPE {malloc($x)} <: FPP(p){$p[0]},FPP(p){$p[1]} ;
+DSP
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			TYPE iTemp1 = ({ malloc(input0[i0]); });
+			output0[i0] = FAUSTFLOAT(({ iTemp1[0]; }));
+			output1[i0] = FAUSTFLOAT(({ iTemp1[1]; }));
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+	process = FPP(x) pure TYPE {malloc($x)} (10) <: FPP(p){$p[11]},FPP(p){$p[22]} ;
+DSP
+	TYPE iConst0;
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		iConst0 = ({ malloc(10); });
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(({ iConst0[11]; }));
+			output1[i0] = FAUSTFLOAT(({ iConst0[22]; }));
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+	p = FPP(C,c,x) { DECL: $DECL; INIT: INIT($DECL,$C);
+		         decl: $decl; init: init($decl,$c); exec: exec($DECL,$decl,$x); };
+	q = FPP(C,c,x) { DECL: $DECL; INIT: INIT($DECL,$C);
+		         decl: $decl; init: init($decl,$c); exec: exec($DECL,$decl,$x); };
+	process = 1,2,3,4 : p(10,20), q(30,40), q(30,50),p(10,60);
+
+DSP
+	DECL__01;
+	decl__01;
+	DECL__02;
+	decl__02;
+	decl__03;
+	decl__04;
+
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		INIT(DECL__01,10);
+		init(decl__01,20);
+		INIT(DECL__02,30);
+		init(decl__02,40);
+		init(decl__03,50);
+		init(decl__04,60);
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		FAUSTFLOAT* output3 = outputs[3];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(({ exec(DECL__01,decl__01,1); }));
+			output1[i0] = FAUSTFLOAT(({ exec(DECL__02,decl__02,2); }));
+			output2[i0] = FAUSTFLOAT(({ exec(DECL__02,decl__03,3); }));
+			output3[i0] = FAUSTFLOAT(({ exec(DECL__01,decl__04,4); }));
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+process = FPP() pure struct T1, struct T2 { {;} [RET1, RET2]; };
+DSP
+	int fSampleRate;
+
+	struct T1 aux0__01;
+	struct T2 aux1__01;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		{ {;} aux0__01 = RET1; aux1__01 = RET2; }
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = aux0__01;
+			output1[i0] = aux1__01;
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+process = FPP() struct T1, struct T2 { [RET1, RET2] } : !,_ <: _,_;
+DSP
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			struct T1 aux0__01; struct T2 aux1__01;
+			{ aux0__01 = RET1; aux1__01 = RET2; }
+			output0[i0] = aux1__01;
+			output1[i0] = aux1__01;
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+process = FPP() int,long,_int_,_float_,float,double,quad { [=0,=1,=2,=3,=4,=5,=6] } :> _;
+DSP
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(float(0 + 2 + 1) + 3 + 4 + 6 + 5);
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+process = FPP(x) eval { VOID($x)) } <: par(i0, 2, (FPP(i0,v) eval {$v[$i0]}(i0) <:_,_));
+DSP
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		FAUSTFLOAT* output3 = outputs[3];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = VOID(input0[i0]))[0];
+			output1[i0] = VOID(input0[i0]))[0];
+			output2[i0] = VOID(input0[i0]))[1];
+			output3[i0] = VOID(input0[i0]))[1];
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+process = par(i0,2,FPP(x) eval { VOID($x)) }) : par(i0, 2, (FPP(i0,v)eval{$v[$i0]}(i0) <:_,_));
+DSP
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		FAUSTFLOAT* output3 = outputs[3];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = VOID(input0[i0]))[0];
+			output1[i0] = VOID(input0[i0]))[0];
+			output2[i0] = VOID(input1[i0]))[1];
+			output3[i0] = VOID(input1[i0]))[1];
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+__FPP(bounds) { struct bounds { float min, max; }; };
+
+bounds	= FPP(val) : bounds float,float {
+decl:	struct bounds $b;
+init:	bounds_init(&$b);
+exec:	bounds_compute(&$b, $val);
+	[$b.min, $b.max];
+};
+
+bobj	= FPP(val) : bounds struct bounds * {
+decl:	struct bounds $b;
+init:	bounds_init(&$b);
+exec:	bounds_compute(&$b, $val);
+	&$b;
+} <:	FPP(b){$b->min},
+	FPP(b){$b->max};
+
+process = 1,2 : bounds, bobj;
+DSP
+struct bounds { float min, max; };
+	struct bounds b__01;
+	struct bounds b__02;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		bounds_init(&b__01);
+		bounds_init(&b__02);
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		FAUSTFLOAT* output3 = outputs[3];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			float aux0__01; float aux1__01;
+			{ bounds_compute(&b__01, 1); aux0__01 = b__01.min; aux1__01 = b__01.max; }
+			output0[i0] = aux0__01;
+			output1[i0] = aux1__01;
+			struct bounds * iTemp2 = ({ bounds_compute(&b__02, 2); &b__02; });
+			output2[i0] = FAUSTFLOAT(({ iTemp2->min; }));
+			output3[i0] = FAUSTFLOAT(({ iTemp2->max; }));
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+__FPP(bounds) { struct bounds { float min, max; }; };
+
+bounds	= FPP(val) : bounds pure float,float {
+decl:	struct bounds $b;
+init:	bounds_init(&$b);
+exec:	bounds_compute(&$b, $val);
+	[$b.min, $b.max];
+};
+
+bobj	= FPP(val) : bounds pure struct bounds * {
+decl:	struct bounds $b;
+init:	bounds_init(&$b);
+exec:	bounds_compute(&$b, $val);
+	&$b;
+} <:	FPP(b){$b->min},
+	FPP(b){$b->max};
+
+process = 1,2 : bounds, bobj;
+DSP
+struct bounds { float min, max; };
+	struct bounds b__01;
+	struct bounds b__02;
+	struct bounds * iConst3;
+	int fSampleRate;
+
+	float aux0__01;
+	float aux1__01;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		bounds_init(&b__01);
+		{ bounds_compute(&b__01, 1); aux0__01 = b__01.min; aux1__01 = b__01.max; }
+		bounds_init(&b__02);
+		iConst3 = ({ bounds_compute(&b__02, 2); &b__02; });
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		FAUSTFLOAT* output3 = outputs[3];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = aux0__01;
+			output1[i0] = aux1__01;
+			output2[i0] = FAUSTFLOAT(({ iConst3->min; }));
+			output3[i0] = FAUSTFLOAT(({ iConst3->max; }));
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+__FPP(bounds) { struct bounds { float min, max; }; };
+
+bounds	= FPP(val) : bounds pure float,float {
+decl:	struct bounds $b;
+init:	bounds_init(&$b);
+exec:	bounds_compute(&$b, $val);
+	[$b.min, $b.max];
+};
+
+bobj	= FPP(val) :bounds pure struct bounds * {
+decl:	struct bounds $b;
+init:	bounds_init(&$b);
+exec:	bounds_compute(&$b, $val);
+	&$b;
+} <:	FPP(b){$b->min},
+	FPP(b){$b->max};
+
+process = +(1)~_ <: bounds, bobj;
+DSP
+struct bounds { float min, max; };
+	struct bounds b__01;
+	struct bounds b__02;
+	int iRec0[2];
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		bounds_init(&b__01);
+		bounds_init(&b__02);
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		FAUSTFLOAT* output3 = outputs[3];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			float aux0__01; float aux1__01;
+			iRec0[0] = iRec0[1] + 1;
+			{ bounds_compute(&b__01, iRec0[0]); aux0__01 = b__01.min; aux1__01 = b__01.max; }
+			output0[i0] = aux0__01;
+			output1[i0] = aux1__01;
+			struct bounds * iTemp2 = ({ bounds_compute(&b__02, iRec0[0]); &b__02; });
+			output2[i0] = FAUSTFLOAT(({ iTemp2->min; }));
+			output3[i0] = FAUSTFLOAT(({ iTemp2->max; }));
+			iRec0[1] = iRec0[0];
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+__FPP(dep) {
+LOOP:	DEP_LOOP();
+POST:	DEP_POST();
+};
+tst = FPP(x):dep {
+LOOP:	TST_LOOP();
+POST:	TST_POST();
+loop:	$tst_loop();
+post:	$tst_post();
+exec:	$exec($x);
+};
+process = tst,tst(mem);
+DSP
+	float fVec0[2];
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			DEP_LOOP();
+			TST_LOOP();
+			tst_loop__01();
+			tst_loop__02();
+
+			output0[i0] = FAUSTFLOAT(({ exec__01(input0[i0]); }));
+			fVec0[0] = float(input1[i0]);
+			output1[i0] = FAUSTFLOAT(({ exec__02(fVec0[1]); }));
+			fVec0[1] = fVec0[0];
+
+			DEP_POST();
+			TST_POST();
+			tst_post__01();
+			tst_post__02();
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+pure1 = FPP() pure { CONST1 };
+pure2 = 10 : FPP(x) pure eval { CONST2 };
+mkvar = _ <: +(1),-(1);
+process = mkvar(pure1),mkvar(pure2);
+__FPP() { INIT: INIT; };
+DSP
+	float fConst1;
+	float fConst2;
+	float fConst4;
+	float fConst5;
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		INIT;
+		fSampleRate = sample_rate;
+		float fConst0 = ({ CONST1; });
+		fConst1 = fConst0 + 1.0f;
+		fConst2 = fConst0 + -1.0f;
+		fConst4 = CONST2 + 1.0f;
+		fConst5 = CONST2 + -1.0f;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		FAUSTFLOAT* output3 = outputs[3];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(fConst1);
+			output1[i0] = FAUSTFLOAT(fConst2);
+			output2[i0] = FAUSTFLOAT(fConst4);
+			output3[i0] = FAUSTFLOAT(fConst5);
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP', <<'O_C'],
+del = FPP(i0,x[5])eval{ $x[$i0] };
+process = @(0),@(100),0 : del(1),del(-2),del(3);
+DSP
+	float fVec0[6];
+	int IOTA0;
+	float fVec1[128];
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			fVec0[0] = float(input0[i0]);
+			output0[i0] = fVec0[1];
+			fVec1[IOTA0 & 127] = float(input1[i0]);
+			output1[i0] = fVec1[(IOTA0 - -2 + 5 - 105) & 127];
+			output2[i0] = 0;
+			for (int j0 = 5; j0 > 0; j0 = j0 - 1) {
+				fVec0[j0] = fVec0[j0 - 1];
+
+			}
+			IOTA0 = IOTA0 + 1;
+		}
+	}
+CPP
+	float fVec0[6];
+	int IOTA0;
+	float fVec1[128];
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		dsp->fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		int i0;
+		for (i0 = 0; i0 < count; i0 = i0 + 1) {
+			dsp->fVec0[0] = (float)(input0[i0]);
+			output0[i0] = dsp->fVec0[1];
+			dsp->fVec1[dsp->IOTA0 & 127] = (float)(input1[i0]);
+			output1[i0] = dsp->fVec1[(dsp->IOTA0 - -2 + 5 - 105) & 127];
+			output2[i0] = 0;
+			int j0;
+			for (j0 = 5; j0 > 0; j0 = j0 - 1) {
+				dsp->fVec0[j0] = dsp->fVec0[j0 - 1];
+			}
+			dsp->IOTA0 = dsp->IOTA0 + 1;
+		}
+	}
+O_C
+
+[__LINE__, <<'DSP', <<'CPP'],
+process = *(100) : FPP(x[3]) { =$x[1]= };
+DSP
+	float fVec0[4];
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			fVec0[0] = float(input0[i0]);
+			output0[i0] = FAUSTFLOAT(({ =1e+02f * fVec0[1]=; }));
+			for (int j0 = 3; j0 > 0; j0 = j0 - 1) {
+				fVec0[j0] = fVec0[j0 - 1];
+
+			}
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+process = FPP(x, dl[10], y) { $x + $dl[111] + $y };
+DSP
+	float fVec0[11];
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* input2 = inputs[2];
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			fVec0[0] = float(input1[i0]);
+			output0[i0] = FAUSTFLOAT(({ input0[i0] + fVec0[111] + input2[i0]; }));
+			for (int j0 = 10; j0 > 0; j0 = j0 - 1) {
+				fVec0[j0] = fVec0[j0 - 1];
+
+			}
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+import("stdfaust.lib");
+dl = FPP(del,d1[62],b,d2[del],c)eval{exec($del : $d1[7] : $b : $d2[9] : $c)};
+process = dl(int(ma.SR/10));
+DSP
+	int fSampleRate;
+	int iConst0;
+	int IOTA0;
+	float fVec0[64];
+	float fVec1[32768];
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		iConst0 = int(0.1f * std::min<float>(1.92e+05f, std::max<float>(1.0f, float(fSampleRate))));
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* input2 = inputs[2];
+		FAUSTFLOAT* input3 = inputs[3];
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			fVec0[IOTA0 & 63] = float(input0[i0]);
+			fVec1[IOTA0 & 32767] = float(input2[i0]);
+			output0[i0] = exec(iConst0 : fVec0[(IOTA0 - 7) & 63] : input1[i0] : fVec1[(IOTA0 - 9) & 32767] : input3[i0]);
+			IOTA0 = IOTA0 + 1;
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP', '', <<'FST'],
+process =	FPP(x[111])pure eval{$x[17]},
+		FPP(x[100+11])pure eval{$x[17]},
+		FPP(d,x[d])pure eval{$x[17]}(100+11);
+DSP
+	int IOTA0;
+	float fVec0[128];
+	float fVec1[128];
+	float fVec2[128];
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* input2 = inputs[2];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			fVec0[IOTA0 & 127] = float(input0[i0]);
+			output0[i0] = fVec0[(IOTA0 - 17) & 127];
+			fVec1[IOTA0 & 127] = float(input1[i0]);
+			output1[i0] = fVec1[(IOTA0 - 17) & 127];
+			fVec2[IOTA0 & 127] = float(input2[i0]);
+			output2[i0] = fVec2[(IOTA0 - 17) & 127];
+			IOTA0 = IOTA0 + 1;
+
+		}
+
+	}
+CPP
+// ======== CMDLINE: <stdin>
+process =	\(x).(x@(int(111))  : ffunction(float fpp_func_001(any),"","")),
+		\(x).(int(100+11),x@(int(100+11))  : ffunction(float fpp_func_002(any,any),"","")),
+		\(d,x).(d,int(d),x@(int(d))  : ffunction(float fpp_func_003(any,any,any),"",""))(100+11);
+FST
+
+[__LINE__, <<'DSP', <<'CPP'],
+	L = FPP(n, l1{}, l2{n}, l3{outputs(l1)+n-a},a=2) { a=$a; n=$n; l1=($l1); l2=($l2); l3=($l3); };
+	process = L(3, (10,20))(100,200,300,400), FPP(L{n},n=2){L=($L); len=$L.len; L[0]=$L{0}; L[1]=$L.item(1); };
+DSP
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* input2 = inputs[2];
+		FAUSTFLOAT* input3 = inputs[3];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(({ a=2; n=3; l1=(10,20); l2=(100,200,300); l3=(400,input0[i0],input1[i0]); }));
+			output1[i0] = FAUSTFLOAT(({ L=(input2[i0],input3[i0]); len=2; L[0]=input2[i0]; L[1]=input3[i0]; }));
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+REC(op, x) = op(rec,x) : set(rec) with {
+	set = FPP(rec,val){$rec = $val};
+
+	rec = x : FPP(x) eval {
+	decl:	float $rec;
+	init:	$rec = 0.0;
+	exec:	$rec
+	};
+};
+process = REC(+,1), REC(+);
+DSP
+	float rec__01;
+	float rec__02;
+
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		rec__01 = 0.0;
+		rec__02 = 0.0;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(({ rec__01 = rec__01 + 1.0f; }));
+			float fTemp2 = float(input0[i0]);
+			output1[i0] = FAUSTFLOAT(({ rec__02 = fTemp2 + rec__02; }));
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+process = nentry("NENTRY", 0,-10,+10,1) : FPP(/*arg*/x) {
+	// }
+	/* COMM with "STRING" and } */
+	(void)"/* comm in str */ \" with }";
+	$x + 1; // add 1 }
+};
+DSP
+	FAUSTFLOAT fEntry0;
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		float fSlow0 = float(fEntry0);
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(({ (void)"/* comm in str */ \" with }"; fSlow0 + 1; }));
+
+		}
+
+	}
+CPP
+
+[__LINE__, eval 'sub{'. <<'DSP' . '}', <<'CPP', '', <<'FST'],
+	wr '/tmp/.t_one', <<_;
+fpp_import("/tmp/.t_all");
+F1 = FPP() eval {one_1} * (two.F2 + fpp_library("/tmp/.t_two").F3);
+F2 = FPP() eval {one_2};
+F3 = FPP() eval {one_3};
+_
+
+	wr '/tmp/.t_two', <<_;
+fpp_import("/tmp/.t_all");
+F1 = FPP() eval {two_1} * (one.F2 + fpp_library("/tmp/.t_one").F3);
+F2 = FPP() eval {two_2};
+F3 = FPP() eval {two_3};
+_
+
+	wr '/tmp/.t_all', <<_;
+one = fpp_library("/tmp/.t_one");
+two = fpp_library("/tmp/.t_two");
+_
+
+	<<_;
+fpp_import("/tmp/.t_all");
+fpp_import("/tmp/.t_all");
+process = one.F1,two.F1;
+_
+DSP
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(one_1 * (two_3 + two_2));
+			output1[i0] = FAUSTFLOAT(two_1 * (one_3 + one_2));
+
+		}
+
+	}
+CPP
+// ======== INCLUDE: /tmp/.t_two
+FPP_ENV_02 = environment {
+
+F1 = ffunction(float fpp_func_001(),"","") * (one.F2 + FPP_ENV_01.F3);
+F2 = ffunction(float fpp_func_002(),"","");
+F3 = ffunction(float fpp_func_003(),"","");
+};
+
+// ======== INCLUDE: /tmp/.t_one
+FPP_ENV_01 = environment {
+
+F1 = ffunction(float fpp_func_004(),"","") * (two.F2 + FPP_ENV_02.F3);
+F2 = ffunction(float fpp_func_005(),"","");
+F3 = ffunction(float fpp_func_006(),"","");
+};
+
+// ======== INCLUDE: /tmp/.t_all
+one = FPP_ENV_01;
+two = FPP_ENV_02;
+
+// ======== CMDLINE: <stdin>
+
+
+process = one.F1,two.F1;
+FST
+
+[__LINE__, <<'DSP', <<'CPP'],
+process = FPP(n,x[n-2],y[n+3]) { x=$x[0]; y=$y[0]; r=$y[$x[2]+$y[1]] } (10);
+DSP
+	float fVec0[9];
+	float fVec1[14];
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			fVec0[0] = float(input0[i0]);
+			fVec1[0] = float(input1[i0]);
+			output0[i0] = FAUSTFLOAT(({ x=fVec0[0]; y=fVec1[0]; r=fVec1[(fVec0[2]+fVec1[1])]; }));
+			for (int j0 = 8; j0 > 0; j0 = j0 - 1) {
+				fVec0[j0] = fVec0[j0 - 1];
+
+			}
+			for (int j1 = 13; j1 > 0; j1 = j1 - 1) {
+				fVec1[j1] = fVec1[j1 - 1];
+
+			}
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+zn = FPP(n,x[n]) { =$x[ $n ]= };
+process = zn(0), (mem:zn(0)), zn(3) :>_;
+DSP
+	float fVec0[4];
+	float fVec1[2];
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* input2 = inputs[2];
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			fVec0[0] = float(input2[i0]);
+			fVec1[0] = float(input1[i0]);
+			output0[i0] = FAUSTFLOAT(({ =fVec1[0 - 0 + 1]=; }) + ({ =fVec0[3]=; }) + ({ =input0[i0]=; }));
+			for (int j0 = 3; j0 > 0; j0 = j0 - 1) {
+				fVec0[j0] = fVec0[j0 - 1];
+			}
+			fVec1[1] = fVec1[0];
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+tt = FPP(n, x[n]) {
+decl:
+	$x [ $n ]
+	$x . item ( $n )
+	$x . pure(qqq)
+exec:
+	0
+};
+process = _ <: _,*(123) : tt(2),tt(5);
+DSP
+	fVec0[2]
+	fVec0[2]
+	1(qqq)
+	123.0f * fVec0[5]
+	123.0f * fVec0[5]
+	0(qqq)
+
+	float fVec0[6];
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			float fTemp1 = float(input0[i0]);
+			fVec0[0] = fTemp1;
+			output0[i0] = FAUSTFLOAT(({ 0; }));
+			output1[i0] = FAUSTFLOAT(({ 0; }));
+			for (int j0 = 5; j0 > 0; j0 = j0 - 1) {
+				fVec0[j0] = fVec0[j0 - 1];
+
+			}
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+import("stdfaust.lib");
+fpp_fir = FPP(b{}, x[ba.count(b)-1])
+{
+	float x = 0;
+	$b.for(n,b, x += b * $x[n]);
+	x;
+};
+process = _,_ : _,(_<:_,@(3)) : fpp_fir(5), fpp_fir((10,20,30)), fpp_fir((100,200));
+DSP
+	float fVec0[5];
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(({ float x = 0; x += 5 * input0[i0]; x; }));
+			float fTemp1 = float(input1[i0]);
+			fVec0[0] = fTemp1;
+			output1[i0] = FAUSTFLOAT(({ float x = 0; x += 10 * fVec0[0]; x += 20 * fVec0[1]; x += 30 * fVec0[2]; x; }));
+			output2[i0] = FAUSTFLOAT(({ float x = 0; x += 100 * fVec0[0 - 1 + 4]; x += 200 * fVec0[1 - 1 + 4]; x; }));
+			for (int j0 = 4; j0 > 0; j0 = j0 - 1) {
+				fVec0[j0] = fVec0[j0 - 1];
+
+			}
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+fpp_fir(b) = _ <: FPP(=b{}, x=par(i0, outputs(b), @(i0)){}) { $b.for(i0,b, x += b * $x{i0}); };
+process = fpp_fir((10,20,30));
+DSP
+	float fVec0[3];
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			float fTemp0 = float(input0[i0]);
+			fVec0[0] = fTemp0;
+			output0[i0] = FAUSTFLOAT(({ x += 10 * fTemp0; x += 20 * fVec0[1]; x += 30 * fVec0[2]; }));
+			fVec0[2] = fVec0[1];
+			fVec0[1] = fVec0[0];
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+import("stdfaust.lib");
+fpp_dot = FPP(l{},i0{ba.count(l)}) eval { $l.for(i0,l, l * $i0{i0});; $i0.for(i0,l, $l{i0} * l) };
+process = fpp_dot((3,4));
+DSP
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = 3 * input0[0]; 4 * input1[1];; 3 * input0[i0]; 4 * input1[i0];
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP', <<'O_C'],
+t1 = _      <: mem, FPP(x[0]) { $x.expr -> $x[1]; };
+t2 = *(100) <: mem, FPP(x[1]) { $x.expr -> $x[1]; };
+t3 = *(200) <: mem, FPP(x[0]) { $x.expr -> $x[1]; };
+process = t1,t2,t3;
+DSP
+	float fVec0[2];
+	float fVec1[2];
+	float fVec2[2];
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* input2 = inputs[2];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		FAUSTFLOAT* output3 = outputs[3];
+		FAUSTFLOAT* output4 = outputs[4];
+		FAUSTFLOAT* output5 = outputs[5];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			float fTemp0 = float(input0[i0]);
+			fVec0[0] = fTemp0;
+			output0[i0] = FAUSTFLOAT(fVec0[1]);
+			output1[i0] = FAUSTFLOAT(({ fTemp0 -> fVec0[1]; }));
+			fVec1[0] = float(input1[i0]);
+			float fTemp2 = 1e+02f * fVec1[1];
+			output2[i0] = FAUSTFLOAT(fTemp2);
+			output3[i0] = FAUSTFLOAT(({ fTemp2 -> 1e+02f * fVec1[1]; }));
+			float fTemp3 = float(input2[i0]);
+			fVec2[0] = fTemp3;
+			output4[i0] = FAUSTFLOAT(2e+02f * fVec2[1]);
+			output5[i0] = FAUSTFLOAT(({ 2e+02f * fTemp3 -> 2e+02f * fVec2[1]; }));
+			fVec0[1] = fVec0[0];
+			fVec1[1] = fVec1[0];
+			fVec2[1] = fVec2[0];
+
+		}
+
+	}
+CPP
+	float fVec0[2];
+	float fVec1[2];
+	float fVec2[2];
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		dsp->fSampleRate = sample_rate;
+	}
+
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* input2 = inputs[2];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		FAUSTFLOAT* output3 = outputs[3];
+		FAUSTFLOAT* output4 = outputs[4];
+		FAUSTFLOAT* output5 = outputs[5];
+
+		int i0;
+		for (i0 = 0; i0 < count; i0 = i0 + 1) {
+			float fTemp0 = (float)(input0[i0]);
+			dsp->fVec0[0] = fTemp0;
+			output0[i0] = (FAUSTFLOAT)(dsp->fVec0[1]);
+			output1[i0] = (FAUSTFLOAT)(({ fTemp0 -> dsp->fVec0[1]; }));
+			dsp->fVec1[0] = (float)(input1[i0]);
+			float fTemp2 = 1e+02f * dsp->fVec1[1];
+			output2[i0] = (FAUSTFLOAT)(fTemp2);
+			output3[i0] = (FAUSTFLOAT)(({ fTemp2 -> 1e+02f * dsp->fVec1[1]; }));
+			float fTemp3 = (float)(input2[i0]);
+			dsp->fVec2[0] = fTemp3;
+			output4[i0] = (FAUSTFLOAT)(2e+02f * dsp->fVec2[1]);
+			output5[i0] = (FAUSTFLOAT)(({ 2e+02f * fTemp3 -> 2e+02f * dsp->fVec2[1]; }));
+			dsp->fVec0[1] = dsp->fVec0[0];
+			dsp->fVec1[1] = dsp->fVec1[0];
+			dsp->fVec2[1] = dsp->fVec2[0];
+		}
+	}
+O_C
+
+[__LINE__, <<'DSP', <<'CPP'],
+pref = FPP(pref{}, x[outputs(pref)]) {
+init: $pref.for(i0, v, $x[$pref.len - i0] = v);
+exec: $x[$pref.len];
+};
+process = pref(par(i0, 4, 0-1-i0)), pref(par(i0, 16, 0-1-i0));
+DSP
+	float fVec0[5];
+	int IOTA0;
+	float fVec1[32];
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		fVec0[(4 - 0)] = -1; fVec0[(4 - 1)] = -2; fVec0[(4 - 2)] = -3; fVec0[(4 - 3)] = -4;
+		fVec1[(IOTA0 - (16 - 0)) & 31] = -1; fVec1[(IOTA0 - (16 - 1)) & 31] = -2; fVec1[(IOTA0 - (16 - 2)) & 31] = -3; fVec1[(IOTA0 - (16 - 3)) & 31] = -4; fVec1[(IOTA0 - (16 - 4)) & 31] = -5; fVec1[(IOTA0 - (16 - 5)) & 31] = -6; fVec1[(IOTA0 - (16 - 6)) & 31] = -7; fVec1[(IOTA0 - (16 - 7)) & 31] = -8; fVec1[(IOTA0 - (16 - 8)) & 31] = -9; fVec1[(IOTA0 - (16 - 9)) & 31] = -10; fVec1[(IOTA0 - (16 - 10)) & 31] = -11; fVec1[(IOTA0 - (16 - 11)) & 31] = -12; fVec1[(IOTA0 - (16 - 12)) & 31] = -13; fVec1[(IOTA0 - (16 - 13)) & 31] = -14; fVec1[(IOTA0 - (16 - 14)) & 31] = -15; fVec1[(IOTA0 - (16 - 15)) & 31] = -16;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			fVec0[0] = float(input0[i0]);
+			output0[i0] = FAUSTFLOAT(({ fVec0[4]; }));
+			fVec1[IOTA0 & 31] = float(input1[i0]);
+			output1[i0] = FAUSTFLOAT(({ fVec1[(IOTA0 - 16) & 31]; }));
+			for (int j0 = 4; j0 > 0; j0 = j0 - 1) {
+				fVec0[j0] = fVec0[j0 - 1];
+
+			}
+			IOTA0 = IOTA0 + 1;
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP', '', <<'FST'],
+XZ = (+(1)~_);
+XL = (10,20,30);
+process = FPP(x0,
+	xz=XZ[1], =XZ[1], zz=xz[N],
+	xl=XL{},  =XL{},  ll=xl{},
+	x2, N=100,
+	var1{N/30},
+	var2{2})
+pure {
+init:
+	x0=$x0;
+	xz=$xz[1];
+	zz=$zz[2];
+	XZ=$XZ[3];
+	xl=$xl;
+	XL=$XL;
+	ll=$ll;
+	x2=$x2;
+	var1=$var1;
+	var2=$var2;
+exec:
+	0;
+};
+DSP
+	int IOTA0;
+	int iRec0[128];
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		x0=input0[i0];
+		xz=iRec0[(IOTA0 - 1) & 127];
+		zz=iRec0[(IOTA0 - 2) & 127];
+		XZ=iRec0[(IOTA0 - 3) & 127];
+		xl=10,20,30;
+		XL=10,20,30;
+		ll=10,20,30;
+		x2=input1[i0];
+		var1=input2[i0],input3[i0],input4[i0];
+		var2=input5[i0],input6[i0];
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* input2 = inputs[2];
+		FAUSTFLOAT* input3 = inputs[3];
+		FAUSTFLOAT* input4 = inputs[4];
+		FAUSTFLOAT* input5 = inputs[5];
+		FAUSTFLOAT* input6 = inputs[6];
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			int iTemp0 = iRec0[(IOTA0 - 1) & 127];
+			iRec0[IOTA0 & 127] = iTemp0 + 1;
+			output0[i0] = FAUSTFLOAT(({ 0; }));
+			IOTA0 = IOTA0 + 1;
+
+		}
+
+	}
+CPP
+// ======== <push>
+_fpp_bus_(0) = ffunction(int fpp_func_001(any),"","")(0); _fpp_bus_(1) = ffunction(int fpp_func_002(any),"","");
+_fpp_bus_(n) = _, _fpp_bus_(n-1) : ffunction(int fpp_func_003(any,any),"","");
+
+// ======== CMDLINE: <stdin>
+XZ = (+(1)~_);
+XL = (10,20,30);
+process = \(x0,x2).(x0,xz@(int(1)),XZ@(int(1)),int(N),zz@(int(N)),_fpp_bus_(outputs(xl), xl),_fpp_bus_(outputs(XL), XL),_fpp_bus_(outputs(ll), ll),x2,N,_fpp_bus_(int(N/30)),_fpp_bus_(int(2)) with { xz=XZ;  zz=xz;  xl=XL;  ll=xl;  N=100; }  : ffunction(float fpp_func_004(any,any,any,any,any,any,any,any,any,any,any,any),"",""));
+FST
+
+[__LINE__, <<'DSP', <<'CPP'],
+tst = FPP(l{}) { $l.len: $l.for(i0,v,i0=v); };
+process = tst(0:!), tst(10), tst((10,20));
+DSP
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(({ 0: ; }));
+			output1[i0] = FAUSTFLOAT(({ 1: 0=10; }));
+			output2[i0] = FAUSTFLOAT(({ 2: 0=10; 1=20; }));
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+tst(L) = FPP(=L{3},l=L{3}) { $L ; $l; };
+process = tst(0:!), tst(10), tst((10,20));
+DSP
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* input2 = inputs[2];
+		FAUSTFLOAT* input3 = inputs[3];
+		FAUSTFLOAT* input4 = inputs[4];
+		FAUSTFLOAT* input5 = inputs[5];
+		FAUSTFLOAT* input6 = inputs[6];
+		FAUSTFLOAT* input7 = inputs[7];
+		FAUSTFLOAT* input8 = inputs[8];
+		FAUSTFLOAT* input9 = inputs[9];
+		FAUSTFLOAT* input10 = inputs[10];
+		FAUSTFLOAT* input11 = inputs[11];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(({ input0[i0],input1[i0],input2[i0] ; input3[i0],input4[i0],input5[i0]; }));
+			output1[i0] = FAUSTFLOAT(({ 10,input6[i0],input7[i0] ; 10,input8[i0],input9[i0]; }));
+			output2[i0] = FAUSTFLOAT(({ 10,20,input10[i0] ; 10,20,input11[i0]; }));
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+L=(3,4);
+process = FPP(l1{2}, l2:{3}, l3=L{3}, =L{3}, l4=L{} ) eval { l1=$l1; l2=$l2; l3=$l3; L=$L; l4=$l4 } ((1,2)),
+	  FPP(l=par(i0,3,i0+1){}, l1=l{}, l2=l1{4}) eval { l=$l; l1=$l; l2=$l2};
+DSP
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* input2 = inputs[2];
+		FAUSTFLOAT* input3 = inputs[3];
+		FAUSTFLOAT* input4 = inputs[4];
+		FAUSTFLOAT* input5 = inputs[5];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = l1=input0[i0],input1[i0]; l2=1,2,input2[i0]; l3=3,4,input3[i0]; L=3,4,input4[i0]; l4=3,4;
+			output1[i0] = l=1,2,3; l1=1,2,3; l2=1,2,3,input5[i0];
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+import("stdfaust.lib");
+LIST = 10,20,30;
+process =
+	FPP(x,y[1]) { $x, $(ma.SR' + x); $(library("maths.lib").PI); $y[0]; $(y : mem); },
+	FPP() eval { $(outputs(LIST)); $((LIST)); $((LIST)).for(v,n, =v:n=) };
+DSP
+	float fVec0[2];
+	int fSampleRate;
+	float fConst0;
+	float fVec1[2];
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		fConst0 = std::min<float>(1.92e+05f, std::max<float>(1.0f, float(fSampleRate)));
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			float fTemp1 = float(input0[i0]);
+			fVec0[0] = float(input1[i0]);
+			fVec1[0] = fConst0;
+			output0[i0] = FAUSTFLOAT(({ fTemp1, fTemp1 + fVec1[1]; 3.1415927f; fVec0[0]; fVec0[1]; }));
+			output1[i0] = 3; 10,20,30; =0:10=; =1:20=; =2:30=;
+			fVec0[1] = fVec0[0];
+			fVec1[1] = fVec1[0];
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+process = FPP(x) { $x.const, $(_).class };
+DSP
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(({ 0, input1[i0].TODO_CLASS; }));
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+__FPP() { INIT: $!func(GLOB) PERL: sub func { "FUNC(@_)" } };
+process =	FPP() { $!func(LOC1) + $!perl::user::func(LOC2) },
+		FPP() { $!func(LOC3) + $!perl::user::func(LOC4) PERL: sub func { "func(@_)" } };
+DSP
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		FUNC(GLOB)
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(({ FUNC(LOC1) + FUNC(LOC2); }));
+			output1[i0] = FAUSTFLOAT(({ func(LOC3) + FUNC(LOC4); }));
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+__FPP(dep) { INIT: $!func(DEP) PERL: sub func { "GLOBAL(@_)" } };
+
+fpp1 = FPP(x) :dep{
+PERL: sub func { "LOCAL1(@_)" }
+exec: $!dep::func($!func($x)); $!func($!dep::func($x));
+};
+
+fpp2 = FPP(x) {
+PERL: sub func { "LOCAL2(@_)" }
+exec: $!func($!func($x),$!func($x.const));
+};
+
+process = fpp1, fpp2, FPP() { $!dep::func(1/0) };
+DSP
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		GLOBAL(DEP)
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(({ GLOBAL(LOCAL1(input0[i0])); LOCAL1(GLOBAL(input0[i0])); }));
+			output1[i0] = FAUSTFLOAT(({ LOCAL2(LOCAL2(input1[i0]) LOCAL2(0)); }));
+			output2[i0] = FAUSTFLOAT(({ GLOBAL(1/0); }));
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+L2 = 1, 0-sin(1); L1 = L2, FPP() pure {C}; L0 = L1, FPP() {V};
+process = FPP() { $((L2)).const; $((L1)).const; $((L0)).const; };
+DSP
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		float fConst1 = ({ C; });
+
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(({ 2; 1; 0; }));
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+import("stdfaust.lib");
+fpp = FPP(f, x) eval {
+init: $!if($f.const,
+		init($f); $!if($x.const, $R = exec($x;)))
+exec: $!if($f.const,
+		$!if($x.const, $R, exec($x)),
+		(init($f), exec($x)))
+};
+process = fpp(ma.SR,ma.SR/2), fpp(ma.SR/3), fpp(_, 10), fpp;
+DSP
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		float fConst0 = std::min<float>(1.92e+05f, std::max<float>(1.0f, float(fSampleRate)));
+		float fConst1 = 0.5f * fConst0;
+		float fConst2 = 0.33333334f * fConst0;
+		init(fConst0); R__01 = exec(fConst1;)
+		init(fConst2);
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* input2 = inputs[2];
+		FAUSTFLOAT* input3 = inputs[3];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		FAUSTFLOAT* output3 = outputs[3];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = R__01;
+			output1[i0] = exec(input0[i0]);
+			output2[i0] = init(input1[i0]), exec(10);
+			output3[i0] = init(input2[i0]), exec(input3[i0]);
+
+		}
+
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+__FPP() {PERL: $SIG{__DIE__} = sub { print "ERRPASS: @_"; exit; }};
+tst = FPP(F,i0) {
+FILE: $F, $FF; INIT: $i0, $II;
+exec: $F, $FF; $i0, $II;
+};
+process = tst(10,20), tst(11,20);
+DSP
+ERRPASS: ERR!! can't rebind arg0 from '10' to '11'
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+__FPP() {PERL: $SIG{__DIE__} = sub { print "ERRPASS: @_"; exit; }};
+tst = FPP(F,i0) {
+FILE: $F, $FF; INIT: $i0, $II;
+exec: $F, $FF; $i0, $II;
+};
+process = tst(10,20), tst(10,22);
+DSP
+ERRPASS: ERR!! can't rebind arg1 from '20' to '22'
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+F = FPP(K{}, x) pure { K={$K}; x=$x; [10,20]; };
+process = F((100,200)), F((100,200,300));
+DSP
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		FAUSTFLOAT* output3 = outputs[3];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			float aux0__01; float aux1__01;
+			float aux0__02; float aux1__02;
+			{ K={100,200}; x=input0[i0]; aux0__01 = 10; aux1__01 = 20; }
+			output0[i0] = aux0__01;
+			output1[i0] = aux1__01;
+			{ K={100,200,300}; x=input1[i0]; aux0__02 = 10; aux1__02 = 20; }
+			output2[i0] = aux0__02;
+			output3[i0] = aux1__02;
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+process = $sym / ${{a+b/c}} - ${"str"};
+DSP
+	float fConst0;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		fConst0 = float(sym) / float({a+b/c}) - float("str");
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(fConst0);
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+process = $qwe - ${qwe};
+DSP
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(0);
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+__FPP() { PERL: sub f { "HERE" } INIT: $!(f) };
+process = FPP(x) {
+PERL:	sub f { return 1 + cos shift }
+exec:	$!(my $$t = (1+2) * $!(f 0); perl::user::f . ($$t + 100))
+};
+DSP
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		HERE
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(({ HERE106; }));
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+f = FPP(x) pure { auto: float $AUTO; exec: $AUTO = $x; };
+process = f, f(0), f, f(1);
+DSP
+	float fConst0;
+	float fConst1;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		float AUTO__01;
+		fConst0 = ({ AUTO__01 = 0; });
+		float AUTO__02;
+		fConst1 = ({ AUTO__02 = 1; });
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		FAUSTFLOAT* output3 = outputs[3];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			float AUTO__03;
+			float AUTO__04;
+			output0[i0] = FAUSTFLOAT(({ AUTO__03 = input0[i0]; }));
+			output1[i0] = FAUSTFLOAT(fConst0);
+			output2[i0] = FAUSTFLOAT(({ AUTO__04 = input1[i0]; }));
+			output3[i0] = FAUSTFLOAT(fConst1);
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+f1 = FPP(x) pure { $V=$x; AUTO: $V; };
+f2 = FPP(x) pure { $V=$x; AUTO: $V; };
+f3 = FPP(x) pure { $V=$x; AUTO: $V; };
+process = par(i,4,FPP(i)eval{X$i}(i)) <: f1,f1,f1(10),f1(11), f2,f2, f3(20),f3(21) :> _;
+DSP
+	float fConst0;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		V__01;
+		V__02;
+		fConst0 = ({ V__01=10; }) + ({ V__01=11; }) + ({ V__02=21; }) + ({ V__02=20; });
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			V__01;
+			V__03;
+			output0[i0] = FAUSTFLOAT(fConst0 + ({ V__01=X0; }) + ({ V__01=X1; }) + ({ V__03=X3; }) + ({ V__03=X2; }));
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+__FPP(pure) { DECL: DECL PURE };
+__FPP(eval) { INIT: INIT EVAL };
+process = FPP() : pure , eval pure eval { RET } <: _,_;
+DSP
+	DECL PURE
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		INIT EVAL
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = RET;
+			output1[i0] = RET;
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+process = FPP() pure struct T {X} <: FPP(x,same) pure eval { {$x} };
+DSP
+	int fSampleRate;
+	struct T iConst0;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		iConst0 = ({ X; });
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = {iConst0};
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+import("stdfaust.lib");
+f = FPP(i,x) pure { init: ini(&$st, $i); exec: exe(&$st, $x); };
+process = f(ma.SR, 10) <: f(20,30),_,f(_,40);
+DSP
+	float fConst0;
+	int fSampleRate;
+	float fConst1;
+	float fConst2;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		ini(&st__01, 20);
+		fConst0 = ({ exe(&st__01, 30); });
+		ini(&st__02, std::min<float>(1.92e+05f, std::max<float>(1.0f, float(fSampleRate))));
+		fConst1 = ({ exe(&st__02, 10); });
+		ini(&st__03, fConst1);
+		fConst2 = ({ exe(&st__03, 40); });
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(fConst0);
+			output1[i0] = FAUSTFLOAT(fConst1);
+			output2[i0] = FAUSTFLOAT(fConst2);
+		}
+	}
+CPP
+
+# OBSOLETE. Used to test 05a4dcc166491f but fill_init() was removed.
+[__LINE__, <<'DSP', <<'CPP'],
+i = FPP() Q {
+PERL:	sub xini {
+		$pp_cpp::INIT =~ s/\n/
+			"\n" .
+			"\t\tiConst10 = 0; iConst20 = 0; iConst30 = 0;\n" .
+			"\t\tiConst40 = 0; iConst50 = 0; iConst60 = 0;\n" .
+			"\t\tiConst70 = 0; iConst80 = 0; iConst90 = 0;\n" .
+			'';
+		/em or die;
+	}
+exec:	$!xini();
+};
+
+f = FPP(e) pure T { init: ini($state, $e); exec: exe($state, $e); };
+
+process = i,
+	f(${iConst10 + iConst50}),
+	f(${iConst20 + iConst30}),
+	f(${iConst80}),
+	f(${iConst30}),
+	(0:!) :> _;
+DSP
+	int iConst0;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		iConst10 = 0; iConst20 = 0; iConst30 = 0;
+		iConst40 = 0; iConst50 = 0; iConst60 = 0;
+		iConst70 = 0; iConst80 = 0; iConst90 = 0;
+		fSampleRate = sample_rate;
+		ini(state__01, iConst10 + iConst50);
+		ini(state__02, iConst20 + iConst30);
+		ini(state__03, iConst30);
+		ini(state__04, iConst80);
+		iConst0 = ({ exe(state__01, iConst10 + iConst50); }) + ({ exe(state__02, iConst20 + iConst30); }) + ({ exe(state__03, iConst30); }) + ({ exe(state__04, iConst80); });
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(iConst0 + ({ 1; }));
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+f = FPP(x) {
+PERL:
+	$THIS->{INIT} = "\$THIS;\n"; $THIS->{init} = "\$this;\n";
+	$CODE->{INIT} = "\$CODE;\n"; $CODE->{init} = "\$code;\n";
+exec:
+	$x + $CODE + $code;
+};
+process = f,f;
+DSP
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		$THIS;
+		CODE__01;
+		$this;
+		code__01;
+		code__02;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(({ input0[i0] + CODE__01 + code__01; }));
+			output1[i0] = FAUSTFLOAT(({ input1[i0] + CODE__01 + code__02; }));
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+__FPP(dep1)		{ FILE: DEP1_FILE; };
+__FPP(dep2)		{ DECL: DEP2_DECL; };
+__FPP(dep3) :dep1 	{ INIT: DEP3_INIT; };
+__FPP() :dep3, dep1 {};
+__FPP() :dep1, dep2 {};
+process = 0;
+DSP
+DEP1_FILE;
+	DEP2_DECL;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		DEP3_INIT;
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(0);
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+fpp_import("util.lib");
+process = iota + @(1);
+DSP
+	int IOTA0;
+	float fVec0[2];
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		IOTA0 = 0;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			fVec0[0] = float(input0[i0]);
+			output0[i0] = FAUSTFLOAT(fVec0[1] + float(IOTA0));
+			fVec0[1] = fVec0[0];
+			IOTA0++;
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+u = fpp_library("util.lib");
+process = u.iota + @(1024);
+DSP
+	int IOTA0;
+	float fVec0[2048];
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			fVec0[IOTA0 & 2047] = float(input0[i0]);
+			output0[i0] = FAUSTFLOAT(fVec0[(IOTA0 - 1024) & 2047] + float(IOTA0));
+			IOTA0 = IOTA0 + 1;
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+process = FPP() {
+PERL:	our $x = 123; our @x = (1,2,3);
+exec:	$!($::x += @::x;'') $!(++$::x);
+};
+DSP
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(({  127; }));
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+__FPP(dep3) 	  { DECL: $DEP3; $_DEP; };
+__FPP(dep1) :dep3 { DECL: $DEP1; $_DEP; };
+__FPP(dep2) :dep3 { DECL: $DEP2; $_DEP; };
+process =
+	FPP() : dep1 { ($DEP1 + $DEP2 + $DEP3 + $_DEP) },
+	FPP() : dep1 { ($DEP1 + $DEP2 + $DEP3 + $_DEP) },
+	FPP() : dep2 { ($DEP1 + $DEP2 + $DEP3 + $_DEP) },
+	FPP() : dep2 { ($DEP1 + $DEP2 + $DEP3 + $_DEP) },
+	FPP() : dep3 { ($DEP1 + $DEP2 + $DEP3 + $_DEP) };
+DSP
+	DEP3__01; _DEP__01;
+	DEP1__01; _DEP__01;
+	DEP2__03; _DEP__01;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		FAUSTFLOAT* output3 = outputs[3];
+		FAUSTFLOAT* output4 = outputs[4];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(DEP1__01 + DEP2__01 + DEP3__01 + _DEP__01);
+			output1[i0] = FAUSTFLOAT(DEP1__01 + DEP2__02 + DEP3__01 + _DEP__01);
+			output2[i0] = FAUSTFLOAT(DEP1__02 + DEP2__03 + DEP3__01 + _DEP__01);
+			output3[i0] = FAUSTFLOAT(DEP1__03 + DEP2__03 + DEP3__01 + _DEP__01);
+			output4[i0] = FAUSTFLOAT(DEP1__04 + DEP2__04 + DEP3__01 + _DEP__01);
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+import("stdfaust.lib");
+process = FPP(in) T {
+PERL:	our $var = '$(ma.SR) + $in';
+exec:	($!($::var));
+};
+DSP
+	int fSampleRate;
+	float fConst0;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		fConst0 = std::min<float>(1.92e+05f, std::max<float>(1.0f, float(fSampleRate)));
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = fConst0 + input0[i0];
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+f = FPP(x) pure  {
+INIT: INIT($gl);
+init: init($gl, $st);
+exec: (calc($gl, $st, $x))
+};
+process = 10 : f : f;
+DSP
+	float fConst0;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		INIT(gl__01);
+		init(gl__01, st__01);
+		init(gl__01, st__02);
+		fConst0 = calc(gl__01, st__02, calc(gl__01, st__01, 10));
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(fConst0);
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+f1 = FPP(x) pure eval {
+INIT: INIT1($gl);
+init: init1($gl, $st);
+exec: calc1($gl, $st, $x)
+};
+f2 = FPP(x) pure {
+INIT: INIT2($gl);
+init: init2($gl, $st);
+exec: calc2($gl, $st, $x)
+};
+process = 10 : f1 : f2;
+DSP
+	float fConst0;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		INIT1(gl__01);
+		init1(gl__01, st__01);
+		INIT2(gl__02);
+		init2(gl__02, st__02);
+		fConst0 = ({ calc2(gl__02, st__02, calc1(gl__01, st__01, 10)); });
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(fConst0);
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+process = -($x) : -($y);
+DSP
+	float fConst0;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		fConst0 = float(y) + float(x);
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(float(input0[i0]) - fConst0);
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP', <<'O_C'],
+process = FPP() pure eval {
+init:
+	0 0 0 iConst0 = i0 i0 i0; 1 1 1 iConst1 = i1 i1 i1; 2 2 2 iConst2 = i2 i2 i2;
+	3 3 3 iConst3 = i3 i3 i3; 4 4 4 iConst4 = i4 i4 i4; 5 5 5 iConst5 = i5 i5 i5;
+	6 6 6 iConst6 = i6 i6 i6; 7 7 7 iConst7 = i7 i7 i7; 8 8 8 iConst8 = i8 i8 i8;
+
+	0 0 0 fConst10; 1 1 1 fConst11; 2 2 2 fConst12;
+	3 3 3 fConst13; 4 4 4 fConst14; 5 5 5 fConst15;
+	6 6 6 fConst16; 7 7 7 fConst17; 8 8 8 fConst18;
+
+	fConst10 = f0 f0 f0; fConst11 = f1 f1 f1; fConst12 = f2 f2 f2;
+	fConst13 = f3 f3 f3; fConst14 = f4 f4 f4; fConst15 = f5 f5 f5;
+	fConst16 = f6 f6 f6; fConst17 = f7 f7 f7; fConst18 = f8 f8 f8;
+
+	ti0 * iConst100 = 100; ti1 ** iConst101 = 101;
+
+	tf0 * fConst100; tf1 ** fConst101;
+	fConst100 = 100; fConst101 = 101;
+
+	int iConst200;
+	iConst200 = 200;
+exec:
+	iConst123=iConst0+iConst4+iConst8=fConst10+fConst14+fConst18=iConst100+iConst101+fConst100+fConst101=iConst200
+};
+DSP
+	int fSampleRate;
+
+	0 0 0 iConst0;
+	4 4 4 iConst4;
+	8 8 8 iConst8;
+	0 0 0 fConst10;
+	4 4 4 fConst14;
+	8 8 8 fConst18;
+	ti0 * iConst100;
+	ti1 ** iConst101;
+	tf0 * fConst100;
+	tf1 ** fConst101;
+	int iConst200;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+		iConst0 = i0 i0 i0; 1 1 1 iConst1 = i1 i1 i1; 2 2 2 iConst2 = i2 i2 i2;
+		3 3 3 iConst3 = i3 i3 i3; iConst4 = i4 i4 i4; 5 5 5 iConst5 = i5 i5 i5;
+		6 6 6 iConst6 = i6 i6 i6; 7 7 7 iConst7 = i7 i7 i7; iConst8 = i8 i8 i8;
+
+		1 1 1 fConst11; 2 2 2 fConst12;
+		3 3 3 fConst13; 5 5 5 fConst15;
+		6 6 6 fConst16; 7 7 7 fConst17; 
+
+		fConst10 = f0 f0 f0; fConst11 = f1 f1 f1; fConst12 = f2 f2 f2;
+		fConst13 = f3 f3 f3; fConst14 = f4 f4 f4; fConst15 = f5 f5 f5;
+		fConst16 = f6 f6 f6; fConst17 = f7 f7 f7; fConst18 = f8 f8 f8;
+
+		iConst100 = 100; iConst101 = 101;
+
+		fConst100 = 100; fConst101 = 101;
+
+		iConst200 = 200;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = iConst123=iConst0+iConst4+iConst8=fConst10+fConst14+fConst18=iConst100+iConst101+fConst100+fConst101=iConst200;
+		}
+	}
+CPP
+	int fSampleRate;
+	0 0 0 iConst0;
+	4 4 4 iConst4;
+	8 8 8 iConst8;
+	0 0 0 fConst10;
+	4 4 4 fConst14;
+	8 8 8 fConst18;
+	ti0 * iConst100;
+	ti1 ** iConst101;
+	tf0 * fConst100;
+	tf1 ** fConst101;
+	int iConst200;
+
+	void instanceConstants(int sample_rate)
+	{
+		dsp->fSampleRate = sample_rate;
+		dsp->iConst0 = i0 i0 i0; 1 1 1 iConst1 = i1 i1 i1; 2 2 2 iConst2 = i2 i2 i2;
+		3 3 3 iConst3 = i3 i3 i3; dsp->iConst4 = i4 i4 i4; 5 5 5 iConst5 = i5 i5 i5;
+		6 6 6 iConst6 = i6 i6 i6; 7 7 7 iConst7 = i7 i7 i7; dsp->iConst8 = i8 i8 i8;
+
+		1 1 1 fConst11; 2 2 2 fConst12;
+		3 3 3 fConst13; 5 5 5 fConst15;
+		6 6 6 fConst16; 7 7 7 fConst17; 
+
+		dsp->fConst10 = f0 f0 f0; fConst11 = f1 f1 f1; fConst12 = f2 f2 f2;
+		fConst13 = f3 f3 f3; dsp->fConst14 = f4 f4 f4; fConst15 = f5 f5 f5;
+		fConst16 = f6 f6 f6; fConst17 = f7 f7 f7; dsp->fConst18 = f8 f8 f8;
+
+		dsp->iConst100 = 100; dsp->iConst101 = 101;
+
+		dsp->fConst100 = 100; dsp->fConst101 = 101;
+
+		dsp->iConst200 = 200;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+
+		int i0;
+		for (i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = iConst123=dsp->iConst0+dsp->iConst4+dsp->iConst8=dsp->fConst10+dsp->fConst14+dsp->fConst18=dsp->iConst100+dsp->iConst101+dsp->fConst100+dsp->fConst101=dsp->iConst200;
+		}
+	}
+O_C
+
+[__LINE__, <<'DSP', <<'CPP'],
+process = FPP() _int_,_float_ { ; [i,f] } : par(i,2, (+~_));
+DSP
+	int iRec0[2];
+	float fRec1[2];
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			int aux0__01; float aux1__01;
+			{ ; aux0__01 = i; aux1__01 = f; }
+			iRec0[0] = aux0__01 + iRec0[1];
+			output0[i0] = FAUSTFLOAT(iRec0[0]);
+			fRec1[0] = aux1__01 + fRec1[1];
+			output1[i0] = FAUSTFLOAT(fRec1[0]);
+			iRec0[1] = iRec0[0];
+			fRec1[1] = fRec1[0];
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+process =
+	FPP() pure T {
+	supp:	1 2 3
+	exec: (one)
+	},
+	FPP()     T {
+	supp: 4 5 6
+	exec: (two)
+	}
+	<: _,_,_,_;
+DSP
+	T iConst1;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		1 2 3
+		iConst1 = one;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		FAUSTFLOAT* output3 = outputs[3];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = iConst1;
+			4 5 6
+			T iTemp1 = two;
+			output1[i0] = iTemp1;
+			output2[i0] = iConst1;
+			output3[i0] = iTemp1;
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+process =
+	FPP() pure eval {
+	supp:	1 2 3
+	exec: one
+	},
+	FPP()     eval {
+	supp: 4 5 6
+	exec: two
+	}
+	<: _,_,_,_;
+DSP
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		1 2 3
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		FAUSTFLOAT* output3 = outputs[3];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = one;
+			4 5 6
+			output1[i0] = two;
+			output2[i0] = one;
+			output3[i0] = two;
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+import ("stdfaust.lib");
+
+ini = FPP(fc) pure eval {
+DECL:	lib_t $lib;
+decl:	flt_t $flt;
+INIT:	init_lib($lib, $(ma.SR));
+supp:	init_flt($flt, $fc);
+exec:	$lib, $flt
+};
+
+flt = FPP(fc,x) T { (run($(ini(fc)), $x)) };
+
+process = _ <: flt(123), flt(FPP()eval{(FC)});
+DSP
+	lib_t lib__01;
+	flt_t flt__01;
+	flt_t flt__02;
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		float fConst0 = std::min<float>(1.92e+05f, std::max<float>(1.0f, float(fSampleRate)));
+		init_lib(lib__01, fConst0);
+		init_flt(flt__01, 123);
+	}
+
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			float fTemp1 = float(input0[i0]);
+			output0[i0] = run(lib__01, flt__01, fTemp1);
+			init_flt(flt__02, (FC));
+			output1[i0] = run(lib__01, flt__02, fTemp1);
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP', <<'O_C'],
+import ("stdfaust.lib");
+process = FPP() pure void * { (PTR) }
+	: FPP(c) { init: use0($c) + $c;  exec: (0) }
+	: FPP(x) { init: use1($(ma.SR)); exec: ($x+1) };
+DSP
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		void * iConst0 = PTR;
+		float fConst1 = std::min<float>(1.92e+05f, std::max<float>(1.0f, float(fSampleRate)));
+		use0(iConst0) + iConst0;
+		use1(fConst1);
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(0+1);
+		}
+	}
+CPP
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		dsp->fSampleRate = sample_rate;
+		void * iConst0 = PTR;
+		float fConst1 = fminf(1.92e+05f, fmaxf(1.0f, (float)(dsp->fSampleRate)));
+		use0(iConst0) + iConst0;
+		use1(fConst1);
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		int i0;
+		for (i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = (FAUSTFLOAT)(0+1);
+		}
+	}
+O_C
+
+[__LINE__, <<'DSP', <<'CPP'],
+process = FPP(x) { [0,1] } : _,!;
+DSP
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			float aux0__01; float aux1__01;
+			{ aux0__01 = 0; aux1__01 = 1; }
+			output0[i0] = aux0__01;
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+L = FPP(x) { [$x+1,$x+2,$x+3] };
+process = FPP(l{}) { [$l{2},$l{1},$l{0}] } (
+	  FPP() { [$((L(10))){2},$((L(10))){1},$((L(10))){0}] }
+);
+DSP
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			float aux0__01; float aux1__01; float aux2__01;
+			float aux0__02; float aux1__02; float aux2__02;
+			float aux0__03; float aux1__03; float aux2__03;
+			{ aux0__01 = 10+1; aux1__01 = 10+2; aux2__01 = 10+3; }
+			{ aux0__02 = aux2__01; aux1__02 = aux1__01; aux2__02 = aux0__01; }
+			{ aux0__03 = aux2__02; aux1__03 = aux1__02; aux2__03 = aux0__02; }
+			output0[i0] = aux0__03;
+			output1[i0] = aux1__03;
+			output2[i0] = aux2__03;
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+fsf = FPP(name, read) pure void *, float * {
+decl:	struct fsf_struct $fsf;
+init:	fsf_open(&$fsf, $name);
+exec:	[=$fsf, fsf_read(&$fsf, $read)];
+};
+
+chn = FPP(ch, fsf, ptr) pure {
+init:	check($fsf, $ch);
+exec:	($ptr[$ch])
+};
+
+process =
+	(fsf(${"name1"}, 1) <: chn(10),chn(11)),
+	(fsf(${"name2"}, _) <: chn(20),chn(21));
+DSP
+	struct fsf_struct fsf__01;
+	struct fsf_struct fsf__02;
+	float fConst3;
+	float fConst4;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		float * aux1__01;
+		fsf_open(&fsf__01, "name1");
+		{ aux1__01 = fsf_read(&fsf__01, 1); }
+		check(fsf__01, 10);
+		fConst3 = aux1__01[10];
+		check(fsf__01, 11);
+		fConst4 = aux1__01[11];
+		fsf_open(&fsf__02, "name2");
+		check(fsf__02, 20);
+		check(fsf__02, 21);
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		FAUSTFLOAT* output3 = outputs[3];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			float * aux1__02;
+			output0[i0] = FAUSTFLOAT(fConst3);
+			output1[i0] = FAUSTFLOAT(fConst4);
+			{ aux1__02 = fsf_read(&fsf__02, input0[i0]); }
+			output2[i0] = FAUSTFLOAT(aux1__02[20]);
+			output3[i0] = FAUSTFLOAT(aux1__02[21]);
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+f1 = FPP(str) pure { ($str) };
+f2 = FPP(n, str) T { ($str[$n]) };
+process =
+	(f1(${"str"})  : f2(0)),
+	(f1(${"str"}) <: f2(1), f2(0));
+DSP
+	float fConst0;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		fConst0 = "str";
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			T iTemp1 = fConst0[0];
+			output0[i0] = iTemp1;
+			output1[i0] = fConst0[1];
+			output2[i0] = iTemp1;
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+__FPP() { LOOP: loop; POST: post; };
+process = 0,0 : soundfile("", 0);
+DSP
+	Soundfile* fSoundfile0;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		Soundfile* fSoundfile0ca = fSoundfile0;
+		int* fSoundfile0ca_le0 = fSoundfile0ca->fLength;
+		int iSlow0 = fSoundfile0ca_le0[0];
+		int* fSoundfile0ca_ra0 = fSoundfile0ca->fSR;
+		int iSlow1 = fSoundfile0ca_ra0[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			loop;
+			output0[i0] = FAUSTFLOAT(iSlow0);
+			output1[i0] = FAUSTFLOAT(iSlow1);
+			post;
+		}
+		fSoundfile0 = fSoundfile0ca;
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+import("stdfaust.lib");
+
+f11 = FPP() T1 { supp: 11; exec: (R11); };
+f12 = FPP() T1 { supp: 12; exec: (R12); };
+f21 = FPP() T2 { supp: 21; exec: (R21); };
+f22 = FPP() T2 { supp: 22; exec: (R22); };
+
+f = FPP(l{}) { =$l= };
+process = f11,f21,f12,f22 <: f(si.bus(8));
+DSP
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			11;
+			T1 iTemp1 = R11;
+			21;
+			T2 iTemp3 = R21;
+			12;
+			T1 iTemp5 = R12;
+			22;
+			T2 iTemp7 = R22;
+			output0[i0] = FAUSTFLOAT(({ =iTemp1,iTemp3,iTemp5,iTemp7,iTemp1,iTemp3,iTemp5,iTemp7=; }));
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+f_i = FPP() eval int    { supp: I; exec: I1 };
+f_f = FPP() eval double { supp: F; exec: F1 };
+f_m = FPP() int, double { [=IM,=FM] };
+process = f_i,f_f,f_m : par(i,4,+(1));
+DSP
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		FAUSTFLOAT* output3 = outputs[3];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			I;
+			output0[i0] = FAUSTFLOAT(I1 + 1);
+			F;
+			output1[i0] = FAUSTFLOAT(F1 + 1.0f);
+			output2[i0] = FAUSTFLOAT(IM + 1);
+			output3[i0] = FAUSTFLOAT(FM + 1.0f);
+		}
+	}
+CPP
