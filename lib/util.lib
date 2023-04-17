@@ -1,0 +1,8 @@
+__FPP(iota) {
+PERL:
+	@$CODE{qw(DECL INIT POST)} =
+		("int IOTA0;\n", "IOTA0 = 0;\n", "IOTA0++;\n")
+		unless $pp_cpp::DECL =~ /\bIOTA0\b/;
+};
+
+iota = FPP() :iota _int_ { (IOTA0) };
