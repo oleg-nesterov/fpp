@@ -1,0 +1,129 @@
+/*
+ * Not really useful. This is just an example of how to use maxima to generate
+ * the code at compile time.
+ *
+ * For example, cheb is similar to ba.tabulate_chebychev(0) but it can tabulate
+ * any function (expression) available in maxima, and the generated code can be
+ * more efficient.
+ *
+ * Example:
+ *
+ * 	fpp_import("maxima.lib");
+ * 	airy_ai = cheb(${airy_ai(4-x)}, 100,10, 0,100);
+ *
+ * By default this lib uses the same precision as faust but one can override it:
+ *
+ * 	fpp_library("maxima.lib")[FLOAT = $double;];
+ *
+ * in this case the generated code will use double even if fpp was called with
+ * the -single argument.
+ */
+
+FLOAT = FPP() pure eval { $!(${pp_cpp::O_FLOAT}) };
+
+mk_chtab = FPP(fx, nx,cd, x0,x1) pure eval {
+PERL:	sub mk_chtab
+	{
+		my ($FX, $NX,$CD, $X0,$X1) = @_;
+		s|[fL]$|| for $X0,$X1;
+
+		my $mac = qq{block(
+		FX(x) := $FX,
+		[NX,CD, X0,X1] : [$NX,$CD, $X0,$X1],
+
+		gench(F, N) := makelist(
+			2/N * sum(F(cos(%pi*(k-1/2)/N)) * cos(%pi*j*(k-1/2)/N),
+				  k,1,N),
+			j,0,N-1),
+
+		printf(true, "#define RET ~a~%",
+				horner(sum(ch[i+1]*v^i, i,0,CD))),
+
+		dx: (X1-X0)/NX,
+		for nx: 0 thru NX-1 do (
+			xc: X0 + dx * (nx + 1/2),
+			/* map [-1,+1] -> [xc - dx/2, xc + dx/2] */
+			ch: gench(lambda([x], FX(xc + dx/2 * x)), CD+1),
+			ch[1] : ch[1]/2,
+			ch: float(ch),
+
+			ex: expand(sum(ch[cd+1]*chebyshev_t(cd,v), cd,0,CD)),
+			printf(true, "~t{ ~g,  ", xc),
+			for c: 0 thru CD do printf(true, "~g,", coeff(ex,v,c)),
+			printf(true, " },~%")
+		))\$};
+
+		qx{maxima --very-quiet <<<'$mac'};
+	}
+
+file:	static inline $(FLOAT) $cheb($(FLOAT) x)
+	{
+		static const $(FLOAT) cheb[$nx][$cd+2] = {
+			$!mk_chtab($fx, $nx,$cd, $x0,$x1)
+		};
+
+		int n = (x - $x0) * $(nx/(x1-x0));
+		const $(FLOAT) *const ch = cheb[n];
+		/* map [n*dx, (n+1)*dx] -> [-1,+1] */
+		$(FLOAT) v = (x - ch[0]) * $(2*nx/(x1-x0));
+
+		return RET;
+		#undef RET
+	}
+
+exec:	$cheb
+};
+
+cheb = FPP(cheb,x) pure { ($cheb($x)) } (mk_chtab);
+
+/*
+ * Similar to cheb() but uses the Taylor approximation. Just to demonstrate
+ * that Chebyshev approximation is much better.
+ */
+
+mk_tltab = FPP(fx, nx,td, x0,x1) pure eval {
+PERL:	sub mk_tltab
+	{
+		my ($FX, $NX,$TD, $X0,$X1) = @_;
+		s|[fL]$|| for $X0,$X1;
+
+		my $mac = qq{block(
+		FX(x) := $FX,
+		[X0,X1, NX,TD] : [$X0,$X1, $NX,$TD],
+
+		printf(true, "#define RET ~a~%",
+				horner(sum(tl[i+1]*v^i, i,0,TD))),
+
+		ratprint : false,
+		tl_expr: ratdisrep(taylor(FX(at + v), v, 0, TD)),
+
+		dx: (X1-X0)/NX,
+		for nx: 0 thru NX-1 do (
+			xc: X0 + dx * (nx + 1/2),
+			tl: at(tl_expr, at = xc),
+			printf(true, "~t{ ~g,  ", xc),
+			for c: 0 thru TD do printf(true, "~g,", coeff(tl,v,c)),
+			printf(true, " },~%")
+		))\$};
+
+		qx{maxima --very-quiet <<<'$mac'};
+	}
+
+file:	static inline $(FLOAT) $taylor($(FLOAT) x)
+	{
+		static const $(FLOAT) taylor[$nx][$td+2] = {
+			$!mk_tltab($fx, $nx,$td, $x0,$x1)
+		};
+
+		int n = (x - $x0) * $(nx/(x1-x0));
+		const $(FLOAT) *const tl = taylor[n];
+		$(FLOAT) v = x - tl[0];
+
+		return RET;
+		#undef RET
+	}
+
+exec:	$taylor
+};
+
+taylor = FPP(taylor,x) pure { ($taylor($x)) } (mk_tltab);
