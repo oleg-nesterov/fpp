@@ -1,0 +1,160 @@
+/*
+ * fpp interface to libsndfile. Example test program:
+ *
+ *	fpp_import("fsf.lib");
+ *	process = sf_ui : sf1(${"path/to/audiofile"}) <: _,_;
+ *
+ * or
+ *
+ *	process = sf_ui : sf1(0) <: _,_;
+ *
+ * to read from stdin.
+ */
+sf_ui = off, cnt, ctl with {
+	off = nentry("[0]off", 0, 0,3600,.001) * ma.SR : int;
+	cnt = nentry("[1]cnt", 0, 0,3600,.001) * ma.SR : int;
+
+	ctl = hgroup("[2]", select2(r, select2(p,-1,1), 2)) with {
+		p = checkbox("play");
+		r = button("rewind");
+	};
+};
+
+// 1 channel
+sf1(file) = sfN(file, 1);
+
+// 2 channels
+sf2(file) = sfN(file, 2);
+
+// N channels
+sfN(file, N) = sf_io(file) <: par(c, N, sf_ch(c));
+
+// list L of channels
+sfL(file, L) = sf_io(file) <: par(c, outputs(L), sf_ch(ba.take(c+1,L)));
+
+// ----------------------------------------------------------------------------
+sf_io = FPP(file, off, cnt, ctl) struct fsf_struct*, float* {
+FILE:
+	#include <stdio.h>
+	#include <fcntl.h>
+	#include <unistd.h>
+	#include <stdlib.h>
+	#include <sndfile.h>
+
+	#define FSF_STOP	-1
+	#define FSF_ONCE	 0
+	#define FSF_LOOP	 1
+	#define FSF_RWND	 2
+
+	#define FSF_BUFSZ	1024
+
+	#define fsf_msg(fsf, fmt, ...)	\
+		fprintf(stderr, "SF(%s) " fmt, (fsf)->file, ##__VA_ARGS__)
+	#define fsf_die(fsf, ...)	\
+		do { fsf_msg(fsf, ##__VA_ARGS__); exit(1); } while (0)
+
+	struct fsf_struct {
+		SNDFILE	*	sndf;
+		const char *	file;
+		unsigned	chan;
+
+		unsigned 	pos, cur, end;
+		float		buf[FSF_BUFSZ];
+	};
+
+	static int fsf_open(struct fsf_struct *fsf, const char *file, int sr)
+	{
+		SF_INFO info;
+		int fd;
+
+		if (file) {
+			fsf->file = file;
+			fd = open(file, O_RDONLY);
+			if (fd < 0)
+				fsf_die(fsf, "ERR!! open: %m\n");
+		} else {
+			fsf->file = "<stdin>";
+			fd = 0;
+		}
+
+		fsf->sndf = sf_open_fd(fd, SFM_READ, &info, 0);
+		if (!fsf->sndf)
+			fsf_die(fsf, "ERR!! open: %s\n", sf_strerror(NULL));
+
+		fsf->chan = info.channels;
+		fsf->pos = fsf->cur = fsf->end = 0;
+
+		if (sr && sr != info.samplerate)
+			fsf_msg(fsf, "WARN! samplerate %d != %d\n", info.samplerate, sr);
+		return 0;
+	}
+
+	static int fsf_seek(struct fsf_struct *fsf, unsigned off, unsigned cnt, int ctl)
+	{
+		if (fsf->pos < off)
+			goto seek;
+		if (fsf->pos != off && ctl == FSF_RWND)
+			goto seek;
+
+		if (fsf->pos >= (cnt ? off + cnt : -1u)) {
+			if (ctl == FSF_ONCE)
+				return 0;
+	seek:
+			fsf->cur = fsf->end = 0;
+
+			if (sf_seek(fsf->sndf, off, SF_SEEK_SET) >= 0)
+				fsf->pos = off;
+			else {
+				fsf_msg(fsf, "ERR!! seek(%d) failed: %s\n",
+					off, sf_strerror(fsf->sndf));
+				return -1;
+			}
+		}
+
+		return ctl > FSF_STOP;
+	}
+
+	static int __fsf_read(struct fsf_struct *fsf)
+	{
+		fsf->end = sf_read_float(fsf->sndf, fsf->buf,
+					 FSF_BUFSZ - (FSF_BUFSZ % fsf->chan));
+		fsf->cur = 0;
+
+		if (fsf->end > 0)
+			return 1;
+		else if (!sf_error(fsf->sndf))
+			return 0;
+		else
+			fsf_die(fsf, "ERR!! read(%d) fail: %s\n",
+				fsf->pos, sf_strerror(fsf->sndf));
+	}
+
+	static float *fsf_read(struct fsf_struct *fsf, unsigned off, unsigned cnt, int ctl)
+	{
+		for (;;) {
+			if (fsf_seek(fsf, off, cnt, ctl) <= 0)
+				return NULL;
+
+			if (fsf->cur < fsf->end || __fsf_read(fsf) > 0) {
+				float *ret  = fsf->buf + fsf->cur;
+				fsf->cur += fsf->chan;
+				fsf->pos += 1;
+				return ret;
+			}
+
+			if (cnt)
+				fsf_msg(fsf, "WARN! read(%d) eof\n", fsf->pos);
+			fsf->pos = -1u;
+		}
+	}
+
+decl:	struct fsf_struct $fsf;
+init:	fsf_open(&$fsf, $file, sample_rate);
+exec:	[=$fsf, fsf_read(&$fsf, $off, $cnt, $ctl)];
+};
+
+sf_ch = FPP(ch, fsf, ret) {
+init:	if (unsigned($ch) >= $fsf.chan)
+		fsf_die(&$fsf, "ERR!! bad chan %d\n", $ch);
+exec:	(($ret ? $ret[unsigned($ch)] : 0.0))
+};
