@@ -1,0 +1,12 @@
+Just copy bin/fpp wherever you want, e.g. to /usr/local/bin
+and you are done.
+
+But if you want to use arch/ and lib/ from this repo without
+-A / -I you can do one of the following:
+
+	- do nothing and use /path/to/fpp-repo/bin/fpp
+
+	- add /path/to/fpp-repo/bin/ to $PATH
+
+	- create a symlink to bin/fpp, e.g.
+	  ln -s /path/to/fpp-repo/bin/fpp /usr/local/bin/fpp

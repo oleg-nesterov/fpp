@@ -1,0 +1,22 @@
+- Lack of documentation / examples.
+
+- Incomprehensible error messages.
+
+  When fpp detects an error it simply dies with an unclear message.
+  Well, otoh, faust does the same ;)
+
+- fpp_import() doesn't work correctly if used in .lib accessed via
+  fpp_library(). FIXME.
+
+- Preprocessor directives can't be used in the 'exec' zone.
+
+- FPP functions can't be used in rdtable / rwtable.
+
+- fpp was written with '-lang c' in mind, but I never really tested
+  this mode.
+
+- fpp should probably also work on non-Linux platforms, but I didn't
+  check.
+
+- This code has been extensively rewritten recently, so there may be
+  new bugs that I am not aware of.
