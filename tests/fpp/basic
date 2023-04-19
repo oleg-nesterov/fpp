@@ -2634,6 +2634,7 @@ DSP
 CPP
 
 [__LINE__, <<'DSP', <<'CPP'],
+// IGNORE THIS ERROR on master-dev
 __FPP() { LOOP: loop; POST: post; };
 process = 0,0 : soundfile("", 0);
 DSP
