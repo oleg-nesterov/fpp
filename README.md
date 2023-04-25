@@ -143,7 +143,9 @@ Solved? Not really:
   ```
   will be happily compiled and output garbage.
 
-## Now let's use **fpp**, this .dsp code
+## Now let's use **fpp**
+
+this .dsp code
 
 ```faust
 import("stdfaust.lib");
