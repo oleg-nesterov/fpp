@@ -4,9 +4,29 @@ and you are done.
 But if you want to use arch/ and lib/ from this repo without
 -A / -I you can do one of the following:
 
-	- do nothing and use /path/to/fpp-repo/bin/fpp
-
 	- add /path/to/fpp-repo/bin/ to $PATH
 
 	- create a symlink to bin/fpp, e.g.
 	  ln -s /path/to/fpp-repo/bin/fpp /usr/local/bin/fpp
+
+	- do nothing and use /path/to/fpp-repo/bin/fpp
+
+Example of 'do nothing' usage, assuming that faust/sndfile/portaudio/gtk are
+properly installed:
+
+	$ cd /tmp/
+	$ git clone -q https://github.com/oleg-nesterov/fpp.git
+
+	$ cat > test-fsf.dsp
+	import("stdfaust.lib");
+
+	// imports ./fpp/lib/fsf.lib
+	fpp_import("fsf.lib");
+
+	// reads/plays stdin using libsndfile without soundfile() primitive
+	process = sf_ui : sf1(0) <: _,_;
+	^D
+
+	$ ./fpp/bin/fpp test-fsf.dsp -a pa-gtk.cpp -o test-fsf.cpp
+	$ c++ `pkg-config --cflags --libs sndfile portaudiocpp gtk+-2.0` test-fsf.cpp -o test-fsf
+	$ ./test-fsf < /path/to/audio/file
