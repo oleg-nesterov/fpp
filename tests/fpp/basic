@@ -120,23 +120,21 @@ DSP
 CPP
 
 [__LINE__, <<'DSP', <<'CPP'],
-	process = FPP() eval { func() } <: ==;
+	process = FPP()eval{X}, FPP()eval{Y} <: <=,==;
 DSP
 	int fSampleRate;
-
 	void instanceConstants(int sample_rate)
 	{
 		fSampleRate = sample_rate;
-
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
 		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			output0[i0] = FAUSTFLOAT(func() == func());
-
+			output0[i0] = FAUSTFLOAT(X <= Y);
+			output1[i0] = FAUSTFLOAT(X == Y);
 		}
-
 	}
 CPP
 
