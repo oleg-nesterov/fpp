@@ -5,7 +5,7 @@ my ($VERS, $HAS_ANY) = '1.00';
 
 #------------------------------------------------------------------------------
 package re;
-our $DSP = '\b(?:dsp->)?';
+our $DSP = '\b';
 
 our $bul_crl = '(?:\{(?:(?>[^\{\}]+)|(?-1))*\})';
 our $bal_par = $bul_crl =~ tr/{}/()/r;
@@ -1145,10 +1145,11 @@ sub main
 		elsif (/^-{1,2}(double|quad)\b/){ $O_FLOAT = $1 }
 		elsif (/^-(fx|-fixed-point)$/)	{ $O_FLOAT = 'fixpoint_t' }
 		elsif (/^-os(\d*)$/)		{ $O_OS = $1 }
-		elsif (/^-(lang|-language)$/)	{
-			if (!$_[0] || $_[0] =~ /^o?cpp/ ) { $re::DSP = '\b' }
-			elsif ($_[0] eq 'c')		  { $O_C  = 1  }
-			else { die "ERR!! fpp: unsupported $_ $_[0]\n" }
+		elsif (/^-(lang|-language)$/ && @_) {
+			if ($_[0] eq 'c')
+				{ $re::DSP = '\b(?:dsp->)?'; $O_C = 1; }
+			elsif ($_[0] !~ /^o?cpp$/)
+				{ die "ERR!! fpp: unsupported $_ $_[0]\n" }
 		}
 		elsif ($_ eq '-has') {
 			for (split /,/, shift // narg) {
