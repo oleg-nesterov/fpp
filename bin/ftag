@@ -1,0 +1,34 @@
+#!/usr/bin/perl -w
+use strict;
+# ctags-like program for faust code.
+# Far too simple and stupid but works "in practice".
+# No options, every arg is a filename, output file is "tags",
+# and --excmd is "number".
+
+my @TAGS;
+
+my $t = ''; while (<>) {
+	s/^(?:single|double|quad|fixedpoint)precision\s*//;
+
+	/^(\w+) (?: \s*\(.*?\) )? \s*=/x
+		or next;
+	push @TAGS, [$t = $1, $ARGV, $.]
+		if $t ne $1;
+} continue {
+	$t = '', close ARGV	# reset $t and $.
+		if eof;
+}
+
+open STDOUT, '>', 'tags' or die;
+
+print <<'EOH';
+!_TAG_FILE_FORMAT	2
+!_TAG_FILE_SORTED	1
+EOH
+
+print "$_->[0]\t$_->[1]\t$_->[2];\"\tf\n"
+	for sort {
+		$a->[0] cmp $b->[0] ||
+		$a->[1] cmp $b->[1] ||
+		$a->[2] <=> $b->[2]
+	} @TAGS;
