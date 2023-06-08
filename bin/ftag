@@ -5,17 +5,26 @@ use strict;
 # No options, every arg is a filename, output file is "tags",
 # and --excmd is "number".
 
+my $prec = '(?:(?:single|double|quad|fixedpoint)precision\s*)';
+my $bpar = '(?:\((?:(?>[^\(\)]+)|(?-1))*\))';
+
 my @TAGS;
 
-my $t = ''; while (<>) {
-	s/^(?:single|double|quad|fixedpoint)precision\s*//;
+my ($old, $new) = ''; while (<>) {
+	my $l = $.;
 
-	/^(\w+) (?: \s*\(.*?\) )? \s*=/x
-		or next;
-	push @TAGS, [$t = $1, $ARGV, $.]
-		if $t ne $1;
+	if ($new && /^\s*=/) {
+		$l--;
+	} else {
+		($new) = /^$prec? (\w+) ($bpar)? (\s*=)?/xo and $3
+			or next;
+	}
+
+	push @TAGS, [$old = $new, $ARGV, $l]
+		if $old ne $new;
+	undef $new; # not strictly necessary
 } continue {
-	$t = '', close ARGV	# reset $t and $.
+	$old = '', close ARGV	# reset $old and $.
 		if eof;
 }
 
