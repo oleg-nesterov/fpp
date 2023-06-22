@@ -2721,3 +2721,26 @@ DSP
 		}
 	}
 CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+f = FPP(l{}) { [= $l{0}, = $l{1}, = {one} two] };
+g = FPP(x) pure eval { {$x} $x };
+process = f((g(100),g(200)));
+DSP
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = {100} 100;
+			output1[i0] = {200} 200;
+			output2[i0] = {one} two;
+		}
+	}
+CPP

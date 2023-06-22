@@ -511,19 +511,18 @@ sub parse_fpp
 		CORE::state $a_i = mk_eval_t 1,3,'_int_',   '$!($1_->[$0_])';
 		CORE::state $a_f = mk_eval_t 1,3,'_float_', '$!($1_->[$0_])';
 
-		my (@auto, @init, @list, @accs); for my $i (0..$#rets) {
+		my (@accs, @auto, @init, $retv); for my $i (0..$#rets) {
 			my ($t, $r, $v) = ($type[$i], $rets[$i], "\$aux$i");
 
 			push @accs, pick_t $t, "$a_f($i)", "$a_i($i)";
-
-			if ($r =~ s/^=\s*//) { push @list, $r; next; }
-
-			# OK, this is ugly, but lets do it here for now ...
 			$t =~ s/^_(?:(int)|float)_$/$1||$pp_cpp::O_FLOAT/e;
-			push @auto, "$t $v;";
 
-			push @init, "$v = $r;" if $v ne $r;
-			push @list, $v;
+			if ($r =~ s/^=\s*//) { $v = $r; }
+			else {
+				push @auto, "$t $v;";
+				push @init, "$v = $r;";
+			}
+			$retv .= "q{$v},";
 		}
 
 		$func->{eval} = 0;
@@ -536,7 +535,7 @@ sub parse_fpp
 		}
 
 		$code->{auto} .= "@auto\n" if @auto;
-		$code->{exec}  = $exec . "[qw(@list)]";
+		$code->{exec}  = $exec . "[$retv]";
 		$postp         = join ',', @accs;
 	}
 
