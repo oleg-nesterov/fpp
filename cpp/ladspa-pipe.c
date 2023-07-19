@@ -10,7 +10,7 @@ struct plug {
 	int ofd, ifd;
 };
 
-static inline void pipe_start(struct plug *plug, int rate, int narg, float *arg)
+static void pipe_start(struct plug *plug, int rate, int narg, float *arg)
 {
 	int pid, ofd[2], ifd[2];
 
@@ -162,7 +162,7 @@ static const LADSPA_Descriptor desc = {
 	.Maker		= "Oleg Nesterov",
 	.Copyright	= "",
 
-	.PortCount		= sizeof(port_desc) / sizeof(port_desc)[0],
+	.PortCount		= sizeof(port_desc) / sizeof(port_desc[0]),
 	.PortDescriptors	= port_desc,
 	.PortNames		= port_name,
 	.PortRangeHints		= port_hint,
