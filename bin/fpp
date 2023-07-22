@@ -395,15 +395,17 @@ sub parse_args
 	0+@pass, $lambd;
 }
 
+sub re_z
+{
+	qr/(.*?)(?:\b($_[0]):|$)/s
+}
 sub parse_zone
 {
 	my ($re_z, $zone) = @_;
-	$_[0] = $re_z = qr/(.*?)(?:\b($re_z):|$)/s
-		unless ref $re_z;
 
-	my $code = {};
+	$_ = re::chop2 $_;
 
-	for ($_ = re::chop2 $_;;) {
+	for (my $code;;) {
 		/$re_z/g;
 		my ($c, $z) = ($1, $2);
 		for ($c) {
@@ -432,9 +434,9 @@ sub parse_code
 	/oeg;
 
 	my @r = parse_args $_[0], $with;
-	CORE::state $re_zone =	'FILE|DECL|INIT|LOOP|POST|AUTO|PERL|'.
-				'file|decl|init|loop|post|auto|supp|exec';
-	@r, parse_zone $re_zone, 'exec';
+	CORE::state $re_z = re_z 'FILE|DECL|INIT|LOOP|POST|AUTO|PERL|'.
+				 'file|decl|init|loop|post|auto|supp|exec';
+	@r, parse_zone $re_z, 'exec';
 }
 
 sub __parse_deps
@@ -556,8 +558,8 @@ sub parse_dep
 	$2 or die 'expected ;';
 
 	local $_ = $1;
-	CORE::state $re_zone = 'FILE|DECL|INIT|LOOP|POST|PERL';
-	my $code = parse_zone $re_zone, 'FILE';
+	CORE::state $re_z = re_z 'FILE|DECL|INIT|LOOP|POST|PERL';
+	my $code = parse_zone $re_z, 'FILE';
 	$code->{name} = $name;
 
 	if ($name) {
