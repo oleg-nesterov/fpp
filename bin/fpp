@@ -209,8 +209,8 @@ sub __expand_fpp; sub __expand_fpp
 
 	local ($CODE, $THIS) = ($code, $this);
 
-	expand 1, qw(PERL FILE DECL INIT LOOP POST AUTO);
-	expand 0, qw(     file decl init loop post auto exec);
+	expand 1, qw(PERL FILE DECL INIT CALL LOOP POST EXIT AUTO);
+	expand 0, qw(     file decl init call loop post exit auto exec);
 	$dict;
 }
 
@@ -434,8 +434,8 @@ sub parse_code
 	/oeg;
 
 	my @r = parse_args $_[0], $with;
-	CORE::state $re_z = re_z 'FILE|DECL|INIT|LOOP|POST|AUTO|PERL|'.
-				 'file|decl|init|loop|post|auto|supp|exec';
+	CORE::state $re_z = re_z 'FILE|DECL|INIT|CALL|LOOP|POST|EXIT|AUTO|PERL|'.
+				 'file|decl|init|call|loop|post|exit|auto|supp|exec';
 	@r, parse_zone $re_z, 'exec';
 }
 
@@ -867,10 +867,10 @@ sub expand_all
 	fill_mark $FILE, 'FILE', collect qw(FILE file);
 	fill_mark $DECL, 'CALL', collect qw(DECL decl);
 	fill_mark $INIT, 'EXIT', collect qw(INIT init);
+	fill_mark $EXEC, 'CALL', collect qw(CALL call);
 	fill_mark $EXEC, 'LOOP', collect qw(LOOP loop);
 	fill_mark $EXEC, 'POST', collect qw(POST post);
-
-	fill_mark $EXEC, $_,'' for qw(CALL EXIT);
+	fill_mark $EXEC, 'EXIT', collect qw(EXIT exit);
 
 	kill_const; # complements faust commit a950fd41de
 	lift_const;
