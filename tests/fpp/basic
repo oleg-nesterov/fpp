@@ -266,10 +266,10 @@ DSP
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
+		struct T1 aux0__01; struct T2 aux1__01;
 		FAUSTFLOAT* output0 = outputs[0];
 		FAUSTFLOAT* output1 = outputs[1];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			struct T1 aux0__01; struct T2 aux1__01;
 			{ aux0__01 = RET1; aux1__01 = RET2; }
 			output0[i0] = aux1__01;
 			output1[i0] = aux1__01;
@@ -383,12 +383,12 @@ struct bounds { float min, max; };
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
+		float aux0__01; float aux1__01;
 		FAUSTFLOAT* output0 = outputs[0];
 		FAUSTFLOAT* output1 = outputs[1];
 		FAUSTFLOAT* output2 = outputs[2];
 		FAUSTFLOAT* output3 = outputs[3];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			float aux0__01; float aux1__01;
 			{ bounds_compute(&b__01, 1); aux0__01 = b__01.min; aux1__01 = b__01.max; }
 			output0[i0] = aux0__01;
 			output1[i0] = aux1__01;
@@ -484,12 +484,12 @@ struct bounds { float min, max; };
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
+		float aux0__01; float aux1__01;
 		FAUSTFLOAT* output0 = outputs[0];
 		FAUSTFLOAT* output1 = outputs[1];
 		FAUSTFLOAT* output2 = outputs[2];
 		FAUSTFLOAT* output3 = outputs[3];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			float aux0__01; float aux1__01;
 			iRec0[0] = iRec0[1] + 1;
 			{ bounds_compute(&b__01, iRec0[0]); aux0__01 = b__01.min; aux1__01 = b__01.max; }
 			output0[i0] = aux0__01;
@@ -1677,6 +1677,8 @@ DSP
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
+		float aux0__01; float aux1__01;
+		float aux0__02; float aux1__02;
 		FAUSTFLOAT* input0 = inputs[0];
 		FAUSTFLOAT* input1 = inputs[1];
 		FAUSTFLOAT* output0 = outputs[0];
@@ -1684,8 +1686,6 @@ DSP
 		FAUSTFLOAT* output2 = outputs[2];
 		FAUSTFLOAT* output3 = outputs[3];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			float aux0__01; float aux1__01;
-			float aux0__02; float aux1__02;
 			{ K={100,200}; x=input0[i0]; aux0__01 = 10; aux1__01 = 20; }
 			output0[i0] = aux0__01;
 			output1[i0] = aux1__01;
@@ -1772,6 +1772,8 @@ DSP
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
+		float AUTO__03;
+		float AUTO__04;
 		FAUSTFLOAT* input0 = inputs[0];
 		FAUSTFLOAT* input1 = inputs[1];
 		FAUSTFLOAT* output0 = outputs[0];
@@ -1779,8 +1781,6 @@ DSP
 		FAUSTFLOAT* output2 = outputs[2];
 		FAUSTFLOAT* output3 = outputs[3];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			float AUTO__03;
-			float AUTO__04;
 			output0[i0] = FAUSTFLOAT(({ AUTO__03 = input0[i0]; }));
 			output1[i0] = FAUSTFLOAT(fConst0);
 			output2[i0] = FAUSTFLOAT(({ AUTO__04 = input1[i0]; }));
@@ -1806,10 +1806,10 @@ DSP
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
+		V__01;
+		V__03;
 		FAUSTFLOAT* output0 = outputs[0];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			V__01;
-			V__03;
 			output0[i0] = FAUSTFLOAT(fConst0 + ({ V__01=X0; }) + ({ V__01=X1; }) + ({ V__03=X3; }) + ({ V__03=X2; }));
 		}
 	}
@@ -2330,10 +2330,10 @@ DSP
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
+		int aux0__01; float aux1__01;
 		FAUSTFLOAT* output0 = outputs[0];
 		FAUSTFLOAT* output1 = outputs[1];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			int aux0__01; float aux1__01;
 			{ ; aux0__01 = i; aux1__01 = f; }
 			iRec0[0] = aux0__01 + iRec0[1];
 			output0[i0] = FAUSTFLOAT(iRec0[0]);
@@ -2510,10 +2510,10 @@ DSP
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
+		float aux0__01; float aux1__01;
 		FAUSTFLOAT* input0 = inputs[0];
 		FAUSTFLOAT* output0 = outputs[0];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			float aux0__01; float aux1__01;
 			{ aux0__01 = 0; aux1__01 = 1; }
 			output0[i0] = aux0__01;
 		}
@@ -2533,13 +2533,13 @@ DSP
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
+		float aux0__01; float aux1__01; float aux2__01;
+		float aux0__02; float aux1__02; float aux2__02;
+		float aux0__03; float aux1__03; float aux2__03;
 		FAUSTFLOAT* output0 = outputs[0];
 		FAUSTFLOAT* output1 = outputs[1];
 		FAUSTFLOAT* output2 = outputs[2];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			float aux0__01; float aux1__01; float aux2__01;
-			float aux0__02; float aux1__02; float aux2__02;
-			float aux0__03; float aux1__03; float aux2__03;
 			{ aux0__01 = 10+1; aux1__01 = 10+2; aux2__01 = 10+3; }
 			{ aux0__02 = aux2__01; aux1__02 = aux1__01; aux2__02 = aux0__01; }
 			{ aux0__03 = aux2__02; aux1__03 = aux1__02; aux2__03 = aux0__02; }
@@ -2587,13 +2587,13 @@ DSP
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
+		float * aux1__02;
 		FAUSTFLOAT* input0 = inputs[0];
 		FAUSTFLOAT* output0 = outputs[0];
 		FAUSTFLOAT* output1 = outputs[1];
 		FAUSTFLOAT* output2 = outputs[2];
 		FAUSTFLOAT* output3 = outputs[3];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			float * aux1__02;
 			output0[i0] = FAUSTFLOAT(fConst3);
 			output1[i0] = FAUSTFLOAT(fConst4);
 			{ aux1__02 = fsf_read(&fsf__02, input0[i0]); }
@@ -2741,6 +2741,26 @@ DSP
 			output0[i0] = {100} 100;
 			output1[i0] = {200} 200;
 			output2[i0] = {one} two;
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+process = button("") : FPP(x) pure { code($x); [ret($x)]; };
+DSP
+	FAUSTFLOAT fButton0;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		float aux0__01;
+		FAUSTFLOAT* output0 = outputs[0];
+		{ code(float(fButton0)); aux0__01 = ret(float(fButton0)); }
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = aux0__01;
 		}
 	}
 CPP
