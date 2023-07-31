@@ -2150,14 +2150,13 @@ INIT: INIT1($gl);
 init: init1($gl, $st);
 exec: calc1($gl, $st, $x)
 };
-f2 = FPP(x) pure {
+f2 = FPP(x) pure eval {
 INIT: INIT2($gl);
 init: init2($gl, $st);
 exec: calc2($gl, $st, $x)
 };
 process = 10 : f1 : f2;
 DSP
-	float fConst0;
 	int fSampleRate;
 	void instanceConstants(int sample_rate)
 	{
@@ -2166,13 +2165,12 @@ DSP
 		init1(gl__01, st__01);
 		INIT2(gl__02);
 		init2(gl__02, st__02);
-		fConst0 = ({ calc2(gl__02, st__02, calc1(gl__01, st__01, 10)); });
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
 		FAUSTFLOAT* output0 = outputs[0];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			output0[i0] = FAUSTFLOAT(fConst0);
+			output0[i0] = calc2(gl__02, st__02, calc1(gl__01, st__01, 10));
 		}
 	}
 CPP
