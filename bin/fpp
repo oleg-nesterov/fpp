@@ -744,15 +744,21 @@ sub lift_const
 sub fill_oobi
 {
 	my $oobi = shift;
+
 	$INIT = join '', map {
 		my @o; if (s/\e(\d+)\e/push @o, $1; ''/eg) {
+			my $i = ''; for (@$oobi[sort {$a<=>$b} @o]) {
+				$i .= $_ // next;
+				$_ = undef;
+			}
 			my ($p) = /^(\h*)/;
-			my $i = join '', @$oobi[sort {$a<=>$b} @o];
 			$i =~ s/^(?=\h*\S)/$p/mg;
 			$_ = $i . $_;
 		}
 		$_;
 	} split /\n\K/, $INIT;
+
+	die if grep { defined } @$oobi;
 }
 
 sub mark_body($$_)
