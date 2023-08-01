@@ -513,7 +513,7 @@ sub parse_fpp
 		CORE::state $a_i = mk_eval_t 1,3,'_int_',   '$!($1_->[$0_])';
 		CORE::state $a_f = mk_eval_t 1,3,'_float_', '$!($1_->[$0_])';
 
-		my (@accs, @supp, @init, $retv); for my $i (0..$#rets) {
+		my (@accs, @decl, @init, $retv); for my $i (0..$#rets) {
 			my ($t, $r, $v) = ($type[$i], $rets[$i], "\$aux$i");
 
 			push @accs, pick_t $t, "$a_f($i)", "$a_i($i)";
@@ -521,7 +521,7 @@ sub parse_fpp
 
 			if ($r =~ s/^=\s*//) { $v = $r; }
 			else {
-				push @supp, "$t $v;";
+				push @decl, "$t $v;";
 				push @init, "$v = $r;";
 			}
 			$retv .= "q{$v},";
@@ -529,11 +529,13 @@ sub parse_fpp
 
 		$func->{eval} = 0;
 		my $exec = "$code->{exec}@init";
-		if (@supp || $supp || $exec) {
+		if (@decl || $supp || $exec) {
+			my @stmt;
+			push @stmt,   "@decl"	if @decl;
+			push @stmt,    $supp	if $supp;
+			push @stmt, "{ $exec }"	if $exec;
+			$exec = "@stmt\e!";
 			$func->{eval} = 1;
-			push @supp,    $supp	if $supp;
-			push @supp, "{ $exec }"	if $exec;
-			$exec = "@supp\e!";
 		}
 
 		$code->{exec}  = $exec . "[$retv]";
@@ -814,8 +816,8 @@ sub expand_all
 			$stmt = '';
 			$void =~ s/\e\d+\e/$stmt .= $&; ''/eg;
 		} else {
-			$stmt =~ s/\e!(.*)//s;
-			$void = $1 // die;
+			$stmt =~ s/\e!(.+)//s or die;
+			$void = $1;
 		}
 		$voids{$_[0]} = $void;
 		$stmt;
