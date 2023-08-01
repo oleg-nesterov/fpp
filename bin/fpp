@@ -534,7 +534,7 @@ sub parse_fpp
 			push @stmt,   "@decl"	if @decl;
 			push @stmt,    $supp	if $supp;
 			push @stmt, "{ $exec }"	if $exec;
-			$exec = "@stmt\e!";
+			$exec = join("\n", @stmt). "\e!";
 			$func->{eval} = 1;
 		}
 
@@ -691,13 +691,13 @@ sub fix_types
 
 	if (@stmts) {
 		my $stmts = re_this @stmts;
-		s/\b  (?:void\h+)? $stmts \h*=\h* (.+?) \h*;
-		 /_($1,($2),1)/xg
+		s/(\h*)\K (?:void\h+)? $stmts \h*=\h* (.+?) \h*;
+		 /_($2,($3),($1))/xg
 			for $INIT, $EXEC;
 	}
 	if (@evals) {
 		my $evals = re_this @evals;
-		s/\h* (?:void\h+)? $evals \h*=\h* (.+?) \h*; \h*\v
+		s/\h*     (?:void\h+)? $evals \h*=\h* (.+?) \h*; \h*\v
 		 /_($1,($2))/xg
 			for $INIT, $EXEC;
 	}
@@ -818,6 +818,9 @@ sub expand_all
 		} else {
 			$stmt =~ s/\e!(.+)//s or die;
 			$void = $1;
+
+			my $i = re::chop2 $_[2];
+			$stmt =~ s/\n\K/$i/g;
 		}
 		$voids{$_[0]} = $void;
 		$stmt;
