@@ -759,8 +759,6 @@ sub fill_oobi
 		}
 		$_;
 	} split /\n\K/, $INIT;
-
-	die if grep { defined } @$oobi;
 }
 
 sub mark_body($$_)

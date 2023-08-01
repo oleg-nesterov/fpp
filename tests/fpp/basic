@@ -2792,3 +2792,23 @@ DSP
 		}
 	}
 CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+process = FPP()  pure { init: init; exec: 0; } :
+	  FPP(x) pure { 1 };
+DSP
+	float fConst0;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		fConst0 = ({ 1; });
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(fConst0);
+		}
+	}
+CPP
