@@ -1207,6 +1207,7 @@ sub main
 			-fui	| --freeze-ui			|
 			-fx	| --fixed-point			|
 			-i	| --inline-architecture-files	|
+			-it	| --inline-table		|
 			-inpl	| --in-place			|
 			-lcc	| --local-causality-check	|
 			-light	| --light-mode			|
