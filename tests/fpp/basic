@@ -2812,3 +2812,49 @@ DSP
 		}
 	}
 CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+process = FPP() pure { init: ini; exec: (0) } :
+	  FPP(x) pure eval { $x.const };
+DSP
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		ini;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = 2;
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+f1 = FPP(x) pure { init: init1($x); exec: (0) };
+f2 = FPP(x) pure { INIT: INIT2($x); exec: (1) };
+process = f1(10),f1(20) : f2,f2;
+DSP
+	float fConst0;
+	float fConst1;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		init1(10);
+		INIT2(0);
+		fConst0 = 1;
+		fConst1 = 1;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(fConst0);
+			output1[i0] = FAUSTFLOAT(fConst1);
+		}
+	}
+CPP

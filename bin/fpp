@@ -152,6 +152,12 @@ sub __expand_fpp; sub __expand_fpp
 	my $pckg = 'perl::user' . ($name && "::$name");
 	my $dict = {};
 
+	my @oobi = map {
+		my $o = '';
+		s/\e\d+\e/$o .= $&; ''/eg;
+		$o;
+	} @$args;
+
 	CORE::state $seen = {};
 	CORE::state $uniq = {};
 
@@ -172,7 +178,10 @@ sub __expand_fpp; sub __expand_fpp
 		my $zone = shift;
 
 		$zone =~ s{\$(\d+)\_\b}{
-			$dict->{$1} ||= $args->[$1];
+			$dict->{$1} ||= do {
+				$this->{exec} .= $oobi[$1];
+				$args->[$1];
+			};
 		}eg;
 
 		if ($_ eq 'PERL') {
