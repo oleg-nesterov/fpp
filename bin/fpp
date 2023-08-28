@@ -1200,6 +1200,7 @@ sub main
 			-cir	| --check-integer-range		|
 			-cm	| --compute-mix			|
 			-d	| --details			|
+			-diff	| --auto-differentiate		|
 			-double	| --double-precision-floats	|
 			-exp10	| --generate-exp10		|
 			-flist	| --file-list			|
