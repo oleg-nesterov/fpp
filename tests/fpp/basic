@@ -2828,3 +2828,96 @@ DSP
 		}
 	}
 CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+import("stdfaust.lib");
+
+foo = FPP(fc0, inp) {
+decl:	foo_state $state;
+init:	#if $(internal.rate(fc0) < 2)
+		foo_set_fc0(&$state, $fc0);
+	#endif
+exec:	if ($(internal.rate(fc0) > 1))
+		foo_set_fc0(&$state, $fc0);
+	foo_compute(&$state, $inp);
+};
+
+process = _ <: foo(ma.SR/4), foo(nentry("",0,0,1,1)), foo(FPP()eval{FC0});
+DSP
+	foo_state state__01;
+	foo_state state__02;
+	foo_state state__03;
+	int fSampleRate;
+	float fConst0;
+	FAUSTFLOAT fEntry0;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		fConst0 = 0.25f * std::min<float>(1.92e+05f, std::max<float>(1.0f, float(fSampleRate)));
+		#if 1
+			foo_set_fc0(&state__01, fConst0);
+		#endif
+		#if 0
+			foo_set_fc0(&state__02, fSlow0);
+		#endif
+		#if 0
+			foo_set_fc0(&state__03, FC0);
+		#endif
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		float fSlow0 = float(fEntry0);
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			float fTemp1 = float(input0[i0]);
+			output0[i0] = FAUSTFLOAT(({ if (0) foo_set_fc0(&state__01, fConst0); foo_compute(&state__01, fTemp1); }));
+			output1[i0] = FAUSTFLOAT(({ if (1) foo_set_fc0(&state__02, fSlow0); foo_compute(&state__02, fTemp1); }));
+			output2[i0] = FAUSTFLOAT(({ if (1) foo_set_fc0(&state__03, FC0); foo_compute(&state__03, fTemp1); }));
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+import("stdfaust.lib");
+
+foo = FPP(fc0, inp) { (foo_compute($(mk_state(fc0, inp)), $inp)) }
+with {
+	mk_state = FPP(fc0, inp:internal.id) pure {
+	decl: foo_state $state;
+	exec: foo_set_fc0(&$state, $fc0); [=&$state];
+	};
+};
+
+process = _ <: foo(ma.SR/4), foo(nentry("",0,0,1,1)), foo(FPP()eval{FC0});
+DSP
+	foo_state state__01;
+	foo_state state__02;
+	foo_state state__03;
+	int fSampleRate;
+	FAUSTFLOAT fEntry0;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		float fConst0 = 0.25f * std::min<float>(1.92e+05f, std::max<float>(1.0f, float(fSampleRate)));
+		{ foo_set_fc0(&state__01, fConst0);  }
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		float fSlow0 = float(fEntry0);
+		{ foo_set_fc0(&state__02, fSlow0);  }
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			float fTemp1 = float(input0[i0]);
+			output0[i0] = FAUSTFLOAT(foo_compute(&state__01, fTemp1));
+			output1[i0] = FAUSTFLOAT(foo_compute(&state__02, fTemp1));
+			{ foo_set_fc0(&state__03, FC0);  }
+			output2[i0] = FAUSTFLOAT(foo_compute(&state__03, fTemp1));
+		}
+	}
+CPP
