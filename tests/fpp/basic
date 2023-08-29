@@ -2660,36 +2660,6 @@ DSP
 CPP
 
 [__LINE__, <<'DSP', <<'CPP'],
-// IGNORE THIS ERROR on master-dev
-__FPP() { LOOP: loop; POST: post; };
-process = 0,0 : soundfile("", 0);
-DSP
-	Soundfile* fSoundfile0;
-	int fSampleRate;
-	void instanceConstants(int sample_rate)
-	{
-		fSampleRate = sample_rate;
-	}
-	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
-	{
-		FAUSTFLOAT* output0 = outputs[0];
-		FAUSTFLOAT* output1 = outputs[1];
-		Soundfile* fSoundfile0ca = fSoundfile0;
-		int* fSoundfile0ca_le0 = fSoundfile0ca->fLength;
-		int iSlow0 = fSoundfile0ca_le0[0];
-		int* fSoundfile0ca_ra0 = fSoundfile0ca->fSR;
-		int iSlow1 = fSoundfile0ca_ra0[0];
-		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			loop;
-			output0[i0] = FAUSTFLOAT(iSlow0);
-			output1[i0] = FAUSTFLOAT(iSlow1);
-			post;
-		}
-		fSoundfile0 = fSoundfile0ca;
-	}
-CPP
-
-[__LINE__, <<'DSP', <<'CPP'],
 import("stdfaust.lib");
 
 f11 = FPP() T1 { supp: 11; exec: (R11); };
