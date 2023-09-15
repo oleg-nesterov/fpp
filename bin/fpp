@@ -344,9 +344,9 @@ sub expand_args
 
 sub parse_args
 {
-	my $lambd;
 	my (%argn, %argz, %argl);
 	my (@args, @pass, @with);
+	my ($lambd, $bus);
 
 	for (re::split_args $_[0], @{$_[1]}) {
 		my ($with, $argn,$argv, $m,$z,$l) = s/^=\s*//;
@@ -377,7 +377,8 @@ sub parse_args
 			my ($n, $a) = ("outputs($argv)", ", $argv");
 			if (length $l) {
 				$n = "int($l)";
-				$a = '', $with = 1 unless $with || $m;
+				$a = '', $with = 1, $bus ||= $argv
+					unless $with || $m;
 			}
 			$argv = "_fpp_bus_($n$a)";
 		}
@@ -388,6 +389,8 @@ sub parse_args
 		if (!$with) {
 			push @args, $argn;
 			$lambd ||= $m || $z || defined $l;
+			die "arg '$argn' should be declared before '$bus'"
+				if $bus;
 		}
 	}
 

@@ -1427,7 +1427,7 @@ CPP
 
 [__LINE__, <<'DSP', <<'CPP'],
 L=(3,4);
-process = FPP(l1{2}, l2:{3}, l3=L{3}, =L{3}, l4=L{} ) eval { l1=$l1; l2=$l2; l3=$l3; L=$L; l4=$l4 } ((1,2)),
+process = FPP(l1:{3}, l2{2}, l3=L{3}, =L{3}, l4=L{} ) eval { l1=$l1; l2=$l2; l3=$l3; L=$L; l4=$l4 } ((1,2)),
 	  FPP(l=par(i0,3,i0+1){}, l1=l{}, l2=l1{4}) eval { l=$l; l1=$l; l2=$l2};
 DSP
 	int fSampleRate;
@@ -1448,7 +1448,7 @@ DSP
 		FAUSTFLOAT* output0 = outputs[0];
 		FAUSTFLOAT* output1 = outputs[1];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			output0[i0] = l1=input0[i0],input1[i0]; l2=1,2,input2[i0]; l3=3,4,input3[i0]; L=3,4,input4[i0]; l4=3,4;
+			output0[i0] = l1=1,2,input0[i0]; l2=input1[i0],input2[i0]; l3=3,4,input3[i0]; L=3,4,input4[i0]; l4=3,4;
 			output1[i0] = l=1,2,3; l1=1,2,3; l2=1,2,3,input5[i0];
 
 		}
