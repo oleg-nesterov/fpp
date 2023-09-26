@@ -2,6 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/wait.h>
 #include <assert.h>
 
 #define FAUSTFLOAT double
@@ -45,6 +46,7 @@ struct _O {
 	virtual void ini(void) {}
 	virtual void out(unsigned) = 0;
 	virtual void eob(void) {}
+	virtual void eof(void) {}
 };
 
 struct O_T : public _O {
@@ -76,15 +78,24 @@ struct O_B : public _O {
 	}
 } __o_b;
 
-struct O_P : public O_B {
-	void ini(void)
+struct _O_SOX : public O_B {
+	int pid;
+
+	void eof(void)
+	{
+		close(ofd); waitpid(pid, NULL, 0);
+	}
+
+	void __ini(const char *file)
 	{
 		int fds[2];
 		assert(!pipe(fds));
 
-		if (fork())
+		if ((pid = fork())) {
 			ofd = fds[1];
-		else {
+			close(fds[0]);
+		} else {
+			close(fds[1]);
 			assert(dup2(fds[0], 0) == 0);
 
 			char o_r[64], o_c[64];
@@ -92,15 +103,27 @@ struct O_P : public O_B {
 			sprintf(o_c, "-c%d", G.no);
 
 			const char *argv[] = {
-				"play", "-q", "-traw", "-ef", "-b32",
-				o_r, o_c, "-", NULL,
+				file ? "sox" : "play",
+				"-q", "-traw", "-ef", "-b32",
+				o_r, o_c,
+				"-",
+				file ? "-t.wav" : NULL,
+				file,
+				NULL,
 			};
 
 			execvp(argv[0], (char**)argv);
 			die("exec '%s' failed: %m", argv[0]);
 		}
 	}
+};
+
+struct O_P : public _O_SOX {
+	void ini() { __ini(NULL); }
 } __o_p;
+struct O_F : public _O_SOX {
+	void ini() { __ini("-"); }
+} __o_f;
 
 struct _O *O = &__o_t;
 
@@ -114,6 +137,8 @@ static void parse_o(const char *n)
 		O = &__o_b;
 	else IF (p)
 		O = &__o_p;
+	else IF (f)
+		O = &__o_f;
 	else
 		die("bad -o value '%s'", n);
 }
@@ -266,6 +291,7 @@ int main(int argc, const char* argv[])
 		}
 		O->eob();
 	}
+	O->eof();
 
 	return 0;
 }
