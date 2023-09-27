@@ -237,17 +237,26 @@ static void parse_args(const char* argv[])
 
 void *it_loop(void *)
 {
+	char *line = NULL;
+	size_t size = 0;
+
 	goto dump; for (;;) {
-		char *inp; size_t sz;
 		char n[128]; float v;
+		char *inp; int cur, eat;
 
 		printf(": ");
-		getline(&inp, &sz, stdin);
+		cur = getline(&line, &size, stdin);
+		inp = line;
 
-		if (sscanf(inp, "%s %f", n, &v) == 2) {
-			if (auto o = cli_get_opt(n))
-				{ *o->v = v; continue; }
+		for (; cur; inp += eat, cur -= eat) {
+			if (sscanf(inp, "%s %f %n", n, &v, &eat) != 2)
+				goto dump;
+			auto o = cli_get_opt(n);
+			if (!o)
+				goto dump;
+			*o->v = v;
 		}
+		continue;
  dump:
 		printf("\n");
 		for (int i = 0; i < ARGN; ++i)
