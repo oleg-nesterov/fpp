@@ -12,13 +12,15 @@ struct Meta {
 	void declare(const char *k, const char *v);
 };
 struct UI {
-	inline void openVerticalBox(const char *n) {}
-	inline void closeBox(void) {}
 
-	inline void addNumEntry(const char *n, FAUSTFLOAT *e, FAUSTFLOAT v, ...)
-	{
-		ui_add_opt(n, e, v);
-	}
+	#define	F(n)	inline void n(...) {}
+	F(openVerticalBox) F(closeBox)
+	#undef	F
+
+	#define F(n)	inline void n(const char *n, FAUSTFLOAT *e, FAUSTFLOAT v, ...) \
+			{ ui_add_opt(n, e, v); }
+	F(addNumEntry)
+	#undef	F
 };
 
 <<includeIntrinsic>>
