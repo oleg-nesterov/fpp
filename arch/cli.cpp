@@ -14,12 +14,17 @@ struct Meta {
 struct UI {
 
 	#define	F(n)	inline void n(...) {}
-	F(openVerticalBox) F(closeBox)
+	F(openVerticalBox) F(openHorizontalBox) F(closeBox) F(declare)
 	#undef	F
 
 	#define F(n)	inline void n(const char *n, FAUSTFLOAT *e, FAUSTFLOAT v, ...) \
 			{ ui_add_opt(n, e, v); }
 	F(addNumEntry)
+	#undef	F
+
+	#define F(n)	inline void n(const char *n, FAUSTFLOAT *e) \
+			{ ui_add_opt(n, e, 0); }
+	F(addButton) F(addCheckButton)
 	#undef	F
 };
 
