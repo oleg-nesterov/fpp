@@ -246,9 +246,10 @@ void *it_loop(void *)
 
 		printf(": ");
 		cur = getline(&line, &size, stdin);
-		inp = line;
+		if (cur < 0)
+			die("getline failed: %m");
 
-		for (; cur; inp += eat, cur -= eat) {
+		for (inp = line; cur; inp += eat, cur -= eat) {
 			if (sscanf(inp, "%s %f %n", n, &v, &eat) != 2)
 				goto dump;
 			auto o = cli_get_opt(n);
@@ -260,7 +261,7 @@ void *it_loop(void *)
  dump:
 		printf("\n");
 		for (int i = 0; i < ARGN; ++i)
-			printf("  %-8s %f\n", ARGV[i].n, *ARGV[i].v);
+			printf("  %-16s %f\n", ARGV[i].n, *ARGV[i].v);
 		printf("\n");
 	}
 }
