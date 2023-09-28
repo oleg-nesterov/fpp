@@ -244,7 +244,7 @@ void *it_loop(void *)
 		char n[128]; float v;
 		char *inp; int cur, eat;
 
-		printf(": ");
+		fprintf(stderr, ": ");
 		cur = getline(&line, &size, stdin);
 		if (cur < 0)
 			die("getline failed: %m");
@@ -259,10 +259,10 @@ void *it_loop(void *)
 		}
 		continue;
  dump:
-		printf("\n");
+		fprintf(stderr, "\n");
 		for (int i = 0; i < ARGN; ++i)
-			printf("  %-16s %f\n", ARGV[i].n, *ARGV[i].v);
-		printf("\n");
+			fprintf(stderr, "  %-16s %f\n", ARGV[i].n, *ARGV[i].v);
+		fprintf(stderr, "\n");
 	}
 }
 
