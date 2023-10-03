@@ -104,7 +104,7 @@ sub if
 #------------------------------------------------------------------------------
 package pp_dsp;
 my  (%STRN, %FUNC, %DEPS);
-our ($CODE, $THIS);
+our ($CODE, $THIS, $DICT);
 
 sub fix_strn(_)
 {
@@ -216,7 +216,7 @@ sub __expand_fpp; sub __expand_fpp
 		expand_zone $code->{$_} // next for @_;
 	};
 
-	local ($CODE, $THIS) = ($code, $this);
+	local ($CODE, $THIS, $DICT) = ($code, $this, \$dict);
 
 	expand 1, qw(PERL FILE DECL INIT CALL LOOP POST EXIT AUTO);
 	expand 0, qw(     file decl init call loop post exit auto exec);

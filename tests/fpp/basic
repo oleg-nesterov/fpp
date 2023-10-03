@@ -2830,6 +2830,51 @@ DSP
 CPP
 
 [__LINE__, <<'DSP', <<'CPP'],
+f(x) = x : f1 : f2 : f3
+with {
+	f1 = FPP(x) pure { $!($(env)->{var1}) += 11; [=$x + 22] };
+	f2 = FPP(x) pure { $!($(env)->{var2}) -= 33; [=$x - 44] };
+
+	f3 = FPP(x) pure { ($x + $!($(env)->{var1}) + $!($(env)->{var2})) };
+
+	env = x : FPP(x) pure //eval
+	{
+	auto:	type_t $var1, $var2;
+	exec:	$var1 = 0; $var2 = 0;
+		[=$!(qq{+{qw(@{[ %$${DICT} ]})}})]
+	};
+};
+process = f,f(100);
+DSP
+	float fConst4;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		type_t var1__01, var2__01;
+		{ var1__01 = 0; var2__01 = 0;  }
+		{ var1__01 += 11;  }
+		{ var2__01 -= 33;  }
+		fConst4 = 100 + 22 - 44 + var1__01 + var2__01;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		type_t var1__02, var2__02;
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			float fTemp0 = float(input0[i0]);
+			{ var1__02 = 0; var2__02 = 0;  }
+			{ var1__02 += 11;  }
+			{ var2__02 -= 33;  }
+			output0[i0] = FAUSTFLOAT(fTemp0 + 22 - 44 + var1__02 + var2__02);
+			output1[i0] = FAUSTFLOAT(fConst4);
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
 import("stdfaust.lib");
 
 foo = FPP(fc0, inp) {
