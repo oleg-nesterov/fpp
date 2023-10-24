@@ -49,12 +49,12 @@ static struct {
 } while (0)
 
 // ----------------------------------------------------------------------------
-struct O_N {
+static struct O_N {
 	virtual void ini(void) {}
-	virtual void out(unsigned) = 0;
+	virtual void out(unsigned) {};
 	virtual void eob(void) {}
 	virtual void eof(void) {}
-};
+} __o_n;
 
 static struct O_T : public O_N {
 	void out(unsigned i)
@@ -140,6 +140,8 @@ static void parse_o(const char *n)
 {
 	IF (t)
 		O = &__o_t;
+	else IF (n)
+		O = &__o_n;
 	else IF (b)
 		O = &__o_b;
 	else IF (p)
