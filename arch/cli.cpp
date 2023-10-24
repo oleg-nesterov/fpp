@@ -49,14 +49,14 @@ static struct {
 } while (0)
 
 // ----------------------------------------------------------------------------
-struct _O {
+struct O_N {
 	virtual void ini(void) {}
 	virtual void out(unsigned) = 0;
 	virtual void eob(void) {}
 	virtual void eof(void) {}
 };
 
-struct O_T : public _O {
+static struct O_T : public O_N {
 	void out(unsigned i)
 	{
 		for (unsigned o = 0; o < G.no; o++) {
@@ -66,7 +66,7 @@ struct O_T : public _O {
 	}
 } __o_t;
 
-struct O_B : public _O {
+static struct O_B : public O_N {
 	float buf[NOUTS * BUFSZ];
 	int ofd = 1, cnt = 0;
 
@@ -125,14 +125,14 @@ struct _O_SOX : public O_B {
 	}
 };
 
-struct O_P : public _O_SOX {
+static struct O_P : public _O_SOX {
 	void ini() { __ini(NULL); }
 } __o_p;
-struct O_F : public _O_SOX {
+static struct O_F : public _O_SOX {
 	void ini() { __ini("-"); }
 } __o_f;
 
-struct _O *O = &__o_t;
+static struct O_N *O = &__o_t;
 
 #define	IF(a)	if (!strcmp(n, #a))
 
