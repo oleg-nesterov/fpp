@@ -19,7 +19,7 @@ struct UI {
 
 	#define F(n)	inline void n(const char *n, FAUSTFLOAT *e, FAUSTFLOAT v, ...) \
 			{ ui_add_opt(n, e, v); }
-	F(addNumEntry)
+	F(addNumEntry) F(addVerticalSlider) F(addHorizontalSlider)
 	#undef	F
 
 	#define F(n)	inline void n(const char *n, FAUSTFLOAT *e) \
