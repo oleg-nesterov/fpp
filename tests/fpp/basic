@@ -2187,7 +2187,7 @@ init: init1;
 exec: (0)
 };
 f2 = FPP(x) pure {
-supp: supp2($x, $x);
+stmt: supp2($x, $x);
 exec: (ret($x, $x));
 };
 process = 0 : f1 : f2;
@@ -2376,11 +2376,11 @@ CPP
 [__LINE__, <<'DSP', <<'CPP'],
 process =
 	FPP() pure T {
-	supp:	1 2 3
+	stmt:	1 2 3
 	exec: (one)
 	},
 	FPP()     T {
-	supp: 4 5 6
+	stmt: 4 5 6
 	exec: (two)
 	}
 	<: _,_,_,_;
@@ -2413,11 +2413,11 @@ CPP
 [__LINE__, <<'DSP', <<'CPP'],
 process =
 	FPP() pure eval {
-	supp:	1 2 3
+	stmt:	1 2 3
 	exec: one
 	},
 	FPP()     eval {
-	supp: 4 5 6
+	stmt: 4 5 6
 	exec: two
 	}
 	<: _,_,_,_;
@@ -2451,7 +2451,7 @@ ini = FPP(fc) pure eval {
 DECL:	lib_t $lib;
 decl:	flt_t $flt;
 INIT:	init_lib($lib, $(ma.SR));
-supp:	init_flt($flt, $fc);
+stmt:	init_flt($flt, $fc);
 exec:	$lib, $flt
 };
 
@@ -2662,10 +2662,10 @@ CPP
 [__LINE__, <<'DSP', <<'CPP'],
 import("stdfaust.lib");
 
-f11 = FPP() T1 { supp: 11; exec: (R11); };
-f12 = FPP() T1 { supp: 12; exec: (R12); };
-f21 = FPP() T2 { supp: 21; exec: (R21); };
-f22 = FPP() T2 { supp: 22; exec: (R22); };
+f11 = FPP() T1 { stmt: 11; exec: (R11); };
+f12 = FPP() T1 { stmt: 12; exec: (R12); };
+f21 = FPP() T2 { stmt: 21; exec: (R21); };
+f22 = FPP() T2 { stmt: 22; exec: (R22); };
 
 f = FPP(l{}) { =$l= };
 process = f11,f21,f12,f22 <: f(si.bus(8));
@@ -2693,8 +2693,8 @@ DSP
 CPP
 
 [__LINE__, <<'DSP', <<'CPP'],
-f_i = FPP() eval int    { supp: I; exec: I1 };
-f_f = FPP() eval double { supp: F; exec: F1 };
+f_i = FPP() eval int    { stmt: I; exec: I1 };
+f_f = FPP() eval double { stmt: F; exec: F1 };
 f_m = FPP() int, double { [=IM,=FM] };
 process = f_i,f_f,f_m : par(i,4,+(1));
 DSP
