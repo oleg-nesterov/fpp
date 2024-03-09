@@ -6,6 +6,10 @@
 #include <assert.h>
 
 #define FAUSTFLOAT double
+
+static int cli_stop = -1;
+#define CLI_STOP do { if (cli_stop < 0) cli_stop = i0; } while (0)
+
 static void ui_add_opt(const char *, FAUSTFLOAT*, FAUSTFLOAT);
 
 struct Meta {
@@ -38,7 +42,7 @@ static mydsp DSP;
 static FAUSTFLOAT _outputs[NOUTS][BUFSZ];
 
 static struct {
-	unsigned sr = 44100, nr = 10, bs = 512, sk;
+	unsigned sr = 44100, nr = 10, bs = 512, sk, xt;
 	unsigned no;
 	int it;
 } G;
@@ -234,6 +238,8 @@ static void parse_args(const char* argv[])
 			{ p_u = &G.sk; goto set_u; }
 		else IF (-b)
 			{ p_u = &G.bs; goto set_u; }
+		else IF (-x)
+			{ p_u = &G.xt; goto set_u; }
 		else
 			die("bad option '%s'", n);
 		continue;
@@ -298,12 +304,17 @@ int main(int argc, const char* argv[])
 		outputs[o] = _outputs[o];
 
 	O->ini();
-	for (unsigned nr = G.nr + G.sk; nr; ) {
-		unsigned count = G.bs;
+	for (unsigned count, stopped = 0, nr = G.nr + G.sk; nr; nr -= count) {
+		count = G.bs;
 		if (count > nr) count = nr;
-		nr -= count;
 
 		DSP.compute(count, 0, outputs);
+		if (cli_stop >= 0 && !stopped) {
+			nr = cli_stop + G.xt;
+			if (count > nr) count = nr;
+			stopped = 1;
+		}
+
 		for (unsigned i = 0; i < count; i++) {
 			if (G.sk) G.sk--;
 			else   O->out(i);

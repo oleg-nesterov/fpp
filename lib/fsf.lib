@@ -153,8 +153,12 @@ init:	fsf_open(&$fsf, $file, sample_rate);
 exec:	[=$fsf, fsf_read(&$fsf, $off, $cnt, $ctl)];
 };
 
-sf_ch = FPP(ch, fsf, ret) float {
+sf_ch = FPP(ch, fsf, ret) pure float {
 init:	if (unsigned($ch) >= $fsf.chan)
 		fsf_die(&$fsf, "ERR!! bad chan %d\n", $ch);
 exec:	(($ret ? $ret[unsigned($ch)] : 0.0f))
 };
+
+// temporary ugly but simple helper
+sf_cli(file, off,cnt) = sf_io(file, off,cnt,0) : !,_ :
+	FPP(ret) pure { if (!$ret) CLI_STOP; $ret ? $ret[0] : 0.0f; };
