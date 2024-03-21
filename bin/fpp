@@ -487,7 +487,7 @@ sub parse_fpp
 		last if exists $func->{eval};
 		s/(\s*;)+$//g;
 		@rets = re::split_args $1 if
-			s/(?:^|[;}])\s*\K($re::bal_sqr)$//o;
+			s/(?:^|[:;}])\s*\K($re::bal_sqr)$//o;
 	}
 
 	if (@type) {
