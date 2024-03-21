@@ -281,6 +281,9 @@ void *it_loop(void *)
 
 int main(int argc, const char* argv[])
 {
+	#ifdef CLI_INIT
+	CLI_INIT
+	#endif
 	parse_args(argv);
 
 	if (DSP.getNumInputs() > 0)
@@ -304,7 +307,8 @@ int main(int argc, const char* argv[])
 		outputs[o] = _outputs[o];
 
 	O->ini();
-	for (unsigned count, stopped = 0, nr = G.nr + G.sk; nr; nr -= count) {
+	if (G.nr <= G.nr + G.sk) G.nr += G.sk; // avoid overflow
+	for (unsigned count, stopped = 0, nr = G.nr; nr; nr -= count) {
 		count = G.bs;
 		if (count > nr) count = nr;
 
