@@ -715,6 +715,7 @@ sub fix_types
 	}
 }
 
+# complements faust commit a950fd41de (disabled by 81cf3d7635a2)
 sub kill_const
 {
 	my $re_c = qr/\b([if]Const\d+)\b/;
@@ -892,7 +893,7 @@ sub expand_all
 	fill_mark $EXEC, 'POST', collect qw(POST post);
 	fill_mark $EXEC, 'EXIT', collect qw(EXIT exit);
 
-	kill_const; # complements faust commit a950fd41de
+	kill_const;
 	lift_const;
 }
 
