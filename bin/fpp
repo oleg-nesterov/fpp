@@ -639,7 +639,7 @@ sub parse_dsp
 
 #------------------------------------------------------------------------------
 package pp_cpp;
-our ($O_FLOAT, $O_C, $O_OS) = 'float';
+our ($O_FLOAT, $O_C, $O_EC, $O_OS) = 'float';
 our (%ZMAP, $FILE, $DECL, $INIT, $EXEC);
 
 my $TYPE = '(?: int | float | double | quad | fixpoint_t)';
@@ -1156,17 +1156,18 @@ sub main
 	}
 
 	while (defined($_ = shift)) {
-		if (ord != ord '-')		{ push @inp, $_; next; }
-		elsif ($_ eq '-k')		{ $ktf = 1; next; }
-		elsif ($_ eq '-s')		{ $shrt = 1; next; }
-		elsif ($_ eq '-faust')		{ $faust = shift // narg; next; }
-		elsif ($_ eq '-O')		{ $OUT = shift // narg; next; }
-		elsif ($_ eq '-o')		{ $out = shift // narg; next; }
-		elsif ($_ eq '-I0')		{ push @INCDIR, shift // narg; next; }
-		elsif (/^-(I|-import-dir)$/)	{ push @INCDIR, $_[0] }
-		elsif (/^-{1,2}(double|quad)\b/){ $O_FLOAT = $1 }
-		elsif (/^-(fx|-fixed-point)$/)	{ $O_FLOAT = 'fixpoint_t' }
-		elsif (/^-os(\d*)$/)		{ $O_OS = $1 }
+		if (ord != ord '-')			{ push @inp, $_; next; }
+		elsif ($_ eq '-k')			{ $ktf = 1; next; }
+		elsif ($_ eq '-s')			{ $shrt = 1; next; }
+		elsif ($_ eq '-faust')			{ $faust = shift // narg; next; }
+		elsif ($_ eq '-O')			{ $OUT = shift // narg; next; }
+		elsif ($_ eq '-o')			{ $out = shift // narg; next; }
+		elsif ($_ eq '-I0')			{ push @INCDIR, shift // narg; next; }
+		elsif (/^-(I|-import-dir)$/)		{ push @INCDIR, $_[0] }
+		elsif (/^-{1,2}(double|quad)\b/)	{ $O_FLOAT = $1 }
+		elsif (/^-(fx|-fixed-point)$/)		{ $O_FLOAT = 'fixpoint_t' }
+		elsif (/^-(ec|-external-control)$/)	{ $O_EC =  1 }
+		elsif (/^-os(\d*)$/)			{ $O_OS = $1 }
 		elsif (/^-(lang|-language)$/ && @_) {
 			if ($_[0] eq 'c')
 				{ $re::DSP = '\b(?:dsp->)?'; $O_C = 1; }
@@ -1206,6 +1207,7 @@ sub main
 			-d	| --details			|
 			-diff	| --auto-differentiate		|
 			-double	| --double-precision-floats	|
+			-ec	| --external-control		|
 			-exp10	| --generate-exp10		|
 			-flist	| --file-list			|
 			-fp	| --full-parentheses		|
