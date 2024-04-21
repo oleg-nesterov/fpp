@@ -2883,9 +2883,8 @@ process =
 
 DSP
 	FAUSTFLOAT fEntry0;
-	int iSlow0;
+	TYPE1 iSlow0;
 	FAUSTFLOAT fEntry1;
-	int iSlow1;
 	int fSampleRate;
 	void instanceConstants(int sample_rate)
 	{
@@ -2893,16 +2892,15 @@ DSP
 	}
 	void control()
 	{
-		iSlow0 = fpp_func_001(float(fEntry0));
-		iSlow1 = fpp_func_002(float(fEntry1));
+		iSlow0 = F1(float(fEntry0));
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
 		FAUSTFLOAT* output0 = outputs[0];
 		FAUSTFLOAT* output1 = outputs[1];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			output0[i0] = FAUSTFLOAT(iSlow0);
-			output1[i0] = FAUSTFLOAT(iSlow1);
+			output0[i0] = iSlow0;
+			output1[i0] = F2(float(fEntry1));
 		}
 	}
 CPP

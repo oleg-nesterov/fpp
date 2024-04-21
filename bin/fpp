@@ -667,7 +667,7 @@ sub uncast_all
 	return if $HAS_ANY;
 
 	my $cast = re_cast $TYPE, $_[0];
-	for ($INIT, $EXEC) { 1 while s/$cast/$2/g; }
+	for ($INIT, $CTRL, $EXEC) { 1 while s/$cast/$2/g; }
 }
 
 sub fix_types
@@ -681,7 +681,7 @@ sub fix_types
 
 	%ftype or return;
 	uncast_all my $calls = re_call keys %ftype;
-	my (%vtype, @evals, @stmts); for ($INIT, $EXEC) {
+	my (%vtype, @evals, @stmts); for ($INIT, $CTRL, $EXEC) {
 		$vtype{$1} = $ftype{$2} // do {
 			push @{$funcs->{$2}{eval} ?
 				\@stmts : \@evals }, $1;
@@ -692,26 +692,26 @@ sub fix_types
 	%vtype or return;
 	uncast_all my $vtype = re_this keys %vtype;
 	s/\b $TYPE (?=\s+$vtype)/$vtype{$1}/xg
-		for $DECL, $INIT, $EXEC;
+		for $DECL, $INIT, $CTRL, $EXEC;
 
 	@stmts || @evals or return;
 	my $voids = re_this @stmts, @evals;
 	s/\h* void \h+ $voids \h*; \h*\v//xg
 		for $DECL;
 	s/$voids (?! \h*=[^=] )/_($1)/xg
-		for $INIT, $EXEC;
+		for $INIT, $CTRL, $EXEC;
 
 	if (@stmts) {
 		my $stmts = re_this @stmts;
 		s/(\h*)\K (?:void\h+)? $stmts \h*=\h* (.+?) \h*;
 		 /_($2,($3),($1))/xg
-			for $INIT, $EXEC;
+			for $INIT, $CTRL, $EXEC;
 	}
 	if (@evals) {
 		my $evals = re_this @evals;
 		s/\h*     (?:void\h+)? $evals \h*=\h* (.+?) \h*; \h*\v
 		 /_($1,($2))/xg
-			for $INIT, $EXEC;
+			for $INIT, $CTRL, $EXEC;
 	}
 }
 
@@ -837,7 +837,7 @@ sub expand_all
 		$stmt;
 	};
 
-	my ($zone, @oobi, %meta);
+	my ($zone, @oobi, %meta) = 0;
 	my @extra = expand_fpp { code => $extra };
 	sub expand_func; local *expand_func = sub
 	{
@@ -849,7 +849,7 @@ sub expand_all
 
 		my $func = $funcs->{$name};
 		my $this = expand_fpp $func, $args;
-		my $auto = [qw(INIT CALL)]->[$zone];
+		my $auto = [qw(INIT TODO CALL)]->[$zone];
 		my $meta = $meta{$name} //= {};
 
 		if (my $a = $this->{auto})
@@ -876,7 +876,7 @@ sub expand_all
 		/xge;
 	};
 
-	$zone = 0; expand_code, $zone++ for $INIT, $EXEC;
+	expand_code, $zone++ for $INIT, $CTRL, $EXEC;
 
 	fill_oobi \@oobi if @oobi;
 
