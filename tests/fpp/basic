@@ -21,12 +21,14 @@ sub do_test
 	$dsp = $dsp->() if ref $dsp;
 	wr '/tmp/x.dsp', $dsp;
 
+	my $opt =''; $opt = $1 if $dsp =~ m{^//:([^\v]+)};
+
 	my @lng = qw(cpp c);
 	for my $chk ($cpp, $o_c) {
 		my $lng = shift @lng;
 
 		$chk || next;
-		system "fpp -k -s -lang $lng @ARGV </tmp/x.dsp >/tmp/x.cpp"
+		system "fpp -k -s -lang $lng $opt @ARGV </tmp/x.dsp >/tmp/x.cpp"
 			and die "COMPILE FAILED [$lnr]:\n\n$dsp\n";
 
 		my $res = rd '/tmp/x.cpp';
@@ -2870,6 +2872,37 @@ DSP
 			{ var2__02 -= 33;  }
 			output0[i0] = FAUSTFLOAT(fTemp0 + 22 - 44 + var1__02 + var2__02);
 			output1[i0] = FAUSTFLOAT(fConst4);
+		}
+	}
+CPP
+[__LINE__, <<'DSP', <<'CPP'],
+//: -ec
+process =
+	(nentry("E1", 0, 0,1,.1) : FPP(x) pure	    TYPE1 { (F1($x)) }),
+	(nentry("E2", 0, 0,1,.1) : FPP(x) pure eval TYPE2 {  F2($x) });
+
+DSP
+	FAUSTFLOAT fEntry0;
+	int iSlow0;
+	FAUSTFLOAT fEntry1;
+	int iSlow1;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+	}
+	void control()
+	{
+		iSlow0 = fpp_func_001(float(fEntry0));
+		iSlow1 = fpp_func_002(float(fEntry1));
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(iSlow0);
+			output1[i0] = FAUSTFLOAT(iSlow1);
 		}
 	}
 CPP
