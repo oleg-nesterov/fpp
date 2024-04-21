@@ -1037,7 +1037,7 @@ sub do_cpp
 		-file			=> \*FILE,
 		-decl			=> \*DECL,
 		instanceConstants	=> \*INIT,
-		compute			=> \*EXEC,
+		$O_OS?'frame':'compute'	=> \*EXEC,
 	);
 	$CTRL = ''; $O_EC and push @items,
 		control			=> \*CTRL;
@@ -1311,7 +1311,9 @@ sub main
 		my ($i, $c, $e) = (
 			'instanceConstants(int sample_rate)',
 			'control()',
-			'compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)'
+			$O_OS
+				? 'frame(FAUSTFLOAT* inputs, FAUSTFLOAT* outputs)'
+				: 'compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)'
 		);
 
 		my $f = sub { $_[1] && "\tvoid $_[0]\n\t{\n$_[1]\t}\n\n" };
