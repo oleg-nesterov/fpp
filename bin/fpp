@@ -786,7 +786,7 @@ sub add_marks
 
 	$DECL =~ s/^\h+\K/#MARK CALL\n$`/ or die;
 
-	unless (defined $O_OS) {
+	unless ($O_OS) {
 		$EXEC =~ s/\{\v\K .*? (?=\h+\})/
 		mark_body 'LOOP', 'POST', $&.'';
 		/exs or die;
@@ -1170,8 +1170,8 @@ sub main
 		elsif (/^-(I|-import-dir)$/)		{ push @INCDIR, $_[0] }
 		elsif (/^-{1,2}(double|quad)\b/)	{ $O_FLOAT = $1 }
 		elsif (/^-(fx|-fixed-point)$/)		{ $O_FLOAT = 'fixpoint_t' }
-		elsif (/^-(ec|-external-control)$/)	{ $O_EC =  1 }
-		elsif (/^-os(\d*)$/)			{ $O_OS = $1 }
+		elsif (/^-(ec|-external-control)$/)	{ $O_EC = 1 }
+		elsif (/^-(os|-one-sample)$/)		{ $O_OS = 1 }
 		elsif (/^-(lang|-language)$/ && @_) {
 			if ($_[0] eq 'c')
 				{ $re::DSP = '\b(?:dsp->)?'; $O_C = 1; }
@@ -1226,10 +1226,6 @@ sub main
 			-me	| --math-exceptions		|
 			-mem	| --memory-manager		|
 			-nvi	| --no-virtual			|
-			-os0	| --one-sample0			|
-			-os1	| --one-sample1			|
-			-os2	| --one-sample2			|
-			-os3	| --one-sample3			|
 			-os	| --one-sample			|
 			-quad	| --quad-precision-floats	|
 			-rui	| --range-ui			|
