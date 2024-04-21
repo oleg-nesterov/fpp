@@ -640,7 +640,7 @@ sub parse_dsp
 #------------------------------------------------------------------------------
 package pp_cpp;
 our ($O_FLOAT, $O_C, $O_EC, $O_OS) = 'float';
-our (%ZMAP, $FILE, $DECL, $INIT, $EXEC);
+our (%ZMAP, $FILE, $DECL, $INIT, $CTRL, $EXEC);
 
 my $TYPE = '(?: int | float | double | quad | fixpoint_t)';
 
@@ -1033,12 +1033,16 @@ sub do_cpp
 {
 	my ($fd, $extra, $funcs) = @_;
 
-	my $code = read_cpp $fd,
+	my @items = (
 		-file			=> \*FILE,
 		-decl			=> \*DECL,
 		instanceConstants	=> \*INIT,
-		compute			=> \*EXEC;
+		compute			=> \*EXEC,
+	);
+	$CTRL = ''; $O_EC and push @items,
+		control			=> \*CTRL;
 
+	my $code = read_cpp $fd, @items;
 	# just because they annoy me so much
 	if ($O_C) { kill_C99_loops for $EXEC }
 
@@ -1305,17 +1309,18 @@ sub main
 		if defined $out;
 
 	if ($shrt) {
-		if ($O_C) { s/^(?!$)/\t/mg for $INIT, $EXEC }
-
 		length and $_ .= "\n" for $FILE, $DECL;
+		if ($O_C) { s/^(?!$)/\t/mg for $INIT, $CTRL, $EXEC }
 
+		my ($i, $c, $e) = (
+			'instanceConstants(int sample_rate)',
+			'control()',
+			'compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)'
+		);
+
+		my $f = sub { $_[1] && "\tvoid $_[0]\n\t{\n$_[1]\t}\n\n" };
 		print	$FILE, $DECL,
-			"\tvoid instanceConstants(int sample_rate)\n\t{\n",
-			$INIT,
-			"\t}\n\n",
-			"\tvoid compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)\n\t{\n",
-			$EXEC,
-			"\t}\n";
+			$f->($i, $INIT), $f->($c, $CTRL), $f->($e, $EXEC)
 	} else {
 		print s/\b\Q$temp\E\b/$name/or for @$code;
 	}
