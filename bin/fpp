@@ -849,7 +849,7 @@ sub expand_all
 
 		my $func = $funcs->{$name};
 		my $this = expand_fpp $func, $args;
-		my $auto = [qw(INIT TODO CALL)]->[$zone];
+		my $auto = qw(INIT TODO CALL)[$zone];
 		my $meta = $meta{$name} //= {};
 
 		if (my $a = $this->{auto})
