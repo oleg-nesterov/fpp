@@ -759,7 +759,8 @@ sub lift_const
 		if ($O_C) { s/(?=($lift))/dsp->/g for $$from, @_; }
 	};
 
-	do_lift \$INIT, $EXEC;
+	do_lift \$INIT, $CTRL, $EXEC;
+	do_lift \$CTRL, $EXEC;
 }
 
 sub fill_oobi

@@ -2875,16 +2875,58 @@ DSP
 		}
 	}
 CPP
+
 [__LINE__, <<'DSP', <<'CPP'],
 //: -ec
 process =
-	(nentry("E1", 0, 0,1,.1) : FPP(x) pure	    TYPE1 { (F1($x)) }),
-	(nentry("E2", 0, 0,1,.1) : FPP(x) pure eval TYPE2 {  F2($x) });
-
+	(nentry("E0", 0, 0,1,.1) : FPP(x) pure	    TYPE0 { (F0($x)) }),
+	(nentry("E1", 0, 0,1,.1) : FPP(x) pure eval TYPE1 {  F1($x)  }),
+	(nentry("E2", 0, 0,1,.1) : FPP(x) pure	    TYPE2 { [F2($x)] }),
+	(nentry("E3", 0, 0,1,.1) + FPP()  pure            { [123456] });
 DSP
 	FAUSTFLOAT fEntry0;
-	TYPE1 iSlow0;
+	TYPE0 iSlow0;
 	FAUSTFLOAT fEntry1;
+	FAUSTFLOAT fEntry2;
+	FAUSTFLOAT fEntry3;
+	float fSlow4;
+	int fSampleRate;
+	float aux0__01;
+	TYPE2 aux0__02;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		{ aux0__01 = 123456; }
+	}
+	void control()
+	{
+		iSlow0 = F0(float(fEntry0));
+		{ aux0__02 = F2(float(fEntry2)); }
+		fSlow4 = aux0__01 + float(fEntry3);
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		FAUSTFLOAT* output3 = outputs[3];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = iSlow0;
+			output1[i0] = F1(float(fEntry1));
+			output2[i0] = aux0__02;
+			output3[i0] = FAUSTFLOAT(fSlow4);
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+//: -ec
+f = FPP(x) pure { [$x+1] };
+process = nentry("E0",0,0,1,.1) + f(nentry("E1",0,0,1,.1));
+DSP
+	FAUSTFLOAT fEntry0;
+	FAUSTFLOAT fEntry1;
+	float fSlow1;
 	int fSampleRate;
 	void instanceConstants(int sample_rate)
 	{
@@ -2892,15 +2934,15 @@ DSP
 	}
 	void control()
 	{
-		iSlow0 = F1(float(fEntry0));
+		float aux0__01;
+		{ aux0__01 = float(fEntry1)+1; }
+		fSlow1 = aux0__01 + float(fEntry0);
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
 		FAUSTFLOAT* output0 = outputs[0];
-		FAUSTFLOAT* output1 = outputs[1];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			output0[i0] = iSlow0;
-			output1[i0] = F2(float(fEntry1));
+			output0[i0] = FAUSTFLOAT(fSlow1);
 		}
 	}
 CPP
