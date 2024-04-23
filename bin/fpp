@@ -733,27 +733,33 @@ sub kill_const
 sub lift_const
 {
 	my $re_c = qr/\b((?:[if]Const|aux\d+__)\d+)\b/;
-	my %decl = map +($_,1), $DECL =~ /$re_c;/g;
-	my %init = map +($_,1), $INIT =~ /$re_c(?=\s*=[^=])/g;
-	my $lift = re::list my @ck = grep $init{$_} && !$decl{$_},
-		$EXEC =~ /$re_c/g
-		or return;
+	my %decl = map +($_,1), $DECL =~ /$re_c;/og;
 
-	my %ck = map +($_,1), @ck;
+	sub do_lift; local *do_lift = sub
+	{
+		my $from = shift;
+		my %init = map +($_,1), $$from =~ /$re_c(?=\s*=[^=])/og;
+		my $lift = re::list my @lift = grep $init{$_} && !$decl{$_},
+			map /$re_c/og, @_
+			or return;
 
-	$INIT =~ s{
-		(?:^|;|\G) \h* \K
-		(?=\S)([\w\h*]+) \b ($lift)	# see typere in parse_fpp
-		(?: (\h*;\h*) | (?=\s*=[^=]))
-	}{
-		defined delete $ck{$2}
-			or die "ERR!! already lifted const: $2\n";
-		$DECL .= "\t$1$2;\n"; !$3 && $2;
-	}xemg;
+		$$from =~ s{
+			(?:^|;|\G) \h* \K
+			(?=\S)([\w\h*]+) \b ($lift)	# see typere in parse_fpp
+			(?: (\h*;\h*) | (?=\s*=[^=]))
+		}{
+			warn "WARN! already lifted const: $2\n"
+				if $decl{$2}++;
+			$DECL .= "\t$1$2;\n"; !$3 && $2;
+		}xemg;
 
-	@ck = keys %ck and warn "WARN! unlifted const(s)? @ck\n";
+		$decl{$_} or warn "WARN! unlifted const: $_\n"
+			for @lift;
 
-	if ($O_C) { s/(?=($lift))/dsp->/g for $INIT, $EXEC; }
+		if ($O_C) { s/(?=($lift))/dsp->/g for $$from, @_; }
+	};
+
+	do_lift \$INIT, $EXEC;
 }
 
 sub fill_oobi
