@@ -2876,7 +2876,7 @@ DSP
 	}
 CPP
 
-[__LINE__, <<'DSP', <<'CPP'],
+[__LINE__, <<'DSP', <<'CPP', <<'O_C'],
 //: -ec
 process =
 	(nentry("E0", 0, 0,1,.1) : FPP(x) pure	    TYPE0 { (F0($x)) }),
@@ -2918,8 +2918,43 @@ DSP
 		}
 	}
 CPP
+	FAUSTFLOAT fEntry0;
+	TYPE0 iSlow0;
+	FAUSTFLOAT fEntry1;
+	FAUSTFLOAT fEntry2;
+	FAUSTFLOAT fEntry3;
+	float fSlow4;
+	int fSampleRate;
+	float aux0__01;
+	TYPE2 aux0__02;
+	void instanceConstants(int sample_rate)
+	{
+		dsp->fSampleRate = sample_rate;
+		{ dsp->aux0__01 = 123456; }
+	}
+	void control()
+	{
+		dsp->iSlow0 = F0((float)(dsp->fEntry0));
+		{ dsp->aux0__02 = F2((float)(dsp->fEntry2)); }
+		dsp->fSlow4 = dsp->aux0__01 + (float)(dsp->fEntry3);
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		FAUSTFLOAT* output3 = outputs[3];
+		int i0;
+		for (i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = dsp->iSlow0;
+			output1[i0] = F1((float)(dsp->fEntry1));
+			output2[i0] = dsp->aux0__02;
+			output3[i0] = (FAUSTFLOAT)(dsp->fSlow4);
+		}
+	}
+O_C
 
-[__LINE__, <<'DSP', <<'CPP'],
+[__LINE__, <<'DSP', <<'CPP', <<'O_C'],
 //: -ec
 f = FPP(x) pure { [$x+1] };
 process = nentry("E0",0,0,1,.1) + f(nentry("E1",0,0,1,.1));
@@ -2946,6 +2981,29 @@ DSP
 		}
 	}
 CPP
+	FAUSTFLOAT fEntry0;
+	FAUSTFLOAT fEntry1;
+	float fSlow1;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		dsp->fSampleRate = sample_rate;
+	}
+	void control()
+	{
+		float aux0__01;
+		{ aux0__01 = (float)(dsp->fEntry1)+1; }
+		dsp->fSlow1 = aux0__01 + (float)(dsp->fEntry0);
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		int i0;
+		for (i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = (FAUSTFLOAT)(dsp->fSlow1);
+		}
+	}
+O_C
 
 [__LINE__, <<'DSP', <<'CPP'],
 import("stdfaust.lib");
