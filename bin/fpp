@@ -719,12 +719,11 @@ sub fix_types
 sub kill_const
 {
 	my $re_c = qr/\b([if]Const\d+)\b/;
-	my %used = map  +($_,1),    $EXEC =~ /$re_c/g;
-	my @temp = grep	!$used{$_}, $DECL =~ /$re_c;\h*\v/g
+	my %used = map  +($_,1), map /$re_c/og, $CTRL, $EXEC;
+	my $temp = re::list grep !$used{$_}, $DECL =~ /$re_c;\h*\v/og
 		   or return;
 
 	my %type;
-	my $temp = re::list @temp;
 	$DECL =~ s/\h*(.*)\b($temp);\h*\v/
 			$type{$2} = $1; ''/eg;
 	$INIT =~ s/\bdsp->(?=$temp\b)//g if $O_C;
@@ -900,8 +899,8 @@ sub expand_all
 	fill_mark $EXEC, 'POST', collect qw(POST post);
 	fill_mark $EXEC, 'EXIT', collect qw(EXIT exit);
 
-	kill_const;
 	lift_const;
+	kill_const;
 }
 
 sub read_cpp
