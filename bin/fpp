@@ -915,10 +915,9 @@ sub read_cpp
 		defined ($_ = <$fd>);
 	};
 	sub mark; local *mark = sub {
-		push @code, $_ unless defined $_[1];
-		push @code, $_[1];
+		push @code, $_, '';
 		*{delete $items{$_[0]}} = \$code[-1];
-		undef $_;
+		undef $_; # for getl() after mark()
 	};
 
 	while (getl) {
