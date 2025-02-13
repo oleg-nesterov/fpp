@@ -1,3 +1,14 @@
+__FPP(maxima) { PERL:
+	sub run
+	{
+		my $r = qx{maxima -Q --very-very-quiet --batch-string='@_'};
+		die "ERR!! maxima failed to run:\n@_\n" if $?;
+		$r;
+	}
+};
+
+FLOAT = FPP() pure eval { $!(${pp_cpp::O_FLOAT}) };
+
 /*
  * Not really useful. This is just an example of how to use maxima to generate
  * the code at compile time.
@@ -10,6 +21,7 @@
  *
  * 	fpp_import("maxima.lib");
  * 	airy_ai = cheb(${airy_ai(4-x)}, 100,10, 0,100);
+ *	process = airy_ai;
  *
  * By default this lib uses the same precision as faust but one can override it:
  *
@@ -19,15 +31,13 @@
  * the -single argument.
  */
 
-FLOAT = FPP() pure eval { $!(${pp_cpp::O_FLOAT}) };
-
-mk_chtab = FPP(fx, nx,cd, x0,x1) pure eval {
+mk_chtab = FPP(fx, nx,cd, x0,x1) :maxima pure eval {
 PERL:	sub mk_chtab
 	{
 		my ($FX, $NX,$CD, $X0,$X1) = @_;
 		s|[fL]$|| for $X0,$X1;
 
-		my $mac = qq{block(
+		perl::user::maxima::run qq{block(
 		FX(x) := $FX,
 		[NX,CD, X0,X1] : [$NX,$CD, $X0,$X1],
 
@@ -52,8 +62,6 @@ PERL:	sub mk_chtab
 			for c: 0 thru CD do printf(true, "~g,", coeff(ex,v,c)),
 			printf(true, " },~%")
 		))\$};
-
-		qx{maxima --very-quiet <<<'$mac'};
 	}
 
 file:	static inline $(FLOAT) $cheb($(FLOAT) x)
@@ -87,7 +95,7 @@ PERL:	sub mk_tltab
 		my ($FX, $NX,$TD, $X0,$X1) = @_;
 		s|[fL]$|| for $X0,$X1;
 
-		my $mac = qq{block(
+		perl::user::maxima::run qq{block(
 		FX(x) := $FX,
 		[X0,X1, NX,TD] : [$X0,$X1, $NX,$TD],
 
@@ -105,8 +113,6 @@ PERL:	sub mk_tltab
 			for c: 0 thru TD do printf(true, "~g,", coeff(tl,v,c)),
 			printf(true, " },~%")
 		))\$};
-
-		qx{maxima --very-quiet <<<'$mac'};
 	}
 
 file:	static inline $(FLOAT) $taylor($(FLOAT) x)
