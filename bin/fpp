@@ -116,7 +116,8 @@ sub fix_strn(_)
 sub do_eval
 {
 	my ($pkg, $src, $uok) = @_;
-	my $ret = eval fix_strn "package $pkg; $src";
+	fix_strn  $src;
+	my $ret = eval "package $pkg; $src";
 	die "ERR!! eval of\n\n\t$src\n\nfailed: $@\n"
 		if $@ or !defined $ret and !$uok and
 		$@ = 'returns undef.';
