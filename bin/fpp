@@ -7,9 +7,9 @@ my ($VERS, $HAS_ANY) = '1.00';
 package re;
 our $DSP = '\b';
 
-our $bul_crl = '(?:\{(?:(?>[^\{\}]+)|(?-1))*\})';
-our $bal_par = $bul_crl =~ tr/{}/()/r;
-our $bal_sqr = $bul_crl =~ tr/{}/[]/r;
+our $bal_crl = '(?:\{(?:(?>[^\{\}]+)|(?-1))*\})';
+our $bal_par = $bal_crl =~ tr/{}/()/r;
+our $bal_sqr = $bal_crl =~ tr/{}/[]/r;
 
 sub qr		{ my $r = join '',@_; qr/$r/; }
 sub list	{ join '|', map "(?:$_)", @_; }
@@ -311,7 +311,7 @@ sub expand_args
 		}
 		elsif (exists $argl->{$arg}) {
 			@args = "($out)";
-			if (/\G\s*($re::bul_crl)/gc) {
+			if (/\G\s*($re::bal_crl)/gc) {
 				$func = '__l_item';
 				my $i = re::chop2s $1;
 				push @args, "($i)";
@@ -354,7 +354,7 @@ sub parse_args
 		s/^(?=\D)(\w+)\s*// or die "bad arg: '$_'";
 		exists $argn{$argn = $argv = $1} and die "dup arg: '$1'";
 
-		if (s/\s*(?:($re::bal_sqr)|($re::bul_crl))$//) {
+		if (s/\s*(?:($re::bal_sqr)|($re::bal_crl))$//) {
 			$1 ? ($z = re::chop2s $1) : ($l = re::chop2s $2);
 			$m = s/\s*:$//;
 		}
@@ -434,7 +434,7 @@ sub parse_zone
 
 sub parse_code
 {
-	s/^\s*($re::bul_crl)//o or die "body";
+	s/^\s*($re::bal_crl)//o or die "body";
 	local $_ = $1;
 
 	my ($with, %with) = [];
@@ -568,7 +568,7 @@ sub parse_dep
 
 	my $deps = __parse_deps;
 
-	s/^\s*($re::bul_crl)\s*(;)?//o or die "dep body";
+	s/^\s*($re::bal_crl)\s*(;)?//o or die "dep body";
 	$2 or die 'expected ;';
 
 	local $_ = $1;
@@ -591,7 +591,7 @@ sub parse_dep
 
 sub parse_lit
 {
-	my $r = s/^($re::bul_crl)//o ? re::chop2 $1 :
+	my $r = s/^($re::bal_crl)//o ? re::chop2 $1 :
 		s/^(\w+)//o ? $1 : die "bad \$ expr";
 	fix_strn $r;
 	CORE::state $f; $f->{$r} ||= mk_eval 1,0, $r;
@@ -878,8 +878,8 @@ sub expand_all
 		s/$calls/
 			my ($f, @a) = ($1, re::split_args $2);
 			uncast_one, expand_code for @a;
-			$f eq '_' ? expand_void @a
-				  : expand_func $f,\@a;
+			$f ne '_' ? expand_func $f,\@a
+				  : expand_void @a;
 		/xge;
 	};
 
@@ -1030,7 +1030,7 @@ sub perl::core::__z_map($$)
 # ----------------------------------------------------------------------------
 sub kill_C99_loops
 {
-	1 while s{\h*/\* C99 loop \*/\s+($re::bul_crl)\h*\v}{
+	1 while s{\h*/\* C99 loop \*/\s+($re::bal_crl)\h*\v}{
 		re::chop2($1) =~ s/\h*$//r =~ s/^\t//mgr
 	}e;
 }
