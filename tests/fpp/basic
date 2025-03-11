@@ -2839,11 +2839,9 @@ with {
 
 	f3 = FPP(x) pure { ($x + @env:var1 + @env:var2) };
 
-	env = x : FPP(x) pure //eval
-	{
+	env = ENV(x) {
 	auto:	type_t $var1, $var2;
 	exec:	$var1 = 0; $var2 = 0;
-		[=$!(qq{+{qw(@{[ %$${DICT} ]})}})]
 	};
 };
 process = f,f(100);
@@ -2854,7 +2852,7 @@ DSP
 	{
 		fSampleRate = sample_rate;
 		type_t var1__01, var2__01;
-		{ var1__01 = 0; var2__01 = 0;  }
+		{ var1__01 = 0; var2__01 = 0; }
 		{ var1__01 += 11;  }
 		{ var2__01 -= 33;  }
 		fConst4 = 100 + 22 - 44 + var1__01 + var2__01;
@@ -2867,11 +2865,49 @@ DSP
 		FAUSTFLOAT* output1 = outputs[1];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
 			float fTemp0 = float(input0[i0]);
-			{ var1__02 = 0; var2__02 = 0;  }
+			{ var1__02 = 0; var2__02 = 0; }
 			{ var1__02 += 11;  }
 			{ var2__02 -= 33;  }
 			output0[i0] = FAUSTFLOAT(fTemp0 + 22 - 44 + var1__02 + var2__02);
 			output1[i0] = FAUSTFLOAT(fConst4);
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+REC(op,x) = op(get,x) : set
+with {
+	get = FPP()  eval {  @env:z };
+	set = FPP(y)      { (@env:z = ($y)) };
+
+	env = ENV(x) {
+	decl:	float $z;
+	init:	$z = 0;
+	};
+};
+process = REC(+), REC(-);
+DSP
+	float z__01;
+	float z__02;
+	int fSampleRate;
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		z__01 = 0;
+		z__02 = 0;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* input1 = inputs[1];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			float fTemp1 = float(input0[i0]);
+			output0[i0] = FAUSTFLOAT(z__01 = (fTemp1 + z__01));
+			float fTemp4 = float(input1[i0]);
+			output1[i0] = FAUSTFLOAT(z__02 = (z__02 - fTemp4));
 		}
 	}
 CPP

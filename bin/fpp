@@ -466,14 +466,14 @@ sub __parse_deps
 
 sub parse_fpp
 {
-	my $func;
+	my $is_env = shift;
 
 	s/^\s*($re::bal_par)//o or die "arglist";
 	my $args = $1;
 
 	my $deps = __parse_deps;
 	my $pure = s/^\s*pure\b//;
-	$func->{eval} = 0 if s/^\s*eval\b//;
+	my $func; $func->{eval} = 0 if s/^\s*eval\b//;
 
 	my @type; @type = map s/^\s+|\s+$//gr, split ',', $1
 		if s/^\s*(?=\S)([^\{]+)//;
@@ -482,15 +482,19 @@ sub parse_fpp
 	$code->{deps} = $deps if $deps;
 	$func->{code} = $code;
 
-	my $stmt = $code->{stmt} // '';
-	s/\s+/ /g, s/\s*$// for $stmt;
+	$_ //= '', s/\s+/ /g, s/\s*$// for @{$code}{qw(stmt exec)};
 
-	my @rets; for ($code->{exec} // die "no 'exec:' zone.\n") {
-		s/\s+/ /g; s/\s*$//;
-		last if exists $func->{eval};
-		s/(\s*;)+$//g;
-		@rets = re::split_args $1 if
-			s/(?:^|[:;}])\s*\K($re::bal_sqr)$//o;
+	my @rets; if ($is_env) {
+		die "ERR!! ENV() doesn't support attrs/types\n"
+			if exists $func->{eval} or $pure or @type;
+		@rets = '=$!(qq{+{qw(@{[%$${DICT}]})}})';
+		$pure = 1;
+	} elsif (!exists $func->{eval}) {
+		for ($code->{exec}) {
+			s/(\s*;)+$//g;
+			@rets = re::split_args $1 if
+				s/(?:^|[:;}])\s*\K($re::bal_sqr)$//o;
+		}
 	}
 
 	if (@type) {
@@ -503,7 +507,7 @@ sub parse_fpp
 		@type = qw(_float_) x @rets;
 	}
 
-	my ($type, $postp) = $type[0] // '_float_';
+	my ($stmt, $type, $postp) = ($code->{stmt}, $type[0] // '_float_');
 	if (!@rets) {
 		unless (exists $func->{eval}) {
 			$_ = /^\(.*\)$/ ? re::chop2s $_ : "({ $_; })"
@@ -561,6 +565,12 @@ sub parse_fpp
 	$ffunc = "($ffunc <: $postp)" if $postp;
 	$ffunc =  "$lambd  : $ffunc)" if $lambd;
 	$ffunc;
+}
+
+sub parse_env
+{
+	my ($args) = /^\s*($re::bal_par)/o or die "arglist";
+	parse_fpp(1) . ($args =~ s/^\(\s*\)\z//or);
 }
 
 sub parse_dep
@@ -630,7 +640,8 @@ sub parse_dsp
 		\$		(?{\&parse_lit})	|
 		(?: \b (?:
 			__FPP	(?{\&parse_dep})	|
-			  FPP	(?{\&parse_fpp})
+			  FPP	(?{\&parse_fpp})	|
+			  ENV	(?{\&parse_env})
 		) \b )
 	}xo) {
 		substr $_, 0, length($`) + length($&), '';
