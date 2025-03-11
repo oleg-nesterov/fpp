@@ -2834,10 +2834,10 @@ CPP
 [__LINE__, <<'DSP', <<'CPP'],
 f(x) = x : f1 : f2 : f3
 with {
-	f1 = FPP(x) pure { $!($(env)->{var1}) += 11; [=$x + 22] };
-	f2 = FPP(x) pure { $!($(env)->{var2}) -= 33; [=$x - 44] };
+	f1 = FPP(x) pure { @env:var1 += 11; [=$x + 22] };
+	f2 = FPP(x) pure { @env:var2 -= 33; [=$x - 44] };
 
-	f3 = FPP(x) pure { ($x + $!($(env)->{var1}) + $!($(env)->{var2})) };
+	f3 = FPP(x) pure { ($x + @env:var1 + @env:var2) };
 
 	env = x : FPP(x) pure //eval
 	{

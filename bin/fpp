@@ -437,6 +437,8 @@ sub parse_code
 	s/^\s*($re::bal_crl)//o or die "body";
 	local $_ = $1;
 
+	s/\@(\w+):(\w+)/\$\!(\$($1)->{$2})/og;
+
 	my ($with, %with) = [];
 	s/\$\K($re::bal_par)/
 		$with{$1} ||= do {
