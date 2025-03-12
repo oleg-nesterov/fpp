@@ -2837,11 +2837,11 @@ with {
 	f1 = FPP(x) pure { @env:var1 += 11; [=$x + 22] };
 	f2 = FPP(x) pure { @env:var2 -= 33; [=$x - 44] };
 
-	f3 = FPP(x) pure { ($x + @env:var1 + @env:var2) };
+	f3 = FPP(x) pure { (@env:0 => $x + @env:var1 + @env:var2) };
 
 	env = ENV(x) {
-	auto:	type_t $var1, $var2;
-	exec:	$var1 = 0; $var2 = 0;
+	stmt:	type_t $var1, $var2;
+	exec:	$var1 = $x+1; $var2 = $x+2;
 	};
 };
 process = f,f(100);
@@ -2852,23 +2852,23 @@ DSP
 	{
 		fSampleRate = sample_rate;
 		type_t var1__01, var2__01;
-		{ var1__01 = 0; var2__01 = 0; }
+		{ var1__01 = 100+1; var2__01 = 100+2; }
 		{ var1__01 += 11;  }
 		{ var2__01 -= 33;  }
-		fConst4 = 100 + 22 - 44 + var1__01 + var2__01;
+		fConst4 = 100 => 100 + 22 - 44 + var1__01 + var2__01;
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
-		type_t var1__02, var2__02;
 		FAUSTFLOAT* input0 = inputs[0];
 		FAUSTFLOAT* output0 = outputs[0];
 		FAUSTFLOAT* output1 = outputs[1];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
 			float fTemp0 = float(input0[i0]);
-			{ var1__02 = 0; var2__02 = 0; }
+			type_t var1__02, var2__02;
+			{ var1__02 = fTemp0+1; var2__02 = fTemp0+2; }
 			{ var1__02 += 11;  }
 			{ var2__02 -= 33;  }
-			output0[i0] = FAUSTFLOAT(fTemp0 + 22 - 44 + var1__02 + var2__02);
+			output0[i0] = FAUSTFLOAT(fTemp0 => fTemp0 + 22 - 44 + var1__02 + var2__02);
 			output1[i0] = FAUSTFLOAT(fConst4);
 		}
 	}
