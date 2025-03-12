@@ -503,11 +503,11 @@ sub parse_fpp
 			for @type;
 		@type == 1 && !@rets or @type == @rets
 			or die "type/ret lists do not match";
-	} elsif (@rets) {
-		@type = qw(_float_) x @rets;
+	} else {
+		@type = qw(_float_) x (@rets || 1);
 	}
 
-	my ($stmt, $type, $postp) = ($code->{stmt}, $type[0] // '_float_');
+	my ($stmt, $type, $postp) = (delete $code->{stmt}, $type[0]);
 	if (!@rets) {
 		unless (exists $func->{eval}) {
 			$_ = /^\(.*\)$/ ? re::chop2s $_ : "({ $_; })"
