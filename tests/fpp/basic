@@ -2912,6 +2912,34 @@ DSP
 	}
 CPP
 
+[__LINE__, <<'DSP', <<'CPP'],
+__FPP(env) { DECL: $sym=GLOB; };
+process(x) = ENV(){}, ENV(){DECL: x=$(x); }, ENV(){DECL: $sym=LOCL; }, ENV():env{};
+DSP
+	sym__01=LOCL;
+	sym__02=GLOB;
+	x=input0[i0];
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		FAUSTFLOAT* output3 = outputs[3];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = +{qw()};
+			output1[i0] = +{qw(0 input0[i0])};
+			output2[i0] = +{qw(sym sym__01)};
+			output3[i0] = +{qw(sym sym__02)};
+		}
+	}
+CPP
+
 [__LINE__, <<'DSP', <<'CPP', <<'O_C'],
 //: -ec
 process =

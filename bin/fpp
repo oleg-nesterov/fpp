@@ -418,7 +418,7 @@ sub parse_zone
 
 	$_ = re::chop2 $_;
 
-	for (my $code;;) {
+	for (my $code = {};;) {
 		/$re_z/g;
 		my ($c, $z) = ($1, $2);
 		for ($c) {
