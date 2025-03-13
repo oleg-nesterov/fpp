@@ -25,6 +25,8 @@ sub split_args(_)
 	return @a;
 }
 
+our $R_TYPE = '[\w\h*]+';
+
 #------------------------------------------------------------------------------
 package perl::core;
 
@@ -499,8 +501,7 @@ sub parse_fpp
 	}
 
 	if (@type) {
-		/^[\w\h*]+$/	# see typere in lift_const
-			or warn "WARN! suspicious type '$_'\n"
+		/^$re::R_TYPE$/o or die "ERR!! bad ret type '$_'\n"
 			for @type;
 		@type == 1 && !@rets or @type == @rets
 			or die "type/ret lists do not match";
@@ -759,7 +760,7 @@ sub lift_const
 
 		$$from =~ s{
 			(?:^|;|\G) \h* \K
-			(?=\S)([\w\h*]+) \b ($lift)	# see typere in parse_fpp
+			(?=\S) ($re::R_TYPE) \b ($lift)
 			(?: (\h*;\h*) | (?=\s*=[^=]))
 		}{
 			warn "WARN! already lifted const: $2\n"
