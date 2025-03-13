@@ -1669,6 +1669,15 @@ ERRPASS: ERR!! can't rebind arg1 from '20' to '22'
 CPP
 
 [__LINE__, <<'DSP', <<'CPP'],
+__FPP() {PERL: $SIG{__DIE__} = sub { print "ERRPASS: @_"; exit; }};
+__FPP(dep1) { DECL: $sym = 0 };
+__FPP(dep2) { DECL: $sym = 0 };
+process = FPP() :dep1,dep2 {0};
+DSP
+ERRPASS: ERR!! dep2: $sym is already bound
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
 F = FPP(K{}, x) pure { K={$K}; x=$x; [10,20]; };
 process = F((100,200)), F((100,200,300));
 DSP

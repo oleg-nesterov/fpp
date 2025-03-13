@@ -168,7 +168,7 @@ sub __expand_fpp; sub __expand_fpp
 		my $d = __expand_fpp $this, $_;
 
 		while (my ($k, $v) = each %$d) {
-			warn "WARN! \$$k redefined in $_->{name}\n"
+			die "ERR!! $_->{name}: \$$k is already bound\n"
 				if exists $dict->{$k};
 			$dict->{$k} = $v;
 		}
