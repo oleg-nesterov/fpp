@@ -19,8 +19,9 @@ sub chop2s($)	{ &chop2 =~ s/^\s+|\s+$//gr }
 sub split_args(_)
 {
 	my ($a, @a) = &chop2;
-	push @a, $& =~ s/^\s+|\s+$//gr
-		while $a =~ /(?: ($re::bal_par) | [^,])+/oxg;
+	$a =~ /\S/ or return @a;
+	push @a, $& =~ s/^\s+|\s+$//gr while
+		$a =~ /(?:^|(?:\G,)) \K (?: ($re::bal_par) | [^,])*/oxg;
 	return @a;
 }
 
