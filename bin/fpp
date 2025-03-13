@@ -25,6 +25,7 @@ sub split_args(_)
 	return @a;
 }
 
+our $C_TYPE = '(?:int|float|double|quad|fixpoint_t)';
 our $R_TYPE = '[\w\h*]+';
 
 #------------------------------------------------------------------------------
@@ -658,8 +659,6 @@ package pp_cpp;
 our ($O_FLOAT, $O_C, $O_EC, $O_OS) = 'float';
 our (%ZMAP, $FILE, $DECL, $INIT, $CTRL, $EXEC);
 
-my $TYPE = '(?: int | float | double | quad | fixpoint_t)';
-
 sub re_cast { qr/(\()? \b$_[0]\b (?(1)\)) \(($_[1])\)/x; }
 sub re_call { my $f = &re::list; "\\b($f)\\s*($re::bal_par)"; }
 sub re_this { my $t = &re::list; "${re::DSP}($t)\\b"; }
@@ -672,7 +671,7 @@ sub uncast_one
 	return if $HAS_ANY;
 
 	# wrong: float(a) + float(b) => a) + float(b
-	CORE::state $cast = re_cast $TYPE, '.*';
+	CORE::state $cast = re_cast $re::C_TYPE, '.*';
 	s/^$cast$/$2/o;
 }
 sub uncast_all
@@ -682,7 +681,7 @@ sub uncast_all
 	$EXEC =~ s/$cast_out/$2/g;
 	return if $HAS_ANY;
 
-	my $cast = re_cast $TYPE, $_[0];
+	my $cast = re_cast $re::C_TYPE, $_[0];
 	for ($INIT, $CTRL, $EXEC) { 1 while s/$cast/$2/g; }
 }
 
@@ -707,7 +706,7 @@ sub fix_types
 
 	%vtype or return;
 	uncast_all my $vtype = re_this keys %vtype;
-	s/\b $TYPE (?=\s+$vtype)/$vtype{$1}/xg
+	s/\b $re::C_TYPE (?=\s+$vtype)/$vtype{$1}/xg
 		for $DECL, $INIT, $CTRL, $EXEC;
 
 	@stmts || @evals or return;
@@ -1004,7 +1003,7 @@ sub inputs
 {
 	my %seen;
 	grep defined && !$seen{$_}++, $_[0] =~ /\b(?:
-		(?:$TYPE) | (?:IOTA0) | (?:[if]Const\d+) |
+		(?:$re::C_TYPE) | (?:IOTA0) | (?:[if]Const\d+) |
 		(?: (?:input|[if][VR]ec)\d+\b) |
 		((?=\D)\w+ (?! \(\s*[^\)] ))
 	)\b/oxg
