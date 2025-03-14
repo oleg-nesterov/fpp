@@ -486,7 +486,7 @@ sub parse_fpp
 	$code->{deps} = $deps if $deps;
 	$func->{code} = $code;
 
-	$_ //= '', s/\s+/ /g, s/\s*$// for @{$code}{qw(stmt exec)};
+	$_ //= '', s/\s+/ /g, s/\s*$// for @$code{qw(stmt exec)};
 
 	my @rets; if ($is_env) {
 		die "ERR!! ENV() doesn't support attrs/types\n"
