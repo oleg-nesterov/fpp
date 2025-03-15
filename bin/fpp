@@ -511,24 +511,26 @@ sub parse_fpp
 		@type == 1 && !@rets or @type == @rets
 			or die "type/ret lists do not match";
 	} else {
-		@type = qw(_float_) x (@rets || 1);
+		@type = qw(_float_) x @rets;
 	}
 
-	my ($stmt, $type, $postp) = (delete $code->{stmt}, $type[0]);
+	my ($stmt, $_type, $postp) = delete $code->{stmt};
 	if (!@rets) {
 		unless (exists $func->{eval}) {
 			$_ = /^\(.*\)$/ ? re::chop2s $_ : "({ $_; })"
 				for $code->{exec};
 		}
 
-		if ($stmt) {
+		my $t = $type[0] // '_float_';
+		if (!$stmt) { $_type = $t } # the only case it is needed
+		else {
 			CORE::state $a_i = mk_eval_t 1,2,'_int_',   "\$0\_";
 			CORE::state $a_f = mk_eval_t 1,2,'_float_', "\$0\_";
 			CORE::state %a_t;
 
 			$postp = exists $func->{eval}
-				? pick_t $type, $a_f, $a_i
-				: ($a_t{$type} ||= mk_ffunc 1,2, $type,
+				? pick_t $t, $a_f, $a_i
+				: ($a_t{$t} ||= mk_ffunc 1,2, $t,
 						{code => {exec => "\$0\_"}});
 
 			$code->{exec} = "$stmt\e!$code->{exec}";
@@ -568,7 +570,7 @@ sub parse_fpp
 		$postp         = join ',', @accs;
 	}
 
-	my $ffunc = mk_ffunc $pure, $argc, $type, $func;
+	my $ffunc = mk_ffunc $pure, $argc, $_type // '_int_', $func;
 	$ffunc = "($ffunc <: $postp)" if $postp;
 	$ffunc =  "$lambd  : $ffunc)" if $lambd;
 	$ffunc;
