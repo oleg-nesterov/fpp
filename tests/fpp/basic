@@ -3089,6 +3089,43 @@ CPP
 O_C
 
 [__LINE__, <<'DSP', <<'CPP'],
+z = FPP(x) eval {
+decl:  __typeof__($(x)) $z;
+post:  $z = $x;
+exec:  $z
+};
+process = _, FPP()pure T1{(X1)}, FPP()T2{(X2)} : par(i,3,z);
+DSP
+	float z__01;
+	T1 z__02;
+	T2 z__03;
+	T1 iConst0;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		iConst0 = X1;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			float fTemp1 = float(input0[i0]);
+			output0[i0] = z__01;
+			output1[i0] = z__02;
+			T2 iTemp2 = X2;
+			output2[i0] = z__03;
+			z__03 = iTemp2;
+			z__02 = iConst0;
+			z__01 = fTemp1;
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
 import("stdfaust.lib");
 
 foo = FPP(fc0, inp) {
