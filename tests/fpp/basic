@@ -543,10 +543,41 @@ DSP
 			output1[i0] = FAUSTFLOAT(({ exec__02(fVec0[1]); }));
 			fVec0[1] = fVec0[0];
 
+			tst_post__02();
+			tst_post__01();
 			DEP_POST();
 			TST_POST();
-			tst_post__01();
-			tst_post__02();
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+z = FPP(x) eval {
+decl:	float $z;
+post:	$z = $x;
+exec:	$z
+};
+process = fpp_library("util.lib").iota+100 : z : z : z;
+DSP
+	int IOTA0;
+	float z__01;
+	float z__02;
+	float z__03;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		IOTA0 = 0;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = z__03;
+			z__03 = z__02;
+			z__02 = z__01;
+			z__01 = IOTA0 + 100;
+			IOTA0++;
 		}
 	}
 CPP

@@ -901,18 +901,21 @@ sub expand_all
 
 	fill_oobi \@oobi if @oobi;
 
-	sub collect; local *collect = sub
-		{ join '', map { del2str $_, @_ } @extra };
+	sub collect; local *collect = sub {
+		my $r = shift;
+		my @c = map { del2str $_, @_ } @extra;
+		join '', $r ? reverse @c : @c;
+	};
 
 	fill_mark $INIT, 'CALL', del2str $extra[0],
-					 qw(INIT);
-	fill_mark $FILE, 'FILE', collect qw(FILE file);
-	fill_mark $DECL, 'CALL', collect qw(DECL decl);
-	fill_mark $INIT, 'EXIT', collect qw(INIT init);
-	fill_mark $EXEC, 'CALL', collect qw(CALL call);
-	fill_mark $EXEC, 'LOOP', collect qw(LOOP loop);
-	fill_mark $EXEC, 'POST', collect qw(POST post);
-	fill_mark $EXEC, 'EXIT', collect qw(EXIT exit);
+					 0, qw(INIT);
+	fill_mark $FILE, 'FILE', collect 0, qw(FILE file);
+	fill_mark $DECL, 'CALL', collect 0, qw(DECL decl);
+	fill_mark $INIT, 'EXIT', collect 0, qw(INIT init);
+	fill_mark $EXEC, 'CALL', collect 0, qw(CALL call);
+	fill_mark $EXEC, 'LOOP', collect 0, qw(LOOP loop);
+	fill_mark $EXEC, 'POST', collect 1, qw(post POST);
+	fill_mark $EXEC, 'EXIT', collect 1, qw(exit EXIT);
 
 	lift_const;
 	kill_const;
