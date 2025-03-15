@@ -2953,12 +2953,12 @@ DSP
 CPP
 
 [__LINE__, <<'DSP', <<'CPP'],
-__FPP(env) { DECL: $sym=GLOB; };
-process(x) = ENV(){}, ENV(){DECL: x=$(x); }, ENV(){DECL: $sym=LOCL; }, ENV():env{};
+__FPP(env) { DECL: $_float_ $sym=GLOB; };
+process(x) = ENV(){}, ENV(){DECL: $_float_ x=$(x); }, ENV(){DECL: $_float_ $sym=LOCL; }, ENV():env{};
 DSP
-	sym__01=LOCL;
-	sym__02=GLOB;
-	x=input0[i0];
+	float sym__01=LOCL;
+	float sym__02=GLOB;
+	float x=input0[i0];
 	int fSampleRate;
 	void instanceConstants(int sample_rate)
 	{

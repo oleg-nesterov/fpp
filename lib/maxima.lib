@@ -7,7 +7,7 @@ __FPP(maxima) { PERL:
 	}
 };
 
-FLOAT = FPP() pure eval { $!(${pp_cpp::O_FLOAT}) };
+FLOAT = FPP() pure eval { $_float_ };
 
 /*
  * Not really useful. This is just an example of how to use maxima to generate

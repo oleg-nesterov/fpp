@@ -165,6 +165,9 @@ sub __expand_fpp; sub __expand_fpp
 
 	CORE::state $seen = {};
 	CORE::state $uniq = {};
+	CORE::state $glob = {
+		_float_ => $pp_cpp::O_FLOAT,
+	};
 
 	sub expand_dep; local *expand_dep = sub
 	{
@@ -195,7 +198,8 @@ sub __expand_fpp; sub __expand_fpp
 		}
 
 		$zone =~ s{\$(\w+)\b}{
-			$dict->{$1} ||= "$1__" . ++($uniq->{$1}||='00');
+			$glob->{$1} or
+			$dict->{$1} //= "$1__" . ++($uniq->{$1} //= '00');
 		}eg;
 
 		$this->{$_} .= expand_perl $pckg, $zone;
