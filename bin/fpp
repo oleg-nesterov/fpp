@@ -711,12 +711,12 @@ sub fix_types
 		} while /\b (\w+) \s*=\s* $calls \s*;/xg;
 	}
 
-	%vtype or return;
+	%vtype or return \%vtype;
 	uncast_all my $vtype = re_this keys %vtype;
 	s/\b $re::C_TYPE (?=\s+$vtype)/$vtype{$1}/xg
 		for $DECL, $INIT, $CTRL, $EXEC;
 
-	@stmts || @evals or return;
+	@stmts || @evals or return \%vtype;
 	my $voids = re_this @stmts, @evals;
 	s/\h* void \h+ $voids \h*; \h*\v//xg
 		for $DECL;
@@ -735,6 +735,22 @@ sub fix_types
 		 /_($1,($2))/xg
 			for $INIT, $CTRL, $EXEC;
 	}
+
+	\%vtype;
+}
+
+sub fix_typeof
+{
+	my $types = shift;
+
+	s{\b __typeof__ \s* ($re::bal_par)}{
+		my ($t, $v, $r) = ($&, re::chop2s($1));
+		if ($r = $types->{$v}) {
+		} elsif ($v =~ /^([if])(?:Const|Temp|Rec)\d+$/o) {
+			$r = $1 eq 'i' ? 'int' : $O_FLOAT;
+		}
+		$r // $t;
+	}oxeg	for $DECL, $INIT, $CTRL, $EXEC;
 }
 
 # complements faust commit a950fd41de (disabled by 81cf3d7635a2)
@@ -844,7 +860,7 @@ sub expand_all
 	my ($extra, $funcs) = @_;
 
 	add_marks;
-	fix_types $funcs;
+	my $types = fix_types $funcs;
 
 	my %voids;
 	sub expand_void; local *expand_void = sub
@@ -924,6 +940,7 @@ sub expand_all
 	fill_mark $EXEC, 'POST', collect 1, qw(post POST);
 	fill_mark $EXEC, 'EXIT', collect 1, qw(exit EXIT);
 
+	fix_typeof $types;
 	lift_const;
 	kill_const;
 }
