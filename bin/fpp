@@ -251,14 +251,15 @@ sub mk_eval_t
 }
 sub mk_eval
 {
-	mk_eval_t $_[0],$_[1],'_int_', $_[2];
+	mk_eval_t $_[0],$_[1], undef, $_[2];
 }
 
 sub mk_ffunc
 {
 	my ($pure, $argc, $type, $func) = @_;
 
-	if ($type =~ /^_(int|float)_$/)	{ $type = $1 }
+	unless (defined $type)		   { $type = 'int' }
+	elsif ($type =~ /^_(int|float)_$/) { $type = $1 }
 	else {
 		$func->{type} = $type;
 		$type = pick_t  $type, qw(float int);
@@ -570,7 +571,7 @@ sub parse_fpp
 		$postp         = join ',', @accs;
 	}
 
-	my $ffunc = mk_ffunc $pure, $argc, $_type // '_int_', $func;
+	my $ffunc = mk_ffunc $pure, $argc, $_type, $func;
 	$ffunc = "($ffunc <: $postp)" if $postp;
 	$ffunc =  "$lambd  : $ffunc)" if $lambd;
 	$ffunc;
