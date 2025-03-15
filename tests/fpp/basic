@@ -850,44 +850,6 @@ DSP
 CPP
 
 [__LINE__, <<'DSP', <<'CPP'],
-REC(op, x) = op(rec,x) : set(rec) with {
-	set = FPP(rec,val){$rec = $val};
-
-	rec = x : FPP(x) eval {
-	decl:	float $rec;
-	init:	$rec = 0.0;
-	exec:	$rec
-	};
-};
-process = REC(+,1), REC(+);
-DSP
-	float rec__01;
-	float rec__02;
-
-	int fSampleRate;
-
-	void instanceConstants(int sample_rate)
-	{
-		fSampleRate = sample_rate;
-		rec__01 = 0.0;
-		rec__02 = 0.0;
-	}
-	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
-	{
-		FAUSTFLOAT* input0 = inputs[0];
-		FAUSTFLOAT* output0 = outputs[0];
-		FAUSTFLOAT* output1 = outputs[1];
-		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			output0[i0] = FAUSTFLOAT(({ rec__01 = rec__01 + 1.0f; }));
-			float fTemp2 = float(input0[i0]);
-			output1[i0] = FAUSTFLOAT(({ rec__02 = fTemp2 + rec__02; }));
-
-		}
-
-	}
-CPP
-
-[__LINE__, <<'DSP', <<'CPP'],
 process = nentry("NENTRY", 0,-10,+10,1) : FPP(/*arg*/x) {
 	// }
 	/* COMM with "STRING" and } */
