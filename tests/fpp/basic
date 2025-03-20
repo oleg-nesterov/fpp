@@ -3122,6 +3122,43 @@ DSP
 CPP
 
 [__LINE__, <<'DSP', <<'CPP'],
+t = FPP(x) pure eval {
+stmt:	__typeof__($(x)) $aux0 = $x;
+exec:	$aux0
+};
+process = FPP()pure struct T1*,struct T2*{[X1,X2]}, FPP()struct T3*, struct T4*{[X3,X4]} : par(i,4,t);
+DSP
+	int fSampleRate;
+	struct T1*  aux0__02;
+	struct T2*  aux0__03;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		struct T1* aux0__01; struct T2* aux1__01;
+		{ aux0__01 = X1; aux1__01 = X2; }
+		aux0__02 = aux0__01;
+		aux0__03 = aux1__01;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		FAUSTFLOAT* output2 = outputs[2];
+		FAUSTFLOAT* output3 = outputs[3];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = aux0__02;
+			output1[i0] = aux0__03;
+			struct T3* aux0__04; struct T4* aux1__02;
+			{ aux0__04 = X3; aux1__02 = X4; }
+			struct T3*  aux0__05 = aux0__04;
+			output2[i0] = aux0__05;
+			struct T4*  aux0__06 = aux1__02;
+			output3[i0] = aux0__06;
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
 import("stdfaust.lib");
 
 foo = FPP(fc0, inp) {

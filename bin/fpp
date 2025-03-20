@@ -743,6 +743,14 @@ sub fix_typeof
 {
 	my $types = shift;
 
+	for ($INIT, $CTRL, $EXEC) {
+		$types->{$2} = $1 while m{
+			(?:^|;|\G) \h* \K
+			(?=\S) ($re::R_TYPE) \b (aux\d+__\d+)
+			(?: (\h*;\h*) | (?=\s*=[^=]))
+		}xmg;
+	}
+
 	s{\b __typeof__ \s* ($re::bal_par)}{
 		my ($t, $v, $r) = ($&, re::chop2s($1));
 		if ($r = $types->{$v}) {
