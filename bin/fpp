@@ -767,7 +767,7 @@ sub kill_const
 	sub do_kill; local *do_kill = sub
 	{
 		my $init = shift;
-		my $re_c = qr/\b([if]Const\d+)\b/;
+		my $re_c = shift; $re_c = qr/\b([if]$re_c\d+)\b/;
 		my %used = map  +($_,1), map /$re_c/g, @_;
 		my $temp = re::list grep !$used{$_}, $DECL =~ /$re_c;\h*\v/g
 			   or return;
@@ -778,7 +778,8 @@ sub kill_const
 		$$init =~ s/\b($temp)(?=\h*=[^=])/$type{$1}$1/g;
 	};
 
-	do_kill \$INIT, $CTRL, $EXEC;
+	do_kill \$INIT, 'Const', $CTRL, $EXEC;
+	do_kill \$CTRL, 'Slow',  $EXEC;
 }
 sub lift_const
 {

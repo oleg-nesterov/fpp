@@ -3023,18 +3023,18 @@ O_C
 [__LINE__, <<'DSP', <<'CPP', <<'O_C'],
 //: -ec
 import("stdfaust.lib");
-f = FPP(x) pure { [$x+1] };
+f = FPP(x, unused) pure { [F($x)] };
 process =
-	nentry("E0",0,0,1,.1) + f(nentry("E1",0,0,1,.1)),
+	nentry("E0",0,0,1,.1) + (nentry("E1",0,0,1,.1) <: f),
 	nentry("E2",0,0,1,.1) + ma.SR/4;
 DSP
 	FAUSTFLOAT fEntry0;
 	FAUSTFLOAT fEntry1;
-	float fSlow1;
+	float fSlow2;
 	FAUSTFLOAT fEntry2;
 	int fSampleRate;
 	float fConst0;
-	float fSlow2;
+	float fSlow3;
 	void instanceConstants(int sample_rate)
 	{
 		fSampleRate = sample_rate;
@@ -3042,28 +3042,29 @@ DSP
 	}
 	void control()
 	{
+		float fSlow0 = float(fEntry1);
 		float aux0__01;
-		{ aux0__01 = float(fEntry1)+1; }
-		fSlow1 = aux0__01 + float(fEntry0);
-		fSlow2 = fConst0 + float(fEntry2);
+		{ aux0__01 = F(fSlow0); }
+		fSlow2 = aux0__01 + float(fEntry0);
+		fSlow3 = fConst0 + float(fEntry2);
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
 		FAUSTFLOAT* output0 = outputs[0];
 		FAUSTFLOAT* output1 = outputs[1];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			output0[i0] = FAUSTFLOAT(fSlow1);
-			output1[i0] = FAUSTFLOAT(fSlow2);
+			output0[i0] = FAUSTFLOAT(fSlow2);
+			output1[i0] = FAUSTFLOAT(fSlow3);
 		}
 	}
 CPP
 	FAUSTFLOAT fEntry0;
 	FAUSTFLOAT fEntry1;
-	float fSlow1;
+	float fSlow2;
 	FAUSTFLOAT fEntry2;
 	int fSampleRate;
 	float fConst0;
-	float fSlow2;
+	float fSlow3;
 	void instanceConstants(int sample_rate)
 	{
 		dsp->fSampleRate = sample_rate;
@@ -3071,10 +3072,11 @@ CPP
 	}
 	void control()
 	{
+		float fSlow0 = (float)(dsp->fEntry1);
 		float aux0__01;
-		{ aux0__01 = (float)(dsp->fEntry1)+1; }
-		dsp->fSlow1 = aux0__01 + (float)(dsp->fEntry0);
-		dsp->fSlow2 = dsp->fConst0 + (float)(dsp->fEntry2);
+		{ aux0__01 = F(fSlow0); }
+		dsp->fSlow2 = aux0__01 + (float)(dsp->fEntry0);
+		dsp->fSlow3 = dsp->fConst0 + (float)(dsp->fEntry2);
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
@@ -3082,8 +3084,8 @@ CPP
 		FAUSTFLOAT* output1 = outputs[1];
 		int i0;
 		for (i0 = 0; i0 < count; i0 = i0 + 1) {
-			output0[i0] = (FAUSTFLOAT)(dsp->fSlow1);
-			output1[i0] = (FAUSTFLOAT)(dsp->fSlow2);
+			output0[i0] = (FAUSTFLOAT)(dsp->fSlow2);
+			output1[i0] = (FAUSTFLOAT)(dsp->fSlow3);
 		}
 	}
 O_C
