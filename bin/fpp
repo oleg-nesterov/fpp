@@ -764,16 +764,21 @@ sub fix_typeof
 # complements faust commit a950fd41de (disabled by 81cf3d7635a2)
 sub kill_const
 {
-	my $re_c = qr/\b([if]Const\d+)\b/;
-	my %used = map  +($_,1), map /$re_c/og, $CTRL, $EXEC;
-	my $temp = re::list grep !$used{$_}, $DECL =~ /$re_c;\h*\v/og
-		   or return;
+	sub do_kill; local *do_kill = sub
+	{
+		my $init = shift;
+		my $re_c = qr/\b([if]Const\d+)\b/;
+		my %used = map  +($_,1), map /$re_c/g, @_;
+		my $temp = re::list grep !$used{$_}, $DECL =~ /$re_c;\h*\v/g
+			   or return;
 
-	my %type;
-	$DECL =~ s/\h*(.*)\b($temp);\h*\v/
-			$type{$2} = $1; ''/eg;
-	$INIT =~ s/\bdsp->(?=$temp\b)//g if $O_C;
-	$INIT =~ s/\b($temp)(?=\h*=[^=])/$type{$1}$1/g;
+		my %type;
+		$DECL  =~ s/\h*(.*)\b($temp);\h*\v/$type{$2} = $1; ''/eg;
+		$$init =~ s/\bdsp->(?=$temp\b)//g if $O_C;
+		$$init =~ s/\b($temp)(?=\h*=[^=])/$type{$1}$1/g;
+	};
+
+	do_kill \$INIT, $CTRL, $EXEC;
 }
 sub lift_const
 {
