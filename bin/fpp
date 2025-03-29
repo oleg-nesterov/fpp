@@ -781,18 +781,19 @@ sub kill_const
 	do_kill \$INIT, 'Const', $CTRL, $EXEC;
 	do_kill \$CTRL, 'Slow',  $EXEC;
 }
+# after the faust commit 81cf3d7635a2 the Const|Slow logic is not needed
 sub lift_const
 {
-	my $re_c = qr/\b((?:[if]Const|aux\d+__)\d+)\b/;
-	my %decl = map +($_,1), $DECL =~ /$re_c;/og;
-
 	sub do_lift; local *do_lift = sub
 	{
 		my $from = shift;
-		my %init = map +($_,1), $$from =~ /$re_c(?=\s*=[^=])/og;
+		my $re_c = shift; $re_c = qr/\b((?:[if]$re_c|aux\d+__)\d+)\b/;
+		my %init = map +($_,1), $$from =~ /$re_c(?=\s*=[^=])/g
+			   or return;
+		my %decl = map +($_,1), $DECL =~ /$re_c;/g;
 		my $lift = re::list my @lift = grep $init{$_} && !$decl{$_},
-			map /$re_c/og, @_
-			or return;
+			   map /$re_c/g, @_
+			   or return;
 
 		$$from =~ s{
 			(?:^|;|\G) \h* \K
@@ -810,8 +811,8 @@ sub lift_const
 		if ($O_C) { s/(?=($lift))/dsp->/g for $$from, @_; }
 	};
 
-	do_lift \$INIT, $CTRL, $EXEC;
-	do_lift \$CTRL, $EXEC;
+	do_lift \$INIT, 'Const', $CTRL, $EXEC;
+	do_lift \$CTRL, 'Slow',  $EXEC;
 }
 
 sub fill_oobi
