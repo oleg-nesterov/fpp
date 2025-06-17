@@ -1,0 +1,88 @@
+env_foll2 = FPP(rel, in) {
+decl:	float $lo = 0, $hi = 0;
+exec:	float p  = $(ba.tau2pole(rel));
+	float in = $in, lo = $lo, hi = $hi;
+	int   gr = in < lo ? -1 :
+		   in > hi ? +1 :
+		   0;
+
+//	$lo = in < lo ? in : hi + p * (lo - hi);
+//	$hi = in > hi ? in : lo + p * (hi - lo);
+
+	float ct = (lo + hi)/2;
+	$lo = gr < 0 ? in : ct + p * (lo - ct);
+	$hi = gr > 0 ? in : ct + p * (hi - ct);
+
+	[gr, =$lo, =$hi];
+};
+
+__pick_peaks = FPP(i_extr, i_peak) _int_,unsigned,float {
+decl:	int		$s_extr = 0; // reset
+	unsigned	$s_time;
+	float		$s_peak;
+
+stmt:	unsigned	$r_time;
+	float		$r_peak;
+
+exec:	int i_extr = $i_extr, r_extr = 0;
+	float i_peak = $i_peak;
+
+	if (!i_extr) {
+		goto ret;
+	} else if (i_extr != $s_extr) {
+		r_extr = $s_extr; $r_time = $s_time; $r_peak = $s_peak;
+		$s_extr = i_extr;
+	} else if (i_extr > 0 ? i_peak <= $s_peak : i_peak >= $s_peak) {
+		goto ret;
+	}
+
+	$s_time = $(ba.time); $s_peak = i_peak;
+	ret: [r_extr, =$r_time, =$r_peak]
+};
+
+pick_peaks(rel) = _ <: (env_foll2(rel) : _,!,!), _ : __pick_peaks;
+
+// ----------------------------------------------------------------------------
+__plot_bpf = FPP(HOW,LAG, push,time,val) {
+FILE:	#include <queue>
+	struct $tv { unsigned time; float val; };
+
+decl:	std::queue<$tv> $q;
+	int	$t0, $t1 = 0;
+	float	$v0, $v1 = 0;
+
+exec:	if ($push) $q.push({$time, $val});
+
+	float ret = 0;
+	int time = $(ba.time) - $LAG;
+	if (time < 0) goto $ret;
+
+	while (time >= $t1) {
+		static int warned;
+		if ($q.empty()) {
+			if (!warned++)
+				fprintf(stderr, "plot_bpf: empty %d [%d %d]\n",
+						time, $t0, $t1);
+			goto $ret;
+		}
+		$t0 = $t1; $v0 = $v1;
+		auto n = $q.front(); $q.pop();
+		$t1 = n.time; $v1 = n.val;
+		warned = 0;
+	}
+
+	switch ($HOW) {
+	case 0:
+		ret = time == $t0 ? $v0 : 0;
+		break;
+	case 1:
+		ret = $v0 + float(time - $t0) / float($t1 - $t0) * ($v1 - $v0);
+		break;
+	default:
+		assert(0);
+	}
+
+	$ret: ret;
+};
+
+plot_bpf = __plot_bpf(1);
