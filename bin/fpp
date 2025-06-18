@@ -110,6 +110,8 @@ package pp_dsp;
 my  (%STRN, %FUNC, %DEPS);
 our ($CODE, $THIS, $DICT);
 
+my $_INCDIR_ = '/ENOENT';
+
 sub fix_strn(_)
 {
 	defined (wantarray)
@@ -166,7 +168,8 @@ sub __expand_fpp; sub __expand_fpp
 	CORE::state $seen = {};
 	CORE::state $uniq = {};
 	CORE::state $glob = {
-		_float_ => $pp_cpp::O_FLOAT,
+		_float_		=> $pp_cpp::O_FLOAT,
+		_INCDIR_	=> $_INCDIR_,
 	};
 
 	sub expand_dep; local *expand_dep = sub
@@ -1217,6 +1220,7 @@ sub main
 	my (@opt, @inp, $OUT, $out);
 
 	if (my $dir = (readlink $0 or $0) =~ s|(?:/[^/]+){2}$||r) {
+		-d and $_INCDIR_ = $_	    for $dir . '/include';
 		-d and push  @opt, '-A', $_ for $dir . '/arch';
 		-d and unshift @_, '-I', $_ for $dir . '/lib';
 	}
@@ -1228,6 +1232,7 @@ sub main
 		elsif ($_ eq '-faust')			{ $faust = shift // narg; next; }
 		elsif ($_ eq '-O')			{ $OUT = shift // narg; next; }
 		elsif ($_ eq '-o')			{ $out = shift // narg; next; }
+		elsif ($_ eq '-IC')			{ $_INCDIR_ = shift // narg; next; }
 		elsif ($_ eq '-I0')			{ push @INCDIR, shift // narg; next; }
 		elsif (/^-(I|-import-dir)$/)		{ push @INCDIR, $_[0] }
 		elsif (/^-{1,2}(double|quad)\b/)	{ $O_FLOAT = $1 }
