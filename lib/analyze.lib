@@ -1,3 +1,5 @@
+u = fpp_library("util.lib");
+
 env_foll2 = FPP(rel, in) {
 decl:	float $lo = 0, $hi = 0;
 exec:	float p  = $(ba.tau2pole(rel));
@@ -37,7 +39,7 @@ exec:	int i_extr = $i_extr, r_extr = 0;
 		goto ret;
 	}
 
-	$s_time = $(ba.time); $s_peak = i_peak;
+	$s_time = $(u.iota); $s_peak = i_peak;
 	ret: [r_extr, =$r_time, =$r_peak]
 };
 
@@ -55,7 +57,7 @@ decl:	std::queue<$tv> $q;
 exec:	if ($push) $q.push({$time, $val});
 
 	float ret = 0;
-	int time = $(ba.time) - $LAG;
+	int time = $(u.iota) - $LAG;
 	if (time < 0) goto $ret;
 
 	while (time >= $t1) {
