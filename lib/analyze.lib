@@ -17,6 +17,7 @@ exec:	float p  = $(ba.tau2pole(rel));
 };
 
 __pick_peaks = FPP(i_extr, i_peak) _int_,unsigned,float {
+FILE:	#include <$_INCDIR_/fpp.h>
 decl:	int		$s_extr = 0; // reset
 	unsigned	$s_time;
 	float		$s_peak;
@@ -32,7 +33,7 @@ exec:	int i_extr = $i_extr, r_extr = 0;
 	} else if (i_extr != $s_extr) {
 		r_extr = $s_extr; $r_time = $s_time; $r_peak = $s_peak;
 		$s_extr = i_extr;
-	} else if (i_extr > 0 ? i_peak <= $s_peak : i_peak >= $s_peak) {
+	} else if (i_extr != signum(i_peak - $s_peak)) {
 		goto ret;
 	}
 
