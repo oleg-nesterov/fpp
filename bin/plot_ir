@@ -4,30 +4,27 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-fig, aa = plt.subplots(2, 1, sharex=True, figsize=(15,10))
+fig, axs = plt.subplots(2, 1, sharex=True, figsize=(15,10))
 fig.tight_layout(pad=1)
 
-plt.setp(aa[0].get_xticklabels(), visible=True)
-plt.setp(aa[1].get_xticklabels(), visible=False)
-
+plt.setp(axs[0].get_xticklabels(), visible=True)
+plt.setp(axs[1].get_xticklabels(), visible=False)
 
 IR = np.loadtxt(sys.stdin).T
-NM = [i for i in range(0, len(IR))]
+NM = range(0, len(IR))
 FS = IR.shape[-1]
 
 rfft = np.fft.rfft(IR).T
-
-aa[0].set_ylim(-60, 20)
-aa[0].plot(20 * np.log10(np.abs(rfft)))
-
 angl = np.angle(rfft)
-angl[np.abs(rfft) < 1e-6] = 0;
+angl[np.abs(rfft) < 1e-6] = 0
 
-aa[1].plot(np.unwrap(angl, axis=0) / np.pi)
+axs[0].set_ylim(-60, 20)
+axs[0].plot(20 * np.log10(np.abs(rfft)))
+axs[1].plot(np.unwrap(angl, axis=0) / np.pi)
 
-for a in aa:
-	a.set_xlim(0, FS/2)
-	a.legend(NM, loc="best")
-	a.grid(True)
+for ax in axs:
+	ax.set_xlim(0, FS/2)
+	ax.legend(NM, loc="best")
+	ax.grid(True)
 
 plt.show()
