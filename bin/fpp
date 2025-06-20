@@ -622,6 +622,11 @@ sub parse_lit
 	CORE::state $f; $f->{$r} ||= mk_eval 1,0, $r;
 }
 
+my $RUN_CPP; sub parse_cpp
+{
+	$RUN_CPP = 1; s/^.*?\v// or die; "\n#$&";
+}
+
 sub parse_dsp
 {
 	our $REGERROR;
@@ -651,6 +656,7 @@ sub parse_dsp
 
 	my $dsp = ''; while (m{
 		\$		(?{\&parse_lit})	|
+		\v\h*\#	(?{\&parse_cpp})	|
 		(?: \b (?:
 			__FPP	(?{\&parse_dep})	|
 			  FPP	(?{\&parse_fpp})	|
@@ -1212,6 +1218,19 @@ sub ck_features
 	$HAS_ANY //= $cmp->(2,47,0) >= 0;
 }
 
+my @CPP_OPT = qw(-w -undef -nostdinc);
+sub run_cpp
+{
+	my $file = shift;
+
+	open my $cpp, '-|', 'cpp', @CPP_OPT, $file
+		or die "ERR!! can't exec 'cpp': $!\n";
+
+	my @cpp = grep !/^\s*#/, <$cpp>;
+	open my $ofd, '>', $file or die;
+	print $ofd @cpp;
+}
+
 sub narg { die "fpp: '$_' needs an arg.\n" }
 sub main
 {
@@ -1229,6 +1248,7 @@ sub main
 		if (ord != ord '-')			{ push @inp, $_; next; }
 		elsif ($_ eq '-k')			{ $ktf = 1; next; }
 		elsif ($_ eq '-s')			{ $shrt = 1; next; }
+		elsif ($_ eq '-D')			{ push @CPP_OPT, $_, shift // narg; next; }
 		elsif ($_ eq '-faust')			{ $faust = shift // narg; next; }
 		elsif ($_ eq '-O')			{ $OUT = shift // narg; next; }
 		elsif ($_ eq '-o')			{ $out = shift // narg; next; }
@@ -1362,6 +1382,8 @@ sub main
 		print "$_\n" for @INCDIR;
 		print "\n";
 	}
+
+	run_cpp $dsp if $RUN_CPP;
 	system $faust, @opt and die "$faust error.\n";
 	exit if $dumb || $notc;
 

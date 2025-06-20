@@ -3217,6 +3217,29 @@ DSP
 CPP
 
 [__LINE__, <<'DSP', <<'CPP'],
+//: -D X=123
+#if X != 0
+	#define RET X
+#else
+	#define RET 0
+#endif
+process = RET;
+DSP
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(123);
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
 import("stdfaust.lib");
 
 foo = FPP(fc0, inp) {
