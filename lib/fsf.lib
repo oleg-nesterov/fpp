@@ -162,3 +162,52 @@ exec:	(($ret ? $ret[unsigned($ch)] : 0.0f))
 // temporary ugly but simple helper
 sf_cli(file, off,cnt) = sf_io(file, off,cnt,0) : !,_ :
 	FPP(ret) pure { if (!$ret) CLI_STOP; $ret ? $ret[0] : 0.0f; };
+
+// ----------------------------------------------------------------------------
+ascii_io = FPP(file, N) float* {
+PERL:	sub mk_sc_args
+	{
+		my $f = '%f ' x $_[0];
+		chop $f; $f = '"' . $f . '"';
+		$f . ', ' . join ',', map qq/outs+$_/, 0 .. $N-1;
+	}
+
+decl:	FILE *$stream;
+	int $lnum;
+init:
+	$lnum = 0;
+
+	$stream = stdin;
+	if ($file) {
+		char *name = (char*)$file;
+		$stream = fopen(name, "r");
+		if (!$stream) {
+			fprintf(stderr, "ERR!! ascii: can't open '%s'\n", name);
+			exit(1);
+		}
+	};
+exec:
+	char	line[1024];
+	float	outs[$N], *ret = NULL;
+
+	$lnum++;
+
+	if (!fgets(line, sizeof(line), $stream))
+		goto ret;
+
+	if (sscanf(line, $!mk_sc_args($N)) < $N) {
+		fprintf(stderr, "ERR!! ascii: bad line %d\n", $lnum);
+		goto ret;
+	}
+
+	ret = outs; ret: [ret]; // [] to force aux for '$outs' below
+};
+
+ascii_ch = FPP(i,outs) { (($outs ? $outs[$i] : 0)) };
+
+ascii(file, N) = ascii_io(file, N) <: par(n,N, ascii_ch(n));
+
+ascii_cli(file, N) = ascii_io(file, N) : cli_stop <: par(n,N, ascii_ch(n))
+with {
+	cli_stop = FPP(outs) { if (!$outs) CLI_STOP; [=$outs]; };
+};
