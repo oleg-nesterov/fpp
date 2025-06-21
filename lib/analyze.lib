@@ -1,3 +1,28 @@
+// Much simpler than fi.dynamicSmoothing() and works just as well.
+//
+// https://cytomic.com/files/dsp/DynamicSmoothing.pdf
+// diff:
+//	- use 'sens' as is
+//	- new arg 'fmax' to avoid the hardcoded '1' which corresponds
+//	  to fmax = ma.SR/4 in this code. Allows to damp overshoots.
+//
+__dynasmoo(fc, fmax, sens) = tick ~ (_,_) with {
+	g0(f) = 2 * gc / (1 + gc) with {
+		gc = tan(ma.PI / ma.SR * f);
+	};
+
+	tick(lp1z,lp2z, inp) = lp1,lp2 with {
+		g = g0(fc) + sens * abs(lp1z - lp2z)
+			: min(g0(fmax));
+
+		lp1 = lp1z + g * (inp - lp1z);
+		lp2 = lp2z + g * (lp1 - lp2z);
+	};
+};
+
+dynasmoo = __dynasmoo : !,_;
+
+// ----------------------------------------------------------------------------
 u = fpp_library("util.lib");
 
 env_foll2 = FPP(rel, in) {
