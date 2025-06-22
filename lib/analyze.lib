@@ -137,7 +137,7 @@ decl:	std::queue<$tv> $q;
 
 exec:	if ($push) $q.push({$time, $val});
 
-	float ret = 0;
+	float ret = $v1;
 	int time = $(u.iota) - $LAG;
 	if (time < 0) goto $ret;
 
