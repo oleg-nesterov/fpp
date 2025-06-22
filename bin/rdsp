@@ -38,7 +38,7 @@ $DSP-cli.cpp: $DSP.dsp $FPP_BIN @F_DEPS
 	$FPP_CMD -scn '' -nvi -a cli.cpp \$< -o \$@
 EOM
 
-open my $fd, '|-', 'make', qw(-f -) or die;
-print $fd $MAKEF; close $fd;
+open my $fd, '|-', 'make', qw(-s -f -) or die;
+print $fd $MAKEF; close $fd or exit;
 
 exec "$DSP-cli", @ARGV;
