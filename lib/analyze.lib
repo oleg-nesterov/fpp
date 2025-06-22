@@ -107,7 +107,7 @@ exec:	int i_extr = $i_extr, r_extr = 0;
 	if (!i_extr)
 		;
 	else if (i_extr == $s_extr) {
-		if ((i_extr < 0) == std::signbit(__leap)) {
+		if (signum(i_extr) == signum(__leap)) {
 			$s_time = i_time;
 			$s_peak = i_peak;
 		}
