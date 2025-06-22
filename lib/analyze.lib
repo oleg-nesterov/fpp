@@ -128,10 +128,12 @@ pick_turns(rel,sens) = _ <: extremum, mem : __pick_turns(rel, sens);
 __plot_bpf = FPP(HOW,LAG, push,time,val) {
 FILE:	#include <queue>
 	struct $tv { unsigned time; float val; };
+	static int $ID;
 
 decl:	std::queue<$tv> $q;
 	int	$t0, $t1 = 0;
 	float	$v0, $v1 = 0;
+	int	$id = ++$ID;
 
 exec:	if ($push) $q.push({$time, $val});
 
@@ -143,8 +145,8 @@ exec:	if ($push) $q.push({$time, $val});
 		static int warned;
 		if ($q.empty()) {
 			if (!warned++)
-				fprintf(stderr, "plot_bpf: empty %d [%d %d]\n",
-						time, $t0, $t1);
+				LOG("WARN! bpf[%d]: empty %d [%d %d]",
+				    $id, time, $t0,$t1);
 			goto $ret;
 		}
 		$t0 = $t1; $v0 = $v1;
