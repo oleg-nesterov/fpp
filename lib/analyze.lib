@@ -24,6 +24,29 @@ __dynasmoo(fc, fmax, sens) = tick ~ (_,_) with {
 
 dynasmoo = __dynasmoo : !,_;
 
+// for ba.time or const input:
+// s = 1 - 2/(N+1)			 "exact" mean
+// s = 1 - (sqrt(12*(N^2+2))-6)/(N^2-1)  "exact" variance
+//
+smoo_stat = FPP(upd, s, x) {
+decl:	float	$avg = 0, $var = 0; //reset
+exec:
+	float s = $s, x = $x;
+	float diff = x - $avg;
+	float incr = (1-s) * diff;
+	int upd = $upd;
+	if (upd < 0)
+		$avg = $var = 0;
+	else if (upd > 0) {
+		$avg += incr;
+		$var = s * ($var + diff * incr);
+	}
+	[=$avg, =$var];
+};
+
+// relative standard deviation
+stat_rsd(a,v) = a, select2(abs(a) > ma.EPSILON, 0, sqrt(v)/abs(a));
+
 // ----------------------------------------------------------------------------
 // +-1 after reset, then +-2
 range_cross = FPP(lo,hi, in) pure _int_ {
