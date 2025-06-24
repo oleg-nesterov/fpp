@@ -88,8 +88,8 @@ decl:	int		$s_extr = 0; // reset
 	unsigned	$s_time;
 	float		$s_peak;
 
-stmt:	unsigned	$r_time;
-	float		$r_peak;
+stmt:	unsigned	$r_time _unused_;
+	float		$r_peak _unused_;
 
 exec:	int i_extr = $i_extr, r_extr = 0;
 	float i_peak = $i_peak;
@@ -117,8 +117,8 @@ decl:	int		$s_extr = 0; // reset
 	float		$s_peak = 0;
 	float		$s_leap = 0;
 
-stmt:	unsigned	$r_time;
-	float		$r_peak;
+stmt:	unsigned	$r_time _unused_;
+	float		$r_peak _unused_;
 
 exec:	int i_extr = $i_extr, r_extr = 0;
 	unsigned i_time = $(u.iota) - 1;
