@@ -109,7 +109,6 @@ exec:	int i_extr = $i_extr, r_extr = 0;
 
 pick_peaks(rel) = _ <: (env_foll2(rel) : _,!,!), _ : __pick_peaks;
 
-// ----------------------------------------------------------------------------
 __pick_turns = FPP(rel,sens, i_extr, i_peak) _int_,unsigned,float {
 FILE:	#include <$_INCDIR_/fpp.h>
 decl:	int		$s_extr = 0; // reset
@@ -148,6 +147,26 @@ exec:	int i_extr = $i_extr, r_extr = 0;
 pick_turns(rel,sens) = _ <: extremum, mem : __pick_turns(rel, sens);
 
 // ----------------------------------------------------------------------------
+__extr_dt = FPP(extr, time, peak) pure _int_,unsigned,float {
+decl:	unsigned $t_lo = 0, $t_hi = 0;
+exec:	unsigned dt = 0; // for -Wmaybe-uninitialized
+
+	if ($extr < 0) {
+		dt = $time - $t_lo; $t_lo = $time;
+	} else if ($extr > 0) {
+		dt = $time - $t_hi; $t_hi = $time;
+	}
+
+	[=$extr, dt, =$peak]
+};
+
+pick_peaks_dt = pick_peaks : __extr_dt;
+pick_turns_dt = pick_turns : __extr_dt;
+
+// ----------------------------------------------------------------------------
+extr_dt_st(s, xt,dt,pk) = (xt<0,s,dt : smoo_stat : stat_rsd),
+			  (xt>0,s,dt : smoo_stat : stat_rsd);
+
 __plot_bpf = FPP(HOW,LAG, push,time,val) {
 FILE:	#include <queue>
 	struct $tv { unsigned time; float val; };
