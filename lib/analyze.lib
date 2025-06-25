@@ -171,6 +171,14 @@ pick_turns = pick_turns_bpf : __extr_dt;
 extr_dt_st(s, xt,dt,pk) = (xt<0,s,dt : smoo_stat),
 			  (xt>0,s,dt : smoo_stat);
 
+__extr_dt_bpf2 = si.bus(3) <: (!,_,!), (__extr_dt : _,_,!)
+	       : \(time,xt,dt).(xt<0,time,dt, xt>0,time,dt);
+
+// ==> : par(i,2, plot_bpf(LAG))
+pick_peaks_dt_bpf2 = pick_peaks_bpf : __extr_dt_bpf2;
+pick_turns_dt_bpf2 = pick_turns_bpf : __extr_dt_bpf2;
+
+
 __plot_bpf = FPP(HOW,LAG, push,time,val) {
 FILE:	#include <queue>
 	struct $tv { unsigned time; float val; };
@@ -181,7 +189,7 @@ decl:	std::queue<$tv> $q;
 	float	$v0, $v1 = 0;
 	int	$id = ++$ID;
 
-exec:	if ($push) $q.push({$time, $val});
+exec:	if ($push) $q.push({$time, float($val)});
 
 	float ret = $v1;
 	int time = $(u.iota) - $LAG;
