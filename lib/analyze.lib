@@ -24,11 +24,14 @@ __dynasmoo(fc, fmax, sens) = tick ~ (_,_) with {
 
 dynasmoo = __dynasmoo : !,_;
 
+// relative standard deviation
+stat_rsd(a,v) = a, select2(abs(a) > ma.EPSILON, 0, sqrt(v)/abs(a));
+
 // for ba.time or const input:
 // s = 1 - 2/(N+1)			 "exact" mean
 // s = 1 - (sqrt(12*(N^2+2))-6)/(N^2-1)  "exact" variance
 //
-smoo_stat = FPP(upd, s, x) {
+__smoo_stat = FPP(upd, s, x) {
 decl:	float	$avg = 0, $var = 0; //reset
 exec:
 	float s = $s, x = $x;
@@ -44,8 +47,7 @@ exec:
 	[=$avg, =$var];
 };
 
-// relative standard deviation
-stat_rsd(a,v) = a, select2(abs(a) > ma.EPSILON, 0, sqrt(v)/abs(a));
+smoo_stat = __smoo_stat : stat_rsd;
 
 // ----------------------------------------------------------------------------
 // +-1 after reset, then +-2
@@ -107,7 +109,7 @@ exec:	int i_extr = $i_extr, r_extr = 0;
 	ret: [r_extr, =$r_time, =$r_peak]
 };
 
-pick_peaks(rel) = _ <: (env_foll2(rel) : _,!,!), _ : __pick_peaks;
+pick_peaks_bpf(rel) = _ <: (env_foll2(rel) : _,!,!), _ : __pick_peaks;
 
 __pick_turns = FPP(rel,sens, i_extr, i_peak) _int_,unsigned,float {
 FILE:	#include <$_INCDIR_/fpp.h>
@@ -144,7 +146,7 @@ exec:	int i_extr = $i_extr, r_extr = 0;
 	[r_extr, =$r_time, =$r_peak];
 };
 
-pick_turns(rel,sens) = _ <: extremum, mem : __pick_turns(rel, sens);
+pick_turns_bpf(rel,sens) = _ <: extremum, mem : __pick_turns(rel, sens);
 
 // ----------------------------------------------------------------------------
 __extr_dt = FPP(extr, time, peak) pure _int_,unsigned,float {
@@ -160,12 +162,12 @@ exec:	unsigned dt = 0; // for -Wmaybe-uninitialized
 	[=$extr, dt, =$peak]
 };
 
-pick_peaks_dt = pick_peaks : __extr_dt;
-pick_turns_dt = pick_turns : __extr_dt;
+pick_peaks = pick_peaks_bpf : __extr_dt;
+pick_turns = pick_turns_bpf : __extr_dt;
 
 // ----------------------------------------------------------------------------
-extr_dt_st(s, xt,dt,pk) = (xt<0,s,dt : smoo_stat : stat_rsd),
-			  (xt>0,s,dt : smoo_stat : stat_rsd);
+extr_dt_st(s, xt,dt,pk) = (xt<0,s,dt : smoo_stat),
+			  (xt>0,s,dt : smoo_stat);
 
 __plot_bpf = FPP(HOW,LAG, push,time,val) {
 FILE:	#include <queue>
