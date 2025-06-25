@@ -153,6 +153,8 @@ __extr_dt = FPP(extr, time, peak) pure _int_,unsigned,float {
 decl:	unsigned $t_lo = 0, $t_hi = 0;
 exec:	unsigned dt = 0; // for -Wmaybe-uninitialized
 
+	$!CK_PRIM($extr, $time, $peak);
+
 	if ($extr < 0) {
 		dt = $time - $t_lo; $t_lo = $time;
 	} else if ($extr > 0) {

@@ -96,6 +96,13 @@ sub __l_for(&$$$)
 
 package perl::user;
 
+sub CK_PRIM
+{
+	/\W/ and die "BUG! input '$_' is not primitive.\n"
+		for @_;
+	'';
+}
+
 sub if
 {
 	die "if(@_) bad argc\n" if @_<2 || @_>3;
