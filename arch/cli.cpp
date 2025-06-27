@@ -7,6 +7,12 @@
 
 #define FAUSTFLOAT double
 
+static struct {
+	unsigned sr = 44100, nr = 10, bs = 512, sk, xt;
+	unsigned no;
+	int it;
+} G;
+
 static int cli_stop = -1;
 #define CLI_STOP do { if (cli_stop < 0) cli_stop = i0; } while (0)
 
@@ -40,12 +46,6 @@ static mydsp DSP;
 #define NOUTS	16
 #define BUFSZ	1024
 static FAUSTFLOAT _outputs[NOUTS][BUFSZ];
-
-static struct {
-	unsigned sr = 44100, nr = 10, bs = 512, sk, xt;
-	unsigned no;
-	int it;
-} G;
 
 #define die(fmt, ...) do {					\
 	fprintf(stderr, "ERR!! " fmt "\n", ##__VA_ARGS__);	\

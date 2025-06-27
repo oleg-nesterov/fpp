@@ -1,0 +1,26 @@
+CLI = FPP(opts{}) pure eval _int_ {
+PERL:	sub CLI
+	{
+		my $o2m = +{qw(b bs r sr n nr s sk x xt)};
+
+		my ($r, @init); while (@_) {
+			my ($k,$v) = splice @_,0,2;
+			my @k = map { $o2m->{$_} ||
+				die "BUG! CLI: bad opt name '$k'.\n" }
+				split '', $k;
+			defined $v ||
+				die "BUG! CLI: no value for '$k'.\n";
+			exists $o2m->{$v}
+				and $v = "G." . $o2m->{$v};
+			push @init, ($r = "G.$_") . " = $v"
+				for @k;
+		}
+
+		$THIS->{FILE} = "#define CLI_INIT\t" .
+				join(', ', @init) .
+				";\n";
+		$r;
+	}
+
+exec:	$!CLI($opts)
+};
