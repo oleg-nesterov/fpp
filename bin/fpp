@@ -1225,7 +1225,7 @@ sub ck_features
 	$HAS_ANY //= $cmp->(2,47,0) >= 0;
 }
 
-my @CPP_OPT = qw(-w -undef -nostdinc);
+my @CPP_OPT = qw(-w -P -undef -nostdinc);
 sub run_cpp
 {
 	my $file = shift;
@@ -1233,9 +1233,11 @@ sub run_cpp
 	open my $cpp, '-|', 'cpp', @CPP_OPT, $file
 		or die "ERR!! can't exec 'cpp': $!\n";
 
-	my @cpp = grep !/^\s*#/, <$cpp>;
+	my $dsp = <$cpp>;
+	close $cpp or die "BUG! cpp error: $?.\n";
+
 	open my $ofd, '>', $file or die;
-	print $ofd @cpp;
+	print $ofd $dsp;
 }
 
 sub narg { die "fpp: '$_' needs an arg.\n" }
