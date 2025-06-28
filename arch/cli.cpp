@@ -1,8 +1,12 @@
 #include <stdio.h>
+#include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <sys/types.h>
 #include <assert.h>
 
 #define FAUSTFLOAT double
@@ -53,6 +57,56 @@ static FAUSTFLOAT _outputs[NOUTS][BUFSZ];
 } while (0)
 
 // ----------------------------------------------------------------------------
+static void fifo_run(const char *fifo, const char *comm, const char *argv[])
+{
+	struct stat st;
+	int fd;
+
+	if (stat(fifo, &st) == 0) {
+		if ((st.st_mode & S_IFMT) != S_IFIFO)
+			die("'%s' is not fifo.", fifo);
+	} else {
+		fprintf(stderr, "CLI: create '%s' ...\n", fifo);
+		assert(mkfifo(fifo, 0666) == 0);
+		goto start;
+	}
+
+
+	fd = open(fifo, O_WRONLY|O_NONBLOCK);
+	if (fd < 0)
+		assert(errno == ENXIO);
+	else {
+		int nb = 0;
+		assert(ioctl(fd, FIONBIO, &nb) == 0);
+		goto out;
+	}
+
+	start: fprintf(stderr, "CLI: starting '%s' ...\n", comm);
+
+	if (!fork()) {
+		if (!fork()) {
+			fd = open(fifo, O_RDONLY);
+			assert(fd > 0);
+			assert(dup2(fd, 0) == 0);
+			close(fd);
+			execvp(comm, (char**)argv);
+			kill(getppid(), SIGKILL);
+			die("exec '%s' failed: %m", comm);
+		}
+
+		fd = open(fifo, O_WRONLY);
+		assert(fd > 0);
+		wait(NULL);
+		exit(0);
+	}
+
+	fd = open(fifo, O_WRONLY);
+	assert(fd > 0);
+out:
+	assert(dup2(fd, 1) == 1);
+	close(fd);
+}
+
 static struct O_N {
 	virtual void ini(void) {}
 	virtual void out(unsigned) {};
@@ -95,6 +149,26 @@ static struct O_B : public O_N {
 		close(ofd);
 	}
 } __o_b;
+
+static struct O_GP : public O_B {
+	void ini(void)
+	{
+		const char *argv[] = { "CLI-gnuplot", NULL };
+		fifo_run("/tmp/gp.fifo", "gnuplot", argv);
+
+		ofd = open("/tmp/gp.data", O_CREAT|O_TRUNC|O_WRONLY, 0666);
+		assert(ofd >= 0);
+	}
+
+	void eof(void)
+	{
+		dprintf(1, "NO = %d; FN = '%s'\n%s", G.no, "/tmp/gp.data",
+			"BF = ''; do for [O=1:NO] { BF = BF . '%float' }\n"
+			"plot for [O=1:NO] FN volatile binary format=BF "
+			"u O w l t sprintf('%d',O)\n"
+		);
+	}
+} __o_gp;
 
 struct _O_SOX : public O_B {
 	int pid;
@@ -160,6 +234,8 @@ static void parse_o(const char *n)
 		O = &__o_p;
 	else IF (f)
 		O = &__o_f;
+	else IF (gp)
+		O = &__o_gp;
 	else
 		die("bad -o value '%s'", n);
 }
