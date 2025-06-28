@@ -6,10 +6,10 @@ PERL:	sub CLI
 		my ($r, @init); while (@_) {
 			my ($k,$v) = splice @_,0,2;
 			my @k = map { $o2m->{$_} ||
-				die "BUG! CLI: bad opt name '$k'.\n" }
+				die "ERR!! CLI: bad opt name '$k'.\n" }
 				split '', $k;
 			defined $v ||
-				die "BUG! CLI: no value for '$k'.\n";
+				die "ERR!! CLI: no value for '$k'.\n";
 			exists $o2m->{$v}
 				and $v = "G." . $o2m->{$v};
 			push @init, ($r = "G.$_") . " = $v"

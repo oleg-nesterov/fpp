@@ -98,7 +98,7 @@ package perl::user;
 
 sub CK_PRIM
 {
-	/\W/ and die "BUG! input '$_' is not primitive.\n"
+	/\W/ and die "ERR!! input '$_' is not primitive.\n"
 		for @_;
 	'';
 }
@@ -1234,7 +1234,7 @@ sub run_cpp
 		or die "ERR!! can't exec 'cpp': $!\n";
 
 	my $dsp = <$cpp>;
-	close $cpp or die "BUG! cpp error: $?.\n";
+	close $cpp or die "ERR!! cpp error: $?.\n";
 
 	open my $ofd, '>', $file or die;
 	print $ofd $dsp;

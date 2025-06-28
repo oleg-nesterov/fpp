@@ -22,7 +22,7 @@ template<class T> static inline int signum(T x)
 #define __DEBUG(condition, fatal, ...) ({					\
 	int __ret_warn_on = !!(condition);					\
 	if (unlikely(__ret_warn_on)) {						\
-		fprintf(stderr, fatal ? "BUG!! %d: " : "WARN! %d: ", __LINE__);	\
+		fprintf(stderr, fatal ? "ERR!! %d: " : "WARN! %d: ", __LINE__);	\
 		fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n");		\
 		if (fatal)							\
 			exit(1);						\
