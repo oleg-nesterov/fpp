@@ -167,6 +167,18 @@ static struct O_GP : public O_B {
 			"plot for [O=1:NO] FN volatile binary format=BF "
 			"u O w l t sprintf('%d',O)\n"
 		);
+
+		int pgp[2]; char ack[32] = {};
+
+		assert(!pipe(pgp));
+		dprintf(1, "set print '/proc/%d/fd/%d'; "
+			   "print 'ACK'; set print\n", getpid(), pgp[1]);
+		read(pgp[0], ack, sizeof(ack) - 1);
+		close(pgp[0]); close(pgp[1]);
+
+		if (strcmp(ack, "ACK\n"))
+			die("bad ack from gnuplot: %s", ack);
+		unlink("/tmp/gp.data");
 	}
 } __o_gp;
 
