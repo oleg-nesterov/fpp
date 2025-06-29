@@ -68,6 +68,10 @@ static struct O_T : public O_N {
 				o == G.no-1 ? '\n' : '\t');
 		}
 	}
+	void eof()
+	{
+		fclose(stdout);
+	}
 } __o_t;
 
 static struct O_B : public O_N {
@@ -81,21 +85,19 @@ static struct O_B : public O_N {
 			buf[cnt++] = _outputs[o][i];
 		}
 	}
-
 	void eob(void)
 	{
 		write(ofd, buf, sizeof(buf[0]) * cnt);
 		cnt = 0;
 	}
+	void eof()
+	{
+		close(ofd);
+	}
 } __o_b;
 
 struct _O_SOX : public O_B {
 	int pid;
-
-	void eof(void)
-	{
-		close(ofd); waitpid(pid, NULL, 0);
-	}
 
 	void __ini(const char *file)
 	{
@@ -126,6 +128,12 @@ struct _O_SOX : public O_B {
 			execvp(argv[0], (char**)argv);
 			die("exec '%s' failed: %m", argv[0]);
 		}
+	}
+
+	void eof(void)
+	{
+		O_B::eof();
+		waitpid(pid, NULL, 0);
 	}
 };
 
