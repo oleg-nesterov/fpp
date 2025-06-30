@@ -351,17 +351,16 @@ void *it_loop(void *)
 	char *line = NULL;
 	size_t size = 0;
 
-	goto dump; for (;;) {
-		char n[128]; float v;
+	for (;;) {
 		char *inp; int cur, eat;
+		char n[128]; float v;
 
 		fprintf(stderr, ": ");
 		cur = getline(&line, &size, stdin);
-		if (cur < 0)
-			die("getline failed: %m");
+		if (cur < 0) exit(0);
 
 		for (inp = line; cur; inp += eat, cur -= eat) {
-			if (sscanf(inp, "%s %f %n", n, &v, &eat) != 2)
+			if (sscanf(inp, " %127[^= ] %*[=] %f %n", n,&v,&eat) != 2)
 				goto dump;
 			auto o = cli_get_opt(n);
 			if (!o)
@@ -372,7 +371,7 @@ void *it_loop(void *)
  dump:
 		fprintf(stderr, "\n");
 		for (int i = 0; i < ARGN; ++i)
-			fprintf(stderr, "  %-16s %f\n", ARGV[i].n, *ARGV[i].v);
+			fprintf(stderr, "  %-16s % -.8g\n", ARGV[i].n, *ARGV[i].v);
 		fprintf(stderr, "\n");
 	}
 }
