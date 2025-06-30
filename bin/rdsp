@@ -31,6 +31,8 @@ my $FPP_CMD = "fpp -single -it -ct 0 -I $FAUST_LIB -A $FAUST_ARC";
 my $CPP_CMD = '$(CXX) -Wall -Ofast -lsndfile -lpthread -std=c++14';
 
 my $MAKEF = <<EOM;
+.INTERMEDIATE: $DSP-cli.cpp
+
 $DSP-cli: $DSP-cli.cpp @C_DEPS
 	$CPP_CMD \$< -o \$@
 
