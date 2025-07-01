@@ -352,14 +352,14 @@ void *it_loop(void *)
 	size_t size = 0;
 
 	for (;;) {
-		char *inp; int cur, eat;
+		char *inp; int eat;
 		char n[128]; float v;
 
 		fprintf(stderr, ": ");
-		cur = getline(&line, &size, stdin);
-		if (cur < 0) exit(0);
+		if (getline(&line, &size, stdin) < 0)
+			exit(0);
 
-		for (inp = line; cur; inp += eat, cur -= eat) {
+		for (inp = line; *inp; inp += eat) {
 			if (sscanf(inp, " %[#]", n) == 1)
 				break;
 			if (sscanf(inp, " %127[^= ] %*[=] %f %n", n,&v,&eat) != 2)
