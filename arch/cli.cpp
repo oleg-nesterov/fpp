@@ -347,6 +347,17 @@ static void parse_args(const char* argv[])
 }
 
 // ----------------------------------------------------------------------------
+static char *__it_getline(void)
+{
+	static char *line = NULL;
+	static size_t size = 0;
+
+	fprintf(stderr, ": ");
+	return getline(&line, &size, stdin) >= 0 ? line : NULL;
+}
+
+inline char *it_readline(void) { return __it_getline(); }
+
 static char *map(const char *k, const char *v)
 {
 	static struct { char *k, *v; } map[128];
@@ -370,19 +381,12 @@ static char *map(const char *k, const char *v)
 
 void *it_loop(void *)
 {
-	char *line = NULL;
-	size_t size = 0;
-
 	for (;;) {
 		char *inp;
 		char *p, c;  int eat;
 		char n[128]; float v;
 
-		fprintf(stderr, ": ");
-		if (getline(&line, &size, stdin) < 0)
-			exit(0);
-
-		inp = line;
+		if(!(inp = it_readline())) _exit(0);
 		if ((p = strchr(inp, '\n'))) *p = 0;
 		if ((p = strchr(inp,  '#'))) *p = 0;
 		if (!*inp) goto dump;
