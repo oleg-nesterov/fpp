@@ -28,7 +28,7 @@ my $DSP = shift // '';
 $DSP =~ s/\.dsp$// or die "ERR!! '$DSP' is not .dsp\n";
 
 my $FPP_CMD = "fpp -single -it -ct 0 -I $FAUST_LIB -A $FAUST_ARC";
-my $CPP_CMD = '$(CXX) -Wall -Ofast -lsndfile -lpthread -std=c++14';
+my $CPP_CMD = '$(CXX) -Wall -Ofast -lpthread -lreadline -std=c++14 -lsndfile';
 
 my $MAKEF = <<EOM;
 .INTERMEDIATE: $DSP-cli.cpp

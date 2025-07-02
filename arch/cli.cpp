@@ -356,7 +356,56 @@ static char *__it_getline(void)
 	return getline(&line, &size, stdin) >= 0 ? line : NULL;
 }
 
-inline char *it_readline(void) { return __it_getline(); }
+#include <readline/readline.h>
+#include <readline/history.h>
+static char *rl_next_match(const char *inp, int state)
+{
+	static int idx, len;
+
+	if (!state) { idx = 0; len = strlen(inp); }
+
+	while (idx < ARGN) {
+		auto arg = ARGV + idx++;
+		if (!strncmp(arg->n, inp, len))
+			return strdup(arg->n);
+	}
+
+	return NULL;
+}
+static char **rl_cmpl_func(const char *inp, int start, int end)
+{
+	rl_attempted_completion_over = 1;
+	return rl_completion_matches(inp, rl_next_match);
+}
+static char *__it_readline(void)
+{
+	static char *inp;
+
+	if (inp) free(inp);
+	else {
+		assert((rl_instream  = fopen("/dev/tty", "r")));
+		assert((rl_outstream = fopen("/dev/tty", "w")));
+		rl_attempted_completion_function = rl_cmpl_func;
+	}
+
+	inp = readline(": ");
+	if (inp && *inp) {
+		for (int i = history_length; i; --i) {
+			HIST_ENTRY *he = history_get(i);
+			if (!strcmp(he->line, inp)) {
+				remove_history(i-1);
+				break;
+			}
+		}
+		add_history(inp);
+	}
+	return inp;
+}
+
+static inline char *it_readline(void)
+{
+	return 1 ? __it_readline() : __it_getline();
+}
 
 static char *map(const char *k, const char *v)
 {
