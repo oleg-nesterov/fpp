@@ -346,22 +346,74 @@ static void parse_args(const char* argv[])
 	}
 }
 
+// ----------------------------------------------------------------------------
+static char *map(const char *k, const char *v)
+{
+	static struct { char *k, *v; } map[128];
+	__typeof__(map + 0) kv = NULL;
+
+	for (unsigned i = 0; i < sizeof(map)/sizeof(map[0]); ++i)
+		if (!map[i].k || !strcmp(map[i].k, k)) {
+			kv = map + i;
+			break;
+		}
+
+	if (!kv)
+		return NULL;
+	else if (v) {
+		if (!kv->k)   kv->k = strdup(k);
+		free(kv->v);  kv->v = strdup(v);
+	}
+
+	return kv->v;
+}
+
 void *it_loop(void *)
 {
 	char *line = NULL;
 	size_t size = 0;
 
 	for (;;) {
-		char *inp; int eat;
+		char *inp;
+		char *p, c;  int eat;
 		char n[128]; float v;
 
 		fprintf(stderr, ": ");
 		if (getline(&line, &size, stdin) < 0)
 			exit(0);
 
-		for (inp = line; *inp; inp += eat) {
-			if (sscanf(inp, " %[#]", n) == 1)
-				break;
+		inp = line;
+		if ((p = strchr(inp, '\n'))) *p = 0;
+		if ((p = strchr(inp,  '#'))) *p = 0;
+		if (!*inp) goto dump;
+
+		if (sscanf(inp, " %127[^=: ] %[:] %n", n,&c,&eat) == 2) {
+			char *v = inp + eat;
+			if (!*v) {
+				static char dump[1024] = ""; // for ARGN == 0
+				int sz = sizeof(dump), wr = 0;
+				for (int i = 0; i < ARGN; ++i) {
+					int w = snprintf(dump+wr,sz,"%s=%.16g ",
+							 ARGV[i].n, *ARGV[i].v);
+					wr += w; sz -= w;
+					if (sz <= 0)
+						die("dump[] overflow.\n");
+				}
+				v = dump;
+			}
+
+			if (!map(n, v))
+				fprintf(stderr, "ERR!! map is full.\n");
+			continue;
+		}
+		if (sscanf(inp, " %127[^=: ] %c", n,&c) == 1) {
+			if (!(inp = map(n, NULL))) {
+				fprintf(stderr, "ERR!! '%s' wasn't defined.\n", n);
+				continue;
+			}
+		}
+
+		for (; *inp; inp += eat) {
 			if (sscanf(inp, " %127[^= ] %*[=] %f %n", n,&v,&eat) != 2)
 				goto dump;
 			auto o = cli_get_opt(n);
