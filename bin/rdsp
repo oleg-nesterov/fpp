@@ -1,6 +1,19 @@
 #!/usr/bin/perl -w
 use strict;
 
+my ($TGT, $DSP) = 'cli';
+
+while (@ARGV) {
+	local $_ = $ARGV[0];
+	if    (s/\.dsp$//)	{ $DSP = $_; shift; last; }
+	elsif (/^-(cli|gtk)$/)	{ $TGT = $1; shift; }
+	else			{
+		die "ERR!! unsupported option '$_'.\n";
+	}
+}
+
+$DSP // die "ERR!! no .dsp files specified.\n";
+
 sub which
 {
 	my ($name, $chop) = @_;
@@ -20,27 +33,32 @@ my @F_DEPS = map "$_/*", grep -d $_, map "$FPP_DIR/$_", qw(lib arch);
 my @C_DEPS = map "$_/*", grep -d $_, map "$FPP_DIR/$_", qw(include);
 
 my ($FAUST_BIN, $FAUST_DIR) = which 'faust', 3; # /build/bin/faust
-my ($FAUST_LIB, $FAUST_ARC) = map "$FAUST_DIR/$_",
-	qw(libraries architecture);
+my ($FAUST_LIB, $FAUST_ARC) = map "$FAUST_DIR/$_", qw(libraries architecture);
 -d $_ or die "ERR!! '$_' doesn't exist.\n" for $FAUST_LIB, $FAUST_ARC;
 
-my $DSP = shift // '';
-$DSP =~ s/\.dsp$// or die "ERR!! '$DSP' is not .dsp\n";
-
 my $FPP_CMD = "fpp -single -it -ct 0 -I $FAUST_LIB -A $FAUST_ARC";
-my $CPP_CMD = '$(CXX) -Wall -Ofast -lpthread -lreadline -std=c++14 -lsndfile';
+my $CPP_CMD = "\$(CXX) -std=c++14 -Wall -Ofast -I $FAUST_DIR/architecture" .
+	      " -lsndfile";
 
-my $MAKEF = <<EOM;
+my $MAKEF = $TGT eq 'cli' ? <<CLI : <<GTK;
 .INTERMEDIATE: $DSP-cli.cpp
 
 $DSP-cli: $DSP-cli.cpp @C_DEPS
-	$CPP_CMD \$< -o \$@
+	$CPP_CMD -lpthread -lreadline \$< -o \$@
 
 $DSP-cli.cpp: $DSP.dsp $FPP_BIN @F_DEPS
 	$FPP_CMD -scn '' -nvi -a cli.cpp \$< -o \$@
-EOM
+CLI
+.INTERMEDIATE: $DSP-gtk.cpp
+
+$DSP-gtk: $DSP-gtk.cpp @C_DEPS
+	$CPP_CMD -w `pkg-config --cflags --libs portaudiocpp gtk+-2.0` \$< -o \$@
+
+$DSP-gtk.cpp: $DSP.dsp $FPP_BIN @F_DEPS
+	$FPP_CMD -a pa-gtk.cpp \$< -o \$@
+GTK
 
 open my $fd, '|-', 'make', qw(-s -f -) or die;
 print $fd $MAKEF; close $fd or exit;
 
-exec "$DSP-cli", @ARGV;
+exec "$DSP-$TGT", @ARGV;
