@@ -184,6 +184,32 @@ static struct O_GP : public O_B {
 	}
 } __o_gp;
 
+static struct O_IR : public O_B {
+	void ini(void)
+	{
+		const char *argv[] = { "CLI-plot_ir", NULL };
+		fifo_run("/tmp/ir.fifo", "plot_ir", argv);
+
+		ofd = open("/tmp/ir.data", O_CREAT|O_TRUNC|O_WRONLY, 0666);
+		assert(ofd >= 0);
+	}
+
+	void eof(void)
+	{
+		int pfd[2]; char chan[64];
+		assert(pipe(pfd) == 0);
+		snprintf(chan,sizeof(chan), "/proc/%d/fd/%d", getpid(),pfd[1]);
+
+		dprintf(1, "/tmp/ir.data %d %d %s\n", G.no, G.sr, chan);
+
+		int r = read(pfd[0], chan, sizeof(chan)-1);
+		if (r <= 0 || strncmp(chan, "ACK\n", r))
+			die("bad ACK from pipe.");
+		close(pfd[0]); close(pfd[1]);
+		unlink("/tmp/ir.data");
+	}
+} __o_ir;
+
 struct _O_SOX : public O_B {
 	int pid;
 
@@ -250,6 +276,8 @@ static void parse_o(const char *n)
 		O = &__o_f;
 	else IF (gp)
 		O = &__o_gp;
+	else IF (ir)
+		O = &__o_ir;
 	else
 		die("bad -o value '%s'", n);
 }

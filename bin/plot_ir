@@ -1,30 +1,39 @@
 #!/usr/bin/env python3
-
-import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
 fig, axs = plt.subplots(2, 1, sharex=True, figsize=(15,10))
 fig.tight_layout(pad=1)
 
-plt.setp(axs[0].get_xticklabels(), visible=True)
-plt.setp(axs[1].get_xticklabels(), visible=False)
+def plot_ir(FILE:str, NC:int, SR:int):
+	IR = np.fromfile(FILE,
+			 dtype = np.dtype((np.float32, NC)))
+	fft = np.fft.rfft(IR.T).T
 
-IR = np.loadtxt(sys.stdin).T
-NM = range(0, len(IR))
-FS = IR.shape[-1]
+	mag = np.abs(fft)
+	mdb = 20 * np.log10(np.abs(fft))
+	ang = np.angle(fft)
+	ang[mag < 1e-6] = 0
+	ang = np.unwrap(ang, axis=0) / np.pi
 
-rfft = np.fft.rfft(IR).T
-angl = np.angle(rfft)
-angl[np.abs(rfft) < 1e-6] = 0
+	for ax in axs: ax.clear()
 
-axs[0].set_ylim(-60, 20)
-axs[0].plot(20 * np.log10(np.abs(rfft)))
-axs[1].plot(np.unwrap(angl, axis=0) / np.pi)
+	axs[0].set_ylim(-60, 20)
+	axs[0].plot(mdb); axs[1].plot(ang)
 
-for ax in axs:
-	ax.set_xlim(0, FS/2)
-	ax.legend(NM, loc="best")
-	ax.grid(True)
+	leg = range(0,2)
+	for ax in axs:
+		ax.set_xlim(0, SR/2)
+		ax.legend(leg, loc='upper right')
+		ax.grid(True)
 
-plt.show()
+#------------------------------------------------------------------------------
+import os
+
+while True:
+	line = os.read(0,1024)
+	file, nc, sr, ack = line.decode('ascii').split()
+	plot_ir(file, int(nc), int(sr))
+	with open(ack, 'bw', buffering=0) as f:
+		f.write(b"ACK\n")
+	plt.pause(0.1);
