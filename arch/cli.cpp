@@ -109,6 +109,20 @@ out:
 	close(fd);
 }
 
+#define PROC_OPEN()					\
+	int pfd[2]; char chan[64];			\
+	assert(pipe(pfd) == 0);				\
+	snprintf(chan, sizeof(chan), "/proc/%d/fd/%d",	\
+		 getpid(),pfd[1])
+
+#define PROC_CLOSE(tmpf)				\
+	int r = read(pfd[0], chan, sizeof(chan)-1);	\
+	if (r <= 0 || strncmp(chan, "ACK\n", r))	\
+		die("bad ACK from pipe.");		\
+	close(pfd[0]); close(pfd[1]);			\
+	unlink(tmpf)
+
+//-----------------------------------------------------------------------------
 static struct O_N {
 	virtual void ini(void) {}
 	virtual void out(unsigned) {};
@@ -170,17 +184,9 @@ static struct O_GP : public O_B {
 			"u O w l t sprintf('%d',O)\n"
 		);
 
-		int pgp[2]; char ack[32] = {};
-
-		assert(!pipe(pgp));
-		dprintf(1, "set print '/proc/%d/fd/%d'; "
-			   "print 'ACK'; set print\n", getpid(), pgp[1]);
-		read(pgp[0], ack, sizeof(ack) - 1);
-		close(pgp[0]); close(pgp[1]);
-
-		if (strcmp(ack, "ACK\n"))
-			die("bad ack from gnuplot: %s", ack);
-		unlink("/tmp/gp.data");
+		PROC_OPEN();
+		dprintf(1, "set print '%s'; print 'ACK'; set print\n", chan);
+		PROC_CLOSE("/tmp/gp.data");
 	}
 } __o_gp;
 
@@ -196,17 +202,9 @@ static struct O_IR : public O_B {
 
 	void eof(void)
 	{
-		int pfd[2]; char chan[64];
-		assert(pipe(pfd) == 0);
-		snprintf(chan,sizeof(chan), "/proc/%d/fd/%d", getpid(),pfd[1]);
-
+		PROC_OPEN();
 		dprintf(1, "/tmp/ir.data %d %d %s\n", G.no, G.sr, chan);
-
-		int r = read(pfd[0], chan, sizeof(chan)-1);
-		if (r <= 0 || strncmp(chan, "ACK\n", r))
-			die("bad ACK from pipe.");
-		close(pfd[0]); close(pfd[1]);
-		unlink("/tmp/ir.data");
+		PROC_CLOSE("/tmp/ir.data");
 	}
 } __o_ir;
 
