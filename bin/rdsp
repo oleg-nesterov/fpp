@@ -1,13 +1,13 @@
 #!/usr/bin/perl -w
 use strict;
 
-my ($TGT, $DSP) = 'cli';
+my ($TGT, $FLT, $DSP) = ('cli', '-single');
 
-while (@ARGV) {
-	local $_ = $ARGV[0];
-	if    (s/\.dsp$//)	{ $DSP = $_; shift; last; }
-	elsif (/^-(cli|gtk)$/)	{ $TGT = $1; shift; }
-	else			{
+while (defined($_ = shift)) {
+	if (/^-(cli|gtk)$/)		{ $TGT = $1; }
+	elsif (/^-(double|quad)$/)	{ $FLT = $_; }
+	elsif (s/\.dsp$//)		{ $DSP = $_; last; }
+	else {
 		die "ERR!! unsupported option '$_'.\n";
 	}
 }
@@ -36,7 +36,7 @@ my ($FAUST_BIN, $FAUST_DIR) = which 'faust', 3; # /build/bin/faust
 my ($FAUST_LIB, $FAUST_ARC) = map "$FAUST_DIR/$_", qw(libraries architecture);
 -d $_ or die "ERR!! '$_' doesn't exist.\n" for $FAUST_LIB, $FAUST_ARC;
 
-my $FPP_CMD = "fpp -single -it -ct 0 -I $FAUST_LIB -A $FAUST_ARC";
+my $FPP_CMD = "fpp $FLT -it -ct 0 -I $FAUST_LIB -A $FAUST_ARC";
 my $CPP_CMD = "\$(CXX) -std=c++14 -Wall -Ofast -I $FAUST_DIR/architecture" .
 	      " -lsndfile";
 
