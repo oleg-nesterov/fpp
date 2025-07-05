@@ -88,20 +88,17 @@ static void fifo_run(const char *fifo, const char *comm, const char *argv[])
 	if (!fork()) {
 		if (!fork()) {
 			fd = open(fifo, O_RDONLY);
-			assert(fd > 0);
-			assert(dup2(fd, 0) == 0);
-			close(fd);
+			dup2(fd, 0); close(fd);
+			open(fifo, O_WRONLY);
 			execvp(comm, (char**)argv);
-			kill(getppid(), SIGKILL);
 			die("exec '%s' failed: %m", comm);
 		}
-
+		// sync with the child's O_RDONLY
 		fd = open(fifo, O_WRONLY);
-		assert(fd > 0);
-		wait(NULL);
 		exit(0);
 	}
 
+	wait(NULL);
 	fd = open(fifo, O_WRONLY);
 	assert(fd > 0);
 out:
