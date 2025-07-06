@@ -21,19 +21,25 @@ def plot_ir(FILE:str, NC:int, SR:int):
 	axs[0].set_ylim(-60, 20)
 	axs[0].plot(mdb); axs[1].plot(ang)
 
-	leg = range(0,2)
+	lgd = range(0, NC)
 	for ax in axs:
 		ax.set_xlim(0, SR/2)
-		ax.legend(leg, loc='upper right')
+		ax.legend(lgd, loc='upper right')
 		ax.grid(True)
 
 #------------------------------------------------------------------------------
-import os
+import os, select
+
+poll = select.poll()
+poll.register(0, select.EPOLLIN)
 
 while True:
+	if not	poll.poll(250):
+		plt.pause(.1)
+		continue
+
 	line = os.read(0,1024)
 	file, nc, sr, ack = line.decode('ascii').split()
 	plot_ir(file, int(nc), int(sr))
 	with open(ack, 'bw', buffering=0) as f:
 		f.write(b"ACK\n")
-	plt.pause(0.1);
