@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-import numpy as np
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
+import numpy as np
 
 fig, axs = plt.subplots(2, 1, sharex=True, figsize=(15,10))
 fig.tight_layout(pad=1)
@@ -30,16 +32,16 @@ def plot_ir(FILE:str, NC:int, SR:int):
 #------------------------------------------------------------------------------
 import os, select
 
-poll = select.poll()
-poll.register(0, select.EPOLLIN)
+def check_input():
+	if	select.select([0],[],[],0)[0]:
+		line = os.read(0, 1024)
+		file, nc, sr, ack = line.decode('ascii').split()
+		plot_ir(file, int(nc), int(sr))
+		fig.canvas.draw_idle()
+		with open(ack, 'bw', buffering=0) as f:
+			f.write(b"ACK\n")
 
-while True:
-	if not	poll.poll(250):
-		plt.pause(.1)
-		continue
+	fig.canvas.get_tk_widget().after(100, check_input)
 
-	line = os.read(0,1024)
-	file, nc, sr, ack = line.decode('ascii').split()
-	plot_ir(file, int(nc), int(sr))
-	with open(ack, 'bw', buffering=0) as f:
-		f.write(b"ACK\n")
+check_input()
+plt.show()
