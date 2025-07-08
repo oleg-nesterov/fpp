@@ -3,6 +3,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import numpy as np
+import math
 
 fig, axs = plt.subplots(2, 1, sharex=True, figsize=(15,10))
 fig.tight_layout(pad=1)
@@ -27,6 +28,7 @@ def plot_ir(FILE:str, NC:int, SR:int):
 	axs[1].plot(xtk, ang)
 
 	axs[0].set_ylim(-60, 20)
+	axs[1].set_ylim(math.floor(ang.min()), math.ceil(ang.max()))
 
 	lgd = range(0, NC)
 	for ax in axs:
