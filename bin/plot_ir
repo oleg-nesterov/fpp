@@ -12,6 +12,9 @@ def plot_ir(FILE:str, NC:int, SR:int):
 			 dtype = np.dtype((np.float32, NC)))
 	fft = np.fft.rfft(IR.T).T
 
+	NB = fft.shape[0]
+	assert(NB - 1 == IR.shape[0] // 2)
+
 	mag = np.abs(fft)
 	mdb = 20 * np.log10(np.abs(fft))
 	ang = np.angle(fft)
@@ -19,13 +22,14 @@ def plot_ir(FILE:str, NC:int, SR:int):
 	ang = np.unwrap(ang, axis=0) / np.pi
 
 	for ax in axs: ax.clear()
+	xtk = np.arange(NB) * (SR // 2 / (NB - 1))
+	axs[0].plot(xtk, mdb)
+	axs[1].plot(xtk, ang)
 
 	axs[0].set_ylim(-60, 20)
-	axs[0].plot(mdb); axs[1].plot(ang)
 
 	lgd = range(0, NC)
 	for ax in axs:
-		ax.set_xlim(0, SR/2)
 		ax.legend(lgd, loc='upper right')
 		ax.grid(True)
 
