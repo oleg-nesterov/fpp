@@ -175,8 +175,8 @@ static struct O_GP : public O_B {
 
 	void eof(void)
 	{
-		dprintf(1, "NO = %d; FN = '%s'\n%s", G.no, "/tmp/gp.data",
-			"BF = ''; do for [O=1:NO] { BF = BF . '%float' }\n"
+		dprintf(1, "FN='/tmp/gp.data'; DT='%s'; NO=%d\n%s", "%float", G.no,
+			"BF = ''; do for [O=1:NO] { BF = BF . DT }\n"
 			"plot for [O=1:NO] FN volatile binary format=BF "
 			"u O w l t sprintf('%d',O)\n"
 		);
