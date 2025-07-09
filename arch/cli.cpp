@@ -200,7 +200,8 @@ static struct O_IR : public O_B {
 	void eof(void)
 	{
 		PROC_OPEN();
-		dprintf(1, "/tmp/ir.data %d %d %s\n", G.no, G.sr, chan);
+		dprintf(1, "/tmp/ir.data %ld %d %d %s\n",
+				sizeof(float), G.no, G.sr, chan);
 		PROC_CLOSE("/tmp/ir.data");
 	}
 } __o_ir;

@@ -8,9 +8,10 @@ import math
 fig, axs = plt.subplots(2, 1, sharex=True, figsize=(15,10))
 fig.tight_layout(pad=1)
 
-def plot_ir(FILE:str, NC:int, SR:int):
-	IR = np.fromfile(FILE,
-			 dtype = np.dtype((np.float32, NC)))
+def plot_ir(FILE:str, DT:int, NO:int, SR:int):
+	DT = {4:np.single, 8:np.double, 16:np.longdouble}[DT]
+	IR = np.fromfile(FILE, dtype = np.dtype((DT, NO)))
+
 	fft = np.fft.rfft(IR.T).T
 
 	NB = fft.shape[0]
@@ -30,7 +31,7 @@ def plot_ir(FILE:str, NC:int, SR:int):
 	axs[0].set_ylim(-60, 20)
 	axs[1].set_ylim(math.floor(ang.min()), math.ceil(ang.max()))
 
-	lgd = range(0, NC)
+	lgd = range(0, NO)
 	for ax in axs:
 		ax.legend(lgd, loc='upper right')
 		ax.grid(True)
@@ -41,8 +42,8 @@ import os, select
 def check_input():
 	if	select.select([0],[],[],0)[0]:
 		line = os.read(0, 1024)
-		file, nc, sr, ack = line.decode('ascii').split()
-		plot_ir(file, int(nc), int(sr))
+		file, dt, no, sr, ack = line.decode('ascii').split()
+		plot_ir(file, int(dt), int(no), int(sr))
 		fig.canvas.draw_idle()
 		with open(ack, 'bw', buffering=0) as f:
 			f.write(b"ACK\n")
