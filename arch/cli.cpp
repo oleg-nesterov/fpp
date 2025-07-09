@@ -11,7 +11,13 @@
 #include <sys/types.h>
 #include <assert.h>
 
-#define FAUSTFLOAT double
+#ifndef FAUSTFLOAT
+#define FAUSTFLOAT float
+#endif
+
+#ifndef FLOAT
+#define FLOAT FAUSTFLOAT
+#endif
 
 static struct {
 	unsigned sr = 44100, nr = 10, bs = 512, sk, xt;
@@ -131,7 +137,7 @@ static struct O_T : public O_N {
 	void out(unsigned i)
 	{
 		for (unsigned o = 0; o < G.no; o++) {
-			printf("%#-+18.12g%c", _outputs[o][i],
+			printf("%#-+18.12g%c", double(_outputs[o][i]),
 				o == G.no-1 ? '\n' : '\t');
 		}
 	}
@@ -142,7 +148,7 @@ static struct O_T : public O_N {
 } __o_t;
 
 static struct O_B : public O_N {
-	float buf[NOUTS * BUFSZ];
+	FLOAT buf[NOUTS * BUFSZ];
 	int ofd = 1, cnt = 0;
 
 	void out(unsigned i)
@@ -175,7 +181,12 @@ static struct O_GP : public O_B {
 
 	void eof(void)
 	{
-		dprintf(1, "FN='/tmp/gp.data'; DT='%s'; NO=%d\n%s", "%float", G.no,
+		const char *dt	= sizeof(FLOAT) == 4 ? "%float"
+				: sizeof(FLOAT) == 8 ? "%double"
+				: NULL;
+		if (!dt) die("unsupported gnuplot datasize");
+
+		dprintf(1, "FN='/tmp/gp.data'; DT='%s'; NO=%d\n%s", dt, G.no,
 			"BF = ''; do for [O=1:NO] { BF = BF . DT }\n"
 			"plot for [O=1:NO] FN volatile binary format=BF "
 			"u O w l t sprintf('%d',O)\n"
@@ -201,7 +212,7 @@ static struct O_IR : public O_B {
 	{
 		PROC_OPEN();
 		dprintf(1, "/tmp/ir.data %ld %d %d %s\n",
-				sizeof(float), G.no, G.sr, chan);
+				sizeof(FLOAT), G.no, G.sr, chan);
 		PROC_CLOSE("/tmp/ir.data");
 	}
 } __o_ir;
@@ -221,14 +232,15 @@ struct _O_SOX : public O_B {
 			close(fds[1]);
 			assert(dup2(fds[0], 0) == 0);
 
-			char o_r[64], o_c[64];
+			char o_b[16], o_r[64], o_c[64];
+			sprintf(o_b, "-b%d", int(sizeof(FLOAT))*8);
 			sprintf(o_r, "-r%d", G.sr);
 			sprintf(o_c, "-c%d", G.no);
 
 			const char *argv[] = {
 				file ? "sox" : "play",
-				"-q", "-traw", "-ef", "-b32",
-				o_r, o_c,
+				"-q", "-traw", "-ef",
+				o_b, o_r, o_c,
 				"-",
 				file ? "-t.wav" : NULL,
 				file,
@@ -471,7 +483,7 @@ void *it_loop(void *)
 				int sz = sizeof(dump), wr = 0;
 				for (int i = 0; i < ARGN; ++i) {
 					int w = snprintf(dump+wr,sz,"%s=%.16g ",
-							 ARGV[i].n, *ARGV[i].v);
+						ARGV[i].n,  double(*ARGV[i].v));
 					wr += w; sz -= w;
 					if (sz <= 0)
 						die("dump[] overflow.\n");
@@ -502,7 +514,8 @@ void *it_loop(void *)
 
 dump:		fprintf(stderr, "\n");
 		for (int i = 0; i < ARGN; ++i)
-			fprintf(stderr, "  %-16s % -.8g\n", ARGV[i].n, *ARGV[i].v);
+			fprintf(stderr, "  %-16s % -.8g\n",
+				ARGV[i].n, double(*ARGV[i].v));
 		fprintf(stderr, "\n");
 	}
 }
