@@ -34,8 +34,9 @@ def plot_ir(FILE:str, DT:int, NO:int, SR:int):
 	axs[0].set_ylim(-60, 20)
 	axs[1].set_ylim(math.floor(ang.min()), math.ceil(ang.max()))
 
-	lgd = range(0, NO)
+	lgd, ind = range(0, NO), NB // 100;
 	for ax in axs:
+		ax.set_xlim(0 - ind, NB + ind)
 		ax.legend(lgd, loc='upper right')
 		ax.grid(True)
 
