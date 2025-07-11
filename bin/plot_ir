@@ -19,9 +19,10 @@ def plot_ir(FILE:str, DT:int, NO:int, SR:int):
 	assert(NB - 1 == IR.shape[0] // 2)
 
 	mag = np.abs(fft)
-	mdb = 20 * np.log10(np.abs(fft))
+	np.maximum(mag, 1e-6, out=mag)
+	mdb = 20 * np.log10(mag)
 	ang = np.angle(fft)
-	ang[mag < 1e-6] = 0
+	ang[mag <= 1e-6] = 0
 	ang = np.unwrap(ang, axis=0) / np.pi
 
 	for ax in axs: ax.clear()
