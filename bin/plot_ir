@@ -32,7 +32,9 @@ def plot_ir(FILE:str, DT:int, NO:int, SR:int):
 	axs[1].plot(xtk, ang)
 
 	axs[0].set_ylim(-60, 20)
-	axs[1].set_ylim(math.floor(ang.min()), math.ceil(ang.max()))
+	_lo, _hi = math.floor(ang.min()), math.ceil(ang.max())
+	ind = max(0.1, abs(_hi - _lo) // 100)
+	axs[1].set_ylim(_lo - ind, _hi + ind)
 
 	lgd, ind = range(0, NO), NB // 100;
 	for ax in axs:
