@@ -11,6 +11,8 @@
 #include <sys/types.h>
 #include <assert.h>
 
+typedef long double quad;
+
 #ifndef FAUSTFLOAT
 #define FAUSTFLOAT float
 #endif

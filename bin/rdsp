@@ -40,13 +40,17 @@ my $FPP_CMD = "fpp $FLT -it -ct 0 -I $FAUST_LIB -A $FAUST_ARC";
 my $CPP_CMD = "\$(CXX) -std=c++14 -Wall -Ofast -I $FAUST_DIR/architecture" .
 	      " -lsndfile";
 
-my $BIN = "$DSP-$TGT";
+my ($BIN, $CLI_FLT) = ("$DSP-$TGT", '');
+
+if    ($FLT eq '-single' or $TGT ne 'cli') {}
+elsif ($FLT eq '-double') { $BIN .= 'd'; $CLI_FLT = '-D FAUSTFLOAT=double'; }
+elsif ($FLT eq '-quad')	  { $BIN .= 'q'; $CLI_FLT = '-D FAUSTFLOAT=quad';   }
 
 my $MAKEF = $TGT eq 'cli' ? <<CLI : <<GTK;
 .INTERMEDIATE: $BIN.cpp
 
 $BIN: $BIN.cpp @C_DEPS
-	$CPP_CMD -lpthread -lreadline \$< -o \$@
+	$CPP_CMD $CLI_FLT -lpthread -lreadline \$< -o \$@
 
 $BIN.cpp: $DSP.dsp $FPP_BIN @F_DEPS
 	$FPP_CMD -scn '' -nvi -a cli.cpp \$< -o \$@
