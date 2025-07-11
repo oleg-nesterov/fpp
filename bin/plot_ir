@@ -10,7 +10,8 @@ fig.tight_layout(pad=1)
 
 def plot_ir(FILE:str, DT:int, NO:int, SR:int):
 	DT = {4:np.single, 8:np.double, 16:np.longdouble}[DT]
-	IR = np.fromfile(FILE, dtype = np.dtype((DT, NO)))
+	if NO > 1: DT = np.dtype((DT, NO))
+	IR = np.fromfile(FILE, dtype = DT)
 
 	fft = np.fft.rfft(IR.T).T
 
