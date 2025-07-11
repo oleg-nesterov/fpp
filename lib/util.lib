@@ -5,3 +5,5 @@ PERL:	@$CODE{qw(DECL INIT POST)} =
 };
 
 iota = FPP() :iota eval _int_ { IOTA0 };
+
+toir = *(FPP() pure { (2 / $_float_(G.nr)) });
