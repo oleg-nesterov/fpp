@@ -40,25 +40,27 @@ my $FPP_CMD = "fpp $FLT -it -ct 0 -I $FAUST_LIB -A $FAUST_ARC";
 my $CPP_CMD = "\$(CXX) -std=c++14 -Wall -Ofast -I $FAUST_DIR/architecture" .
 	      " -lsndfile";
 
-my $MAKEF = $TGT eq 'cli' ? <<CLI : <<GTK;
-.INTERMEDIATE: $DSP-cli.cpp
+my $BIN = "$DSP-$TGT";
 
-$DSP-cli: $DSP-cli.cpp @C_DEPS
+my $MAKEF = $TGT eq 'cli' ? <<CLI : <<GTK;
+.INTERMEDIATE: $BIN.cpp
+
+$BIN: $BIN.cpp @C_DEPS
 	$CPP_CMD -lpthread -lreadline \$< -o \$@
 
-$DSP-cli.cpp: $DSP.dsp $FPP_BIN @F_DEPS
+$BIN.cpp: $DSP.dsp $FPP_BIN @F_DEPS
 	$FPP_CMD -scn '' -nvi -a cli.cpp \$< -o \$@
 CLI
-.INTERMEDIATE: $DSP-gtk.cpp
+.INTERMEDIATE: $BIN.cpp
 
-$DSP-gtk: $DSP-gtk.cpp @C_DEPS
+$BIN: $BIN.cpp @C_DEPS
 	$CPP_CMD -w `pkg-config --cflags --libs portaudiocpp gtk+-2.0` \$< -o \$@
 
-$DSP-gtk.cpp: $DSP.dsp $FPP_BIN @F_DEPS
+$BIN.cpp: $DSP.dsp $FPP_BIN @F_DEPS
 	$FPP_CMD -a pa-gtk.cpp \$< -o \$@
 GTK
 
 open my $fd, '|-', 'make', qw(-s -f -) or die;
 print $fd $MAKEF; close $fd or exit;
 
-exec "$DSP-$TGT", @ARGV;
+exec $BIN, @ARGV;
