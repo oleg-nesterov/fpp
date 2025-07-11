@@ -270,28 +270,6 @@ static struct O_F : public _O_SOX {
 
 static struct O_N *O = &__o_t;
 
-#define	IF(a)	if (!strcmp(n, #a))
-
-static void parse_o(const char *n)
-{
-	IF (t)
-		O = &__o_t;
-	else IF (n)
-		O = &__o_n;
-	else IF (b)
-		O = &__o_b;
-	else IF (p)
-		O = &__o_p;
-	else IF (f)
-		O = &__o_f;
-	else IF (gp)
-		O = &__o_gp;
-	else IF (ir)
-		O = &__o_ir;
-	else
-		die("bad -o value '%s'", n);
-}
-
 // ----------------------------------------------------------------------------
 #define NARG	32
 static struct {
@@ -350,37 +328,64 @@ static void cli_add_opt(const char *n, const char *p)
 }
 
 // ----------------------------------------------------------------------------
+#define	IF(a)	if (!strcmp(n, #a))
+
+static void parse_o(const char *n)
+{
+	if (!n)
+		goto err;
+	else IF (t)
+		O = &__o_t;
+	else IF (n)
+		O = &__o_n;
+	else IF (b)
+		O = &__o_b;
+	else IF (p)
+		O = &__o_p;
+	else IF (f)
+		O = &__o_f;
+	else IF (gp)
+		O = &__o_gp;
+	else IF (ir)
+		O = &__o_ir;
+	else
+		err: die("bad -o name: '%s'", n);
+}
+
+static void parse_G(const char *n, const char *v)
+{
+	const  char *o = n;
+	int x; char *e = NULL;
+
+	if (v) x = strtoll(v, &e, 0);
+	if (e == v || *e)
+		die("bad number: '%s'", v);
+
+	if (*o++ == '-') for (;;)
+		switch (*o++) {
+		case   0: return;
+		case 'r': G.sr = x; break;
+		case 'n': G.nr = x; break;
+		case 's': G.sk = x; break;
+		case 'x': G.xt = x; break;
+		case 'b': G.bs = x; break;
+		default: goto err;
+		};
+
+err:	die("bad option '%s'", n);
+}
+
 static void parse_args(const char* argv[])
 {
-	for (;;) {
-		const char *n, *v;
-		unsigned *p_u;
-
-		if (!(n = *++argv))
-			break;
+	for (const char *n; (n = *++argv);) {
+		if (const char *p = strchr(n, '='))
+			cli_add_opt(n, p);
 		else IF (-i)
 			G.it = 1;
-		else if (const char *p = strchr(n, '='))
-			cli_add_opt(n, p);
-		else if (!(v = *++argv))
-			die("no value for '%s'", n);
 		else IF (-o)
-			parse_o(v);
-		else IF (-r)
-			{ p_u = &G.sr; goto set_u; }
-		else IF (-n)
-			{ p_u = &G.nr; goto set_u; }
-		else IF (-s)
-			{ p_u = &G.sk; goto set_u; }
-		else IF (-b)
-			{ p_u = &G.bs; goto set_u; }
-		else IF (-x)
-			{ p_u = &G.xt; goto set_u; }
+			parse_o(*++argv);
 		else
-			die("bad option '%s'", n);
-		continue;
- set_u:
-		*p_u = atoi(v);
+			parse_G(n, *++argv);
 	}
 }
 
