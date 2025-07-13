@@ -221,10 +221,11 @@ static struct O_IR : public O_B {
 	}
 } __o_ir;
 
-struct _O_SOX : public O_B {
+struct O_SOX : public O_B {
+	const char *file;
 	int pid;
 
-	void __ini(const char *file)
+	void ini(void)
 	{
 		int fds[2];
 		assert(!pipe(fds));
@@ -261,14 +262,7 @@ struct _O_SOX : public O_B {
 		O_B::eof();
 		waitpid(pid, NULL, 0);
 	}
-};
-
-static struct O_P : public _O_SOX {
-	void ini() { __ini(NULL); }
-} __o_p;
-static struct O_F : public _O_SOX {
-	void ini() { __ini("-"); }
-} __o_f;
+} __o_sox;
 
 static struct O_N *O = &__o_t;
 
@@ -343,9 +337,9 @@ static void parse_o(const char *n)
 	else IF (b)
 		O = &__o_b;
 	else IF (p)
-		O = &__o_p;
+		O = &__o_sox, __o_sox.file = NULL;
 	else IF (f)
-		O = &__o_f;
+		O = &__o_sox, __o_sox.file = "-";
 	else IF (gp)
 		O = &__o_gp;
 	else IF (ir)
