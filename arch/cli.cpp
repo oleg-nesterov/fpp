@@ -201,6 +201,8 @@ static struct O_GP : public O_B {
 } __o_gp;
 
 static struct O_IR : public O_B {
+	int norm;
+
 	void ini(void)
 	{
 		const char *argv[] = { "CLI-plot_ir", NULL };
@@ -213,8 +215,8 @@ static struct O_IR : public O_B {
 	void eof(void)
 	{
 		PROC_OPEN();
-		dprintf(1, "/tmp/ir.data %ld %d %d %s\n",
-				sizeof(FLOAT), G.no, G.sr, chan);
+		dprintf(1, "/tmp/ir.data %d %ld %d %d %s\n",
+				norm, sizeof(FLOAT), G.no, G.sr, chan);
 		PROC_CLOSE("/tmp/ir.data");
 	}
 } __o_ir;
@@ -347,7 +349,9 @@ static void parse_o(const char *n)
 	else IF (gp)
 		O = &__o_gp;
 	else IF (ir)
-		O = &__o_ir;
+		O = &__o_ir, __o_ir.norm = 0;
+	else IF (fr)
+		O = &__o_ir, __o_ir.norm = 1;
 	else
 		err: die("bad -o name: '%s'", n);
 }

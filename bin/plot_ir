@@ -8,12 +8,15 @@ import math
 fig, axs = plt.subplots(2, 1, sharex=True, figsize=(15,10))
 fig.tight_layout(pad=1)
 
-def plot_ir(FILE:str, DT:int, NO:int, SR:int):
+def plot_ir(FILE:str, NORM:int, DT:int, NO:int, SR:int):
 	DT = {4:np.single, 8:np.double, 16:np.longdouble}[DT]
 	if NO > 1: DT = np.dtype((DT, NO))
 	IR = np.fromfile(FILE, dtype = DT)
 
 	fft = np.fft.rfft(IR.T).T
+	if NORM:
+		fft	/= (IR.shape[0] / 2)
+		fft[0]	/= 2
 
 	NB = fft.shape[0]
 	assert(NB - 1 == IR.shape[0] // 2)
@@ -51,8 +54,8 @@ import os, select
 def check_input():
 	if	select.select([0],[],[],0)[0]:
 		line = os.read(0, 1024)
-		file, dt, no, sr, ack = line.decode('ascii').split()
-		plot_ir(file, int(dt), int(no), int(sr))
+		file, norm, dt,no,sr, ack = line.decode('ascii').split()
+		plot_ir(file, int(norm), int(dt), int(no), int(sr))
 		fig.canvas.draw_idle()
 		with open(ack, 'bw', buffering=0) as f:
 			f.write(b"ACK\n")
