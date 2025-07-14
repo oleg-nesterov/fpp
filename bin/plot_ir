@@ -49,12 +49,14 @@ def plot_ir(FILE:str, NORM:int, DT:int, NO:int, SR:int):
 		ax.grid(True)
 
 #------------------------------------------------------------------------------
-import os, select
+import array, termios, fcntl, os
 
+rdy = array.array('I', [0])
 def check_input():
-	if	select.select([0],[],[],0)[0]:
-		line = os.read(0, 1024)
-		file, norm, dt,no,sr, ack = line.decode('ascii').split()
+	fcntl.ioctl(0, termios.FIONREAD, rdy)
+	if rdy[0]:
+		line = os.read(0, 1024).decode('ascii')
+		file, norm, dt,no,sr, ack = line.split()
 		plot_ir(file, int(norm), int(dt), int(no), int(sr))
 		fig.canvas.draw_idle()
 		with open(ack, 'bw', buffering=0) as f:
