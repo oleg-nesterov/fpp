@@ -31,10 +31,17 @@ def plot_ir(FILE:str, DT:int, NO:int, SR:int):
 	axs[1].plot(xtk, ang)
 
 	axs[0].set_ylim(-60, 20)
-	axs[1].set_ylim(math.floor(ang.min()), math.ceil(ang.max()))
+	lo, hi = ang.min(), ang.max()
+	if hi - lo >= 1/2:
+		LO, HI = math.floor(2*lo)/2, math.ceil(2*hi)/2
+		pad = (HI - LO) / 50
+		if HI - hi < pad: HI += pad
+		if lo - LO < pad: LO -= pad
+		axs[1].set_ylim(LO, HI)
 
 	lgd = range(0, NO)
 	for ax in axs:
+		ax.margins(1/100, 1/50)
 		ax.legend(lgd, loc='upper right')
 		ax.grid(True)
 
