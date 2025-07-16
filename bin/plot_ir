@@ -22,15 +22,16 @@ def plot_ir(FILE:str, NORM:int, DT:int, NO:int, SR:int):
 	assert(NB - 1 == IR.shape[0] // 2)
 
 	mag = np.abs(fft)
-	np.maximum(mag, 1e-6, out=mag)
-	mdb = 20 * np.log10(mag)
+	np.maximum(mag, 1e-16, out=mag)
+	np.log10(mag, out=mag); mag *= 20
+
 	ang = np.angle(fft)
-	ang[mag <= 1e-6] = 0
+	ang[mag < -120] = 0
 	ang = np.unwrap(ang, axis=0) / np.pi
 
 	for ax in axs: ax.clear()
 	xtk = np.arange(NB) * (SR // 2 / (NB - 1))
-	axs[0].plot(xtk, mdb)
+	axs[0].plot(xtk, mag)
 	axs[1].plot(xtk, ang)
 
 	axs[0].set_ylim(-60, 20)
