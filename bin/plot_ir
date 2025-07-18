@@ -8,6 +8,21 @@ import math
 fig, axs = plt.subplots(2, 1, sharex=True, figsize=(15,10))
 fig.tight_layout(pad=1)
 
+def __bf_fill(mag, ang, min):
+	nz = np.argmax(mag > min)
+	if nz > 0:
+		ang[0:nz] = ang[nz]
+	elif mag[0] <= min:
+		ang[:] = 0; return
+	for n in np.flatnonzero(mag[nz+1:] <= min):
+		ang[nz+n + 1] = ang[nz+n]
+
+def bf_fill(mag, ang, min):
+	mag = np.atleast_2d(mag.T)
+	ang = np.atleast_2d(ang.T)
+	for m, a in zip(mag, ang):
+		__bf_fill(m,a, min)
+
 def plot_ir(FILE:str, NORM:int, DT:int, NO:int, SR:int):
 	DT = {4:np.single, 8:np.double, 16:np.longdouble}[DT]
 	if NO > 1: DT = np.dtype((DT, NO))
@@ -26,7 +41,8 @@ def plot_ir(FILE:str, NORM:int, DT:int, NO:int, SR:int):
 	np.log10(mag, out=mag); mag *= 20
 
 	ang = np.angle(fft)
-	ang[mag < -120] = 0
+	if NORM:	ang[mag < -120] = 0
+	else:		bf_fill(mag,ang, -120)
 	ang = np.unwrap(ang, axis=0) / np.pi
 
 	for ax in axs: ax.clear()
