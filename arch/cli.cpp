@@ -129,6 +129,7 @@ out:
 
 //-----------------------------------------------------------------------------
 static struct O_N {
+	virtual bool cli(char*) { return false; }
 	virtual void ini(void) {}
 	virtual void out(unsigned) {};
 	virtual void eob(void) {}
@@ -328,6 +329,11 @@ static void cli_add_opt(char *n, char *p)
 
 static void parse_o(char *n)
 {
+	char *p = NULL;
+
+	if (n && (p = strchr(n, '=')))
+		*p++ = 0;
+
 	if (!n)
 		goto err;
 	else IF (t)
@@ -348,6 +354,9 @@ static void parse_o(char *n)
 		O = &__o_ir, __o_ir.norm = 1;
 	else
 		err: die("bad -o name: '%s'", n);
+
+	if (p && (!*p || !O->cli(p)))
+		die("bad arg '%s' for -o %s", p, n);
 }
 
 static void parse_G(const char *n, const char *v)
