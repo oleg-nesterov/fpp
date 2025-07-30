@@ -710,6 +710,9 @@ sub uncast_all
 
 sub fix_types
 {
+	# temporary kludge for faust commit cf65ee3172a5
+	s/static_cast<(.*?)>/$1/g for $INIT, $CTRL, $EXEC;
+
 	my $funcs = shift;
 
 	my %ftype; while (my ($n, $f) = each %$funcs) {
