@@ -318,15 +318,15 @@ static void ui_ck_opts(void)
 	if (!w) fputs("\n", stderr);
 }
 
-static void cli_add_opt(const char *n, const char *p)
+static void cli_add_opt(char *n, char *p)
 {
-	*(char *)p = 0; __add_opt(n, atof(p+1), true);
+	*p = 0; __add_opt(n, atof(p+1), true);
 }
 
 // ----------------------------------------------------------------------------
 #define	IF(a)	if (!strcmp(n, #a))
 
-static void parse_o(const char *n)
+static void parse_o(char *n)
 {
 	if (!n)
 		goto err;
@@ -373,10 +373,10 @@ static void parse_G(const char *n, const char *v)
 err:	die("bad option '%s'", n);
 }
 
-static void parse_args(const char* argv[])
+static void parse_args(char* argv[])
 {
-	for (const char *n; (n = *++argv);) {
-		if (const char *p = strchr(n, '='))
+	for (char *n; (n = *++argv);) {
+		if (char *p = strchr(n, '='))
 			cli_add_opt(n, p);
 		else IF (-i)
 			G.it = 1;
@@ -525,7 +525,7 @@ dump:		fprintf(stderr, "\n");
 	}
 }
 
-int main(int argc, const char* argv[])
+int main(int argc, char* argv[])
 {
 	#ifdef CLI_INIT
 	CLI_INIT
