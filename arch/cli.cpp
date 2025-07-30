@@ -173,6 +173,14 @@ static struct O_B : public O_N {
 } __o_b;
 
 static struct O_GP : public O_B {
+	const char *ylims = "";
+
+	bool cli(char *arg)
+	{
+		ylims = arg;
+		return true;
+	}
+
 	void ini(void)
 	{
 		const char *argv[] = { "CLI-gnuplot", NULL };
@@ -189,11 +197,11 @@ static struct O_GP : public O_B {
 				: NULL;
 		if (!dt) die("unsupported gnuplot datasize");
 
-		dprintf(1, "FN='/tmp/gp.data'; DT='%s'; NO=%d\n%s", dt, G.no,
+		dprintf(1, "FN='/tmp/gp.data'; DT='%s'; NO=%d\n"
 			"BF = ''; do for [O=1:NO] { BF = BF . DT }\n"
-			"plot for [O=1:NO] FN volatile binary format=BF "
-			"u O w l t sprintf('%d',O)\n"
-		);
+			"plot [][%s] for [O=1:NO] FN volatile binary format=BF "
+			"u O w l t sprintf('%%d',O)\n",
+			dt, G.no, ylims);
 
 		PROC_OPEN();
 		dprintf(1, "set print '%s'; print 'ACK'; set print\n", chan);
