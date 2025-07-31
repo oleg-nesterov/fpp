@@ -329,7 +329,10 @@ static void ui_ck_opts(void)
 
 static void cli_add_opt(char *n, char *p)
 {
-	*p = 0; __add_opt(n, atof(p+1), true);
+	*p++ = 0;
+	char *e; FAUSTFLOAT v = strtod(p, &e);
+	if (e == p || *e) die("bad number: '%s'", p);
+	__add_opt(n, v, true);
 }
 
 // ----------------------------------------------------------------------------
