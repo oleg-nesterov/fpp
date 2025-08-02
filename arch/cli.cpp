@@ -23,7 +23,7 @@ typedef long double quad;
 
 static struct {
 	unsigned sr = 44100, nr = 10, bs = 512, sk, xt;
-	unsigned no;
+	unsigned no, __no;
 	int it;
 } G;
 
@@ -67,10 +67,19 @@ static unsigned GN; static FAUSTFLOAT GV[NOUTS];
 	exit(1);						\
 } while (0)
 
+static void check_g(void)
+{
+	G.__no = G.no;
+	for (unsigned o = 0; o < G.__no; o++)
+		if (GV[o] == FAUSTFLOAT(0)) --G.no;
+	if (!G.no) die("-g: no outputs");
+}
 static void apply_g(unsigned i)
 {
-	for (unsigned o = 0; o < G.no; o++)
-		_outputs[o][i] *= GV[o];
+	for (unsigned __o = 0, o = 0; o < G.__no; o++) {
+		if (GV[o] == FAUSTFLOAT(0)) continue;
+		_outputs[__o++][i] = _outputs[o][i] * GV[o];
+	}
 }
 
 // ----------------------------------------------------------------------------
@@ -582,6 +591,7 @@ int main(int argc, char* argv[])
 	G.no = DSP.getNumOutputs();
 	assert(G.no <= NOUTS);
 	assert(G.bs <= BUFSZ);
+	if (GN) check_g();
 
 	DSP.init(G.sr);
 	DSP.buildUserInterface((UI*)0);
