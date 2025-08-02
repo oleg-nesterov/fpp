@@ -60,11 +60,18 @@ static mydsp DSP;
 #define NOUTS	16
 #define BUFSZ	1024
 static FAUSTFLOAT _outputs[NOUTS][BUFSZ];
+static unsigned GN; static FAUSTFLOAT GV[NOUTS];
 
 #define die(fmt, ...) do {					\
 	fprintf(stderr, "ERR!! " fmt "\n", ##__VA_ARGS__);	\
 	exit(1);						\
 } while (0)
+
+static void apply_g(unsigned i)
+{
+	for (unsigned o = 0; o < G.no; o++)
+		_outputs[o][i] *= GV[o];
+}
 
 // ----------------------------------------------------------------------------
 static void fifo_run(const char *fifo, const char *comm, const char *argv[])
@@ -370,6 +377,21 @@ static void parse_o(char *n)
 		die("bad arg '%s' for -o %s", p, n);
 }
 
+static void parse_g(const char *p)
+{
+	if (p) for (char *e;; p = e + 1) {
+		assert(GN < NOUTS);
+		FAUSTFLOAT g = strtod(p, &e);
+		if (e != p) {
+			GV[GN++] = g;
+			if (*e == ',') continue;
+			if (*e == '\0') return;
+		}
+		break;
+	}
+	die("bad number: '%s'", p);
+}
+
 static void parse_G(const char *n, const char *v)
 {
 	const  char *o = n;
@@ -402,6 +424,8 @@ static void parse_args(char* argv[])
 			G.it = 1;
 		else IF (-o)
 			parse_o(*++argv);
+		else IF (-g)
+			parse_g(*++argv);
 		else
 			parse_G(n, *++argv);
 	}
@@ -587,7 +611,10 @@ int main(int argc, char* argv[])
 
 		for (unsigned i = 0; i < count; i++) {
 			if (G.sk) G.sk--;
-			else   O->out(i);
+			else {
+				if (GN) apply_g(i);
+				O->out(i);
+			}
 		}
 		O->eob();
 	}
