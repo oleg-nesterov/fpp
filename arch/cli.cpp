@@ -60,7 +60,8 @@ static mydsp DSP;
 #define NOUTS	16
 #define BUFSZ	1024
 static FAUSTFLOAT _outputs[NOUTS][BUFSZ];
-static unsigned GN; static FAUSTFLOAT GV[NOUTS];
+static struct { FAUSTFLOAT g,s; } GV[NOUTS];
+static unsigned GN;
 
 #define die(fmt, ...) do {					\
 	fprintf(stderr, "ERR!! " fmt "\n", ##__VA_ARGS__);	\
@@ -71,14 +72,14 @@ static void check_g(void)
 {
 	G.__no = G.no;
 	for (unsigned o = 0; o < G.__no; o++)
-		if (GV[o] == FAUSTFLOAT(0)) --G.no;
+		if (GV[o].g == FAUSTFLOAT(0)) --G.no;
 	if (!G.no) die("-g: no outputs");
 }
 static void apply_g(unsigned i)
 {
 	for (unsigned __o = 0, o = 0; o < G.__no; o++) {
-		if (GV[o] == FAUSTFLOAT(0)) continue;
-		_outputs[__o++][i] = _outputs[o][i] * GV[o];
+		if (GV[o].g == FAUSTFLOAT(0)) continue;
+		_outputs[__o++][i] = _outputs[o][i] * GV[o].g + GV[o].s;
 	}
 }
 
@@ -390,9 +391,11 @@ static void parse_g(const char *p)
 {
 	if (p) for (char *e;; p = e + 1) {
 		assert(GN < NOUTS);
-		FAUSTFLOAT g = strtod(p, &e);
+		GV[GN].g = strtod(p, &e);
 		if (e != p) {
-			GV[GN++] = g;
+			if (*e == '+' || *e == '-')
+				GV[GN].s = strtod(p = e, &e);
+			GN++;
 			if (*e == ',') continue;
 			if (*e == '\0') return;
 		}
