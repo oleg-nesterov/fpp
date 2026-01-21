@@ -3242,6 +3242,60 @@ CPP
 [__LINE__, <<'DSP', <<'CPP'],
 import("stdfaust.lib");
 
+meth = FPP(ARG, arg) {
+METH:	$METH()
+	{
+		return $(ARG*ma.SR) + $(1/ma.SR);
+	}
+meth:	$meth()
+	{
+		return $ARG + $(arg/ma.SR);
+	}
+exec:	$METH() + $meth();
+};
+
+process = meth(100,10), meth(100,20);
+DSP
+	int fSampleRate;
+
+METH__01()
+{
+	return fConst1 + fConst2;
+}
+meth__01()
+{
+	return 100 + fConst3;
+}
+meth__02()
+{
+	return 100 + fConst4;
+}
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		float fConst0 = std::min<float>(1.92e+05f, std::max<float>(1.0f, float(fSampleRate)));
+		float fConst1 = 1e+02f * fConst0;
+		float fConst2 = 1.0f / fConst0;
+		float fConst3 = 1e+01f / fConst0;
+		float fConst4 = 2e+01f / fConst0;
+	}
+
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(({ METH__01() + meth__01(); }));
+			output1[i0] = FAUSTFLOAT(({ METH__01() + meth__02(); }));
+		}
+	}
+
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
+import("stdfaust.lib");
+
 foo = FPP(fc0, inp) {
 decl:	foo_state $state;
 init:	#if $(internal.rate(fc0) < 2)

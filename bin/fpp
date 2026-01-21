@@ -237,8 +237,8 @@ sub __expand_fpp; sub __expand_fpp
 
 	local ($CODE, $THIS, $DICT) = ($code, $this, \$dict);
 
-	expand 1, qw(PERL FILE DECL INIT CALL LOOP POST EXIT AUTO);
-	expand 0, qw(     file decl init call loop post exit auto exec);
+	expand 1, qw(PERL FILE DECL METH INIT CALL LOOP POST EXIT AUTO);
+	expand 0, qw(     file decl meth init call loop post exit auto exec);
 	$dict;
 }
 
@@ -468,8 +468,8 @@ sub parse_code
 	/oeg;
 
 	my @r = parse_args $_[0], $with;
-	CORE::state $re_z = re_z 'FILE|DECL|INIT|CALL|LOOP|POST|EXIT|AUTO|PERL|'.
-				 'file|decl|init|call|loop|post|exit|auto|stmt|exec';
+	CORE::state $re_z = re_z 'FILE|DECL|METH|INIT|CALL|LOOP|POST|EXIT|AUTO|PERL|'.
+				 'file|decl|meth|init|call|loop|post|exit|auto|stmt|exec';
 	@r, parse_zone $re_z, 'exec';
 }
 
@@ -604,7 +604,7 @@ sub parse_dep
 	$2 or die 'expected ;';
 
 	local $_ = $1;
-	CORE::state $re_z = re_z 'FILE|DECL|INIT|LOOP|POST|PERL';
+	CORE::state $re_z = re_z 'FILE|DECL|METH|INIT|LOOP|POST|PERL';
 	my $code = parse_zone $re_z, 'FILE';
 	$code->{name} = $name;
 
@@ -863,6 +863,7 @@ sub add_marks
 	$FILE = "#MARK FILE\n";
 
 	$DECL =~ s/^\h+\K/#MARK CALL\n$`/ or die;
+	$METH =  "#MARK CALL\n";
 
 	unless ($O_OS) {
 		$EXEC =~ s/\{\v\K .*? (?=\h+\})/
@@ -968,6 +969,7 @@ sub expand_all
 					 0, qw(INIT);
 	fill_mark $FILE, 'FILE', collect 0, qw(FILE file);
 	fill_mark $DECL, 'CALL', collect 0, qw(DECL decl);
+	fill_mark $METH, 'CALL', collect 0, qw(METH meth);
 	fill_mark $INIT, 'EXIT', collect 0, qw(INIT init);
 	fill_mark $EXEC, 'CALL', collect 0, qw(CALL call);
 	fill_mark $EXEC, 'LOOP', collect 0, qw(LOOP loop);
@@ -1409,7 +1411,7 @@ sub main
 		if defined $out;
 
 	if ($shrt) {
-		length and $_ .= "\n" for $FILE, $DECL;
+		length and $_ .= "\n" for $FILE, $DECL, $METH;
 		if ($O_C) { s/^(?!$)/\t/mg for $INIT, $CTRL, $EXEC }
 
 		my ($i, $c, $e) = (
@@ -1421,7 +1423,7 @@ sub main
 		);
 
 		my $f = sub { $_[1] && "\tvoid $_[0]\n\t{\n$_[1]\t}\n\n" };
-		print	$FILE, $DECL,
+		print	$FILE, $DECL, $METH,
 			$f->($i, $INIT), $f->($c, $CTRL), $f->($e, $EXEC)
 	} else {
 		print s/\b\Q$temp\E\b/$name/or for @$code;
