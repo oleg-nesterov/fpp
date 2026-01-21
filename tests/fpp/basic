@@ -3257,6 +3257,10 @@ exec:	$METH() + $meth();
 process = meth(100,10), meth(100,20);
 DSP
 	int fSampleRate;
+	float fConst1;
+	float fConst2;
+	float fConst3;
+	float fConst4;
 
 METH__01()
 {
@@ -3275,10 +3279,10 @@ meth__02()
 	{
 		fSampleRate = sample_rate;
 		float fConst0 = std::min<float>(1.92e+05f, std::max<float>(1.0f, float(fSampleRate)));
-		float fConst1 = 1e+02f * fConst0;
-		float fConst2 = 1.0f / fConst0;
-		float fConst3 = 1e+01f / fConst0;
-		float fConst4 = 2e+01f / fConst0;
+		fConst1 = 1e+02f * fConst0;
+		fConst2 = 1.0f / fConst0;
+		fConst3 = 1e+01f / fConst0;
+		fConst4 = 2e+01f / fConst0;
 	}
 
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
