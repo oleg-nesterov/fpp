@@ -830,8 +830,8 @@ sub lift_const
 		if ($O_C) { s/(?=($lift))/dsp->/g for $$from, @_; }
 	};
 
-	do_lift \$INIT, 'Const', $CTRL, $EXEC;
-	do_lift \$CTRL, 'Slow',  $EXEC;
+	do_lift \$INIT, 'Const', $CTRL, $METH, $EXEC;
+	do_lift \$CTRL, 'Slow',  $METH, $EXEC;
 	do_lift \$EXEC, 'Slow',  $METH;
 }
 

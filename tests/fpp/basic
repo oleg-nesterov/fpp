@@ -3377,6 +3377,36 @@ meth__02() { return 2 + MEM__01 + mem__02 + fSlow0; }
 CPP
 
 [__LINE__, <<'DSP', <<'CPP'],
+const = FPP() pure { [CONST] };
+meth = FPP() {
+meth: $meth() { return $(const); }
+exec: $meth();
+};
+process = meth;
+DSP
+	int fSampleRate;
+	float aux0__01;
+
+meth__01() { return aux0__01; }
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+
+		{ aux0__01 = CONST; }
+	}
+
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(({ meth__01(); }));
+		}
+	}
+
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
 import("stdfaust.lib");
 
 foo = FPP(fc0, inp) {
