@@ -798,7 +798,7 @@ sub kill_const
 	};
 
 	do_kill \$INIT, 'Const', $CTRL, $METH, $EXEC;
-	do_kill \$CTRL, 'Slow',  $EXEC;
+	do_kill \$CTRL, 'Slow',  $METH, $EXEC;
 }
 # after the faust commit 81cf3d7635a2 the Const|Slow logic is not needed
 sub lift_const

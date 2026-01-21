@@ -3298,6 +3298,48 @@ meth__02()
 CPP
 
 [__LINE__, <<'DSP', <<'CPP'],
+//: -ec
+import("stdfaust.lib");
+meth = FPP(x) {
+DECL:	$MEM; decl: $mem;
+meth:	$meth() { return $x + $MEM + $mem + $(nentry("E",0,0,2,1)); }
+exec:	$meth();
+};
+process = meth(1), meth(2);
+DSP
+	MEM__01;
+	mem__01;
+	mem__02;
+	FAUSTFLOAT fEntry0;
+	float fSlow0;
+	int fSampleRate;
+
+meth__01() { return 1 + MEM__01 + mem__01 + fSlow0; }
+meth__02() { return 2 + MEM__01 + mem__02 + fSlow0; }
+
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+	}
+
+	void control()
+	{
+		fSlow0 = float(fEntry0);
+	}
+
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(({ meth__01(); }));
+			output1[i0] = FAUSTFLOAT(({ meth__02(); }));
+		}
+	}
+
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
 import("stdfaust.lib");
 
 foo = FPP(fc0, inp) {
