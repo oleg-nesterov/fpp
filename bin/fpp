@@ -832,6 +832,7 @@ sub lift_const
 
 	do_lift \$INIT, 'Const', $CTRL, $EXEC;
 	do_lift \$CTRL, 'Slow',  $EXEC;
+	do_lift \$EXEC, 'Slow',  $METH;
 }
 
 sub fill_oobi
