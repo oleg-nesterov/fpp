@@ -3262,18 +3262,18 @@ DSP
 	float fConst3;
 	float fConst4;
 
-METH__01()
-{
-	return fConst1 + fConst2;
-}
-meth__01()
-{
-	return 100 + fConst3;
-}
-meth__02()
-{
-	return 100 + fConst4;
-}
+	METH__01()
+	{
+		return fConst1 + fConst2;
+	}
+	meth__01()
+	{
+		return 100 + fConst3;
+	}
+	meth__02()
+	{
+		return 100 + fConst4;
+	}
 
 	void instanceConstants(int sample_rate)
 	{
@@ -3294,7 +3294,6 @@ meth__02()
 			output1[i0] = FAUSTFLOAT(({ METH__01() + meth__02(); }));
 		}
 	}
-
 CPP
 
 [__LINE__, <<'DSP', <<'CPP'],
@@ -3314,8 +3313,8 @@ DSP
 	float fSlow0;
 	int fSampleRate;
 
-meth__01() { return 1 + MEM__01 + mem__01 + fSlow0; }
-meth__02() { return 2 + MEM__01 + mem__02 + fSlow0; }
+	meth__01() { return 1 + MEM__01 + mem__01 + fSlow0; }
+	meth__02() { return 2 + MEM__01 + mem__02 + fSlow0; }
 
 	void instanceConstants(int sample_rate)
 	{
@@ -3336,7 +3335,6 @@ meth__02() { return 2 + MEM__01 + mem__02 + fSlow0; }
 			output1[i0] = FAUSTFLOAT(({ meth__02(); }));
 		}
 	}
-
 CPP
 
 [__LINE__, <<'DSP', <<'CPP'],
@@ -3355,8 +3353,8 @@ DSP
 	int fSampleRate;
 	float fSlow0;
 
-meth__01() { return 1 + MEM__01 + mem__01 + fSlow0; }
-meth__02() { return 2 + MEM__01 + mem__02 + fSlow0; }
+	meth__01() { return 1 + MEM__01 + mem__01 + fSlow0; }
+	meth__02() { return 2 + MEM__01 + mem__02 + fSlow0; }
 
 	void instanceConstants(int sample_rate)
 	{
@@ -3373,7 +3371,6 @@ meth__02() { return 2 + MEM__01 + mem__02 + fSlow0; }
 			output1[i0] = FAUSTFLOAT(({ meth__02(); }));
 		}
 	}
-
 CPP
 
 [__LINE__, <<'DSP', <<'CPP'],
@@ -3387,7 +3384,7 @@ DSP
 	int fSampleRate;
 	float aux0__01;
 
-meth__01() { return aux0__01; }
+	meth__01() { return aux0__01; }
 
 	void instanceConstants(int sample_rate)
 	{
@@ -3403,7 +3400,6 @@ meth__01() { return aux0__01; }
 			output0[i0] = FAUSTFLOAT(({ meth__01(); }));
 		}
 	}
-
 CPP
 
 [__LINE__, <<'DSP', <<'CPP'],

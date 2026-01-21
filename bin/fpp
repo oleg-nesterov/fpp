@@ -863,8 +863,8 @@ sub add_marks
 {
 	$FILE = "#MARK FILE\n";
 
-	$DECL =~ s/^\h+\K/#MARK CALL\n$`/ or die;
-	$METH =  "#MARK CALL\n";
+	$DECL =~ s/^(\h+)\K/#MARK CALL\n$`/ or die;
+	$METH =  "$1#MARK CALL\n";
 
 	unless ($O_OS) {
 		$EXEC =~ s/\{\v\K .*? (?=\h+\})/
