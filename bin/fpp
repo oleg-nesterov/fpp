@@ -680,7 +680,7 @@ sub parse_dsp
 #------------------------------------------------------------------------------
 package pp_cpp;
 our ($O_FLOAT, $O_C, $O_EC, $O_OS) = 'float';
-our (%ZMAP, $FILE, $DECL, $INIT, $CTRL, $EXEC);
+our (%ZMAP, $FILE, $DECL, $METH, $INIT, $CTRL, $EXEC);
 
 sub re_cast { qr/(\()? \b$_[0]\b (?(1)\)) \(($_[1])\)/x; }
 sub re_call { my $f = &re::list; "\\b($f)\\s*($re::bal_par)"; }
@@ -1026,6 +1026,8 @@ sub read_cpp
 	$code[-2] .= $& if $code[-1] =~ s/\A(?:^\h*\v)+//m;
 	push @code,  $& if $code[-1] =~ s/(?:^\h*\v)+\z//m;
 
+	mark -meth;
+
 	%items = map {$_.$class, $items{$_}} keys %items
 		if $O_C;
 
@@ -1117,6 +1119,7 @@ sub do_cpp
 	my @items = (
 		-file			=> \*FILE,
 		-decl			=> \*DECL,
+		-meth			=> \*METH,
 		instanceConstants	=> \*INIT,
 		$O_OS?'frame':'compute'	=> \*EXEC,
 	);
