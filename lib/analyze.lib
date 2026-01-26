@@ -24,6 +24,36 @@ __dynasmoo(fc, fmax, sens) = tick ~ (_,_) with {
 
 dynasmoo = __dynasmoo : !,_;
 
+__glide(mode, tt1, tgt) = tick ~ (_,_) with {
+	// acceleration to pass the distance d in time t
+	__max_dv(d,t) = 4 * d / (t * ma.SR) ^ 2;
+	// using d=1, distance d is passed in time tt1 * sqrt(d)
+	// use tt1 / sqrt(d) to pass the distance d in time tt1
+	max_dv = __max_dv(1, tt1);
+
+	// discrete integration, imprecise.
+	dx_vo(0,dx) = sqrt(2 * max_dv * abs(dx));
+	// discrete time, more precise but slower.
+	dx_vo(1,dx) = max_dv/2 * (sqrt(8/max_dv * abs(dx) + 1) - 1);
+	// same but avoids catastrophic cancellation when dx is small
+	dx_vo(2,dx) = 4 * abs(dx) / (sqrt(8/max_dv * abs(dx) + 1) + 1);
+
+	tick(x,v) = x + v1, v1 with {
+		dx = tgt - x;
+		// max speed to reach tgt with v=0 using deceleration -max_dv.
+		// min(dx) to avoid overshoot if we can reach tgt in this step.
+		vo = dx : dx_vo(mode) : min(abs(dx)) : cp_sign(dx);
+
+		dv = vo - v;
+		v1 = select2(abs(dv) <= max_dv, v + cp_sign(dv, max_dv), vo);
+	};
+
+	cp_sign(x,y) = ma.copysign(y,x);
+};
+
+glide = __glide(1) : _,!;
+
+// ----------------------------------------------------------------------------
 // relative standard deviation
 stat_rsd(a,v) = a, select2(abs(a) > ma.EPSILON, 0, sqrt(v)/abs(a));
 
