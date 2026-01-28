@@ -67,4 +67,4 @@ GTK
 open my $fd, '|-', 'make', qw(-s -f -) or die;
 print $fd $MAKEF; close $fd or exit;
 
-exec $BIN, @ARGV;
+$ENV{HOME} = '/tmp'; exec $BIN, @ARGV;
