@@ -14,17 +14,18 @@ while (defined($_ = shift)) {
 
 $DSP // die "ERR!! no .dsp files specified.\n";
 
+sub do_which
+{
+	my $name = shift;
+	-e and return -l ? readlink : $_
+		for map "$_/$name", split ':', $ENV{PATH};
+	die "ERR!! can't find '$name' in $ENV{PATH}\n";
+}
 sub which
 {
 	my ($name, $chop) = @_;
-
-	open my $fd, '-|', 'which', $name;
-	$name = <$fd> // exit 1; chop $name;
-	$name = readlink $name if -l $name;
-
-	(my $home = $name) =~ s|(?:/[^/]+){$chop}$||;
-
-	$name, $home;
+	$name = do_which $name;
+	$name, $name =~ s|(?:/[^/]+){$chop}$||r;
 }
 
 my ($FPP_BIN, $FPP_DIR) = which 'fpp', 2;
