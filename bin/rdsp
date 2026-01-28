@@ -22,8 +22,7 @@ sub which
 	$name = <$fd> // exit 1; chop $name;
 	$name = readlink $name if -l $name;
 
-	(my $home = $name) =~ s|(?:/[^/]+){$chop}$||
-		or die;
+	(my $home = $name) =~ s|(?:/[^/]+){$chop}$||;
 
 	$name, $home;
 }
@@ -32,13 +31,14 @@ my ($FPP_BIN, $FPP_DIR) = which 'fpp', 2;
 my @F_DEPS = map "$_/*", grep -d $_, map "$FPP_DIR/$_", qw(lib arch);
 my @C_DEPS = map "$_/*", grep -d $_, map "$FPP_DIR/$_", qw(include);
 
+my $FPP_CMD = "fpp $FLT -it -ct 0";
+my $CPP_CMD = "\$(CXX) -std=c++14 -Wall -Ofast -lsndfile";
+
 my ($FAUST_BIN, $FAUST_DIR) = which 'faust', 3; # /build/bin/faust
 my ($FAUST_LIB, $FAUST_ARC) = map "$FAUST_DIR/$_", qw(libraries architecture);
--d $_ or die "ERR!! '$_' doesn't exist.\n" for $FAUST_LIB, $FAUST_ARC;
-
-my $FPP_CMD = "fpp $FLT -it -ct 0 -I $FAUST_LIB -A $FAUST_ARC";
-my $CPP_CMD = "\$(CXX) -std=c++14 -Wall -Ofast -I $FAUST_DIR/architecture" .
-	      " -lsndfile";
+-d $FAUST_LIB and $FPP_CMD .= " -I $FAUST_LIB";
+-d $FAUST_ARC and $FPP_CMD .= " -A $FAUST_ARC",
+		  $CPP_CMD .= " -I $FAUST_ARC";
 
 my ($BIN, $CLI_FLT) = ("$DSP-$TGT", '');
 
