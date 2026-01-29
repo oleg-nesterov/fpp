@@ -4,7 +4,7 @@ use strict;
 my ($TGT, $FLT, $DSP) = ('cli', '-single');
 
 while (defined($_ = shift)) {
-	if (/^-(cli|gtk)$/)		{ $TGT = $1; }
+	if (/^-(cli|gtk|pagtk)$/)		{ $TGT = $1; }
 	elsif (/^-(double|quad)$/)	{ $FLT = $_; }
 	elsif (s/\.dsp$//)		{ $DSP = $_; last; }
 	else {
@@ -47,7 +47,7 @@ if    ($FLT eq '-single' or $TGT ne 'cli') {}
 elsif ($FLT eq '-double') { $BIN .= 'd'; $CLI_FLT = '-D FAUSTFLOAT=double'; }
 elsif ($FLT eq '-quad')	  { $BIN .= 'q'; $CLI_FLT = '-D FAUSTFLOAT=quad';   }
 
-my $MAKEF = $TGT eq 'cli' ? <<CLI : <<GTK;
+my $MAKEF = {cli=> <<CLI, gtk=> <<GTK, pagtk=> <<PAGTK}->{$TGT};
 .INTERMEDIATE: $BIN.cpp
 
 $BIN: $BIN.cpp @C_DEPS
@@ -59,11 +59,19 @@ CLI
 .INTERMEDIATE: $BIN.cpp
 
 $BIN: $BIN.cpp @C_DEPS
+	$CPP_CMD -w -D__PresetUI_H__ `pkg-config --cflags --libs gtk+-2.0` \$< -o \$@
+
+$BIN.cpp: $DSP.dsp $FPP_BIN @F_DEPS
+	$FPP_CMD -a ma-gtk.cpp \$< -o \$@
+GTK
+.INTERMEDIATE: $BIN.cpp
+
+$BIN: $BIN.cpp @C_DEPS
 	$CPP_CMD -w `pkg-config --cflags --libs portaudiocpp gtk+-2.0` \$< -o \$@
 
 $BIN.cpp: $DSP.dsp $FPP_BIN @F_DEPS
 	$FPP_CMD -a pa-gtk.cpp \$< -o \$@
-GTK
+PAGTK
 
 open my $fd, '|-', 'make', qw(-s -f -) or die;
 print $fd $MAKEF; close $fd or exit;
