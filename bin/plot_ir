@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-import matplotlib
-matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import numpy as np
 import math
@@ -79,7 +77,5 @@ def check_input():
 		with open(ack, 'bw', buffering=0) as f:
 			f.write(b"ACK\n")
 
-	fig.canvas.get_tk_widget().after(100, check_input)
-
-check_input()
+fig.canvas.new_timer(interval=100, callbacks=[(check_input, [], {})]).start()
 plt.show()
