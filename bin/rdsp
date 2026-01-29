@@ -47,33 +47,25 @@ if    ($FLT eq '-single' or $TGT ne 'cli') {}
 elsif ($FLT eq '-double') { $BIN .= 'd'; $CLI_FLT = '-D FAUSTFLOAT=double'; }
 elsif ($FLT eq '-quad')	  { $BIN .= 'q'; $CLI_FLT = '-D FAUSTFLOAT=quad';   }
 
-my $MAKEF = {cli=> <<CLI, gtk=> <<GTK, pagtk=> <<PAGTK}->{$TGT};
-.INTERMEDIATE: $BIN.cpp
-
-$BIN: $BIN.cpp @C_DEPS
-	$CPP_CMD $CLI_FLT -lpthread -lreadline \$< -o \$@
-
-$BIN.cpp: $DSP.dsp $FPP_BIN @F_DEPS
-	$FPP_CMD -scn '' -nvi -a cli.cpp \$< -o \$@
-CLI
-.INTERMEDIATE: $BIN.cpp
-
-$BIN: $BIN.cpp @C_DEPS
-	$CPP_CMD -w -D__PresetUI_H__ `pkg-config --cflags --libs gtk+-2.0` \$< -o \$@
-
-$BIN.cpp: $DSP.dsp $FPP_BIN @F_DEPS
-	$FPP_CMD -a ma-gtk.cpp \$< -o \$@
-GTK
-.INTERMEDIATE: $BIN.cpp
-
-$BIN: $BIN.cpp @C_DEPS
-	$CPP_CMD -w `pkg-config --cflags --libs portaudiocpp gtk+-2.0` \$< -o \$@
-
-$BIN.cpp: $DSP.dsp $FPP_BIN @F_DEPS
-	$FPP_CMD -a pa-gtk.cpp \$< -o \$@
-PAGTK
+my %MAKE = (
+	cli	=> ["$CLI_FLT -lpthread -lreadline",
+		    "-a cli.cpp -scn '' -nvi"],
+	gtk	=> ["-w -D__PresetUI_H__ `pkg-config --cflags --libs gtk+-2.0`",
+		    "-a ma-gtk.cpp"],
+	pagtk	=> ["-w `pkg-config --cflags --libs portaudiocpp gtk+-2.0`",
+		    "-a pa-gtk.cpp"],
+);
 
 open my $fd, '|-', 'make', qw(-s -f -) or die;
-print $fd $MAKEF; close $fd or exit;
+print $fd <<EOM;
+.INTERMEDIATE: $BIN.cpp
 
-$ENV{HOME} = '/tmp'; exec $BIN, @ARGV;
+$BIN: $BIN.cpp @C_DEPS
+	$CPP_CMD $MAKE{$TGT}[0] \$< -o \$@
+
+$BIN.cpp: $DSP.dsp $FPP_BIN @F_DEPS
+	$FPP_CMD $MAKE{$TGT}[1] \$< -o \$@
+EOM
+
+$ENV{HOME} = '/tmp';
+close $fd and exec $BIN, @ARGV;
