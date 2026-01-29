@@ -3,7 +3,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 
-fig, axs = plt.subplots(2, 1, sharex=True, figsize=(15,10))
+# gnuplot:
+#	set colorsequence {default|classic|podo}
+#	show colornames
+#	show linetype
+colorcycle = {
+	'dflt':		['#9400d3', '#009e73', '#56b4e9', '#e69f00', '#f0e442', '#0072b2', '#e51e10', '#000000'],
+	'podo':		['#000000', '#e69f00', '#56b4e9', '#009e73', '#f0e442', '#0072b2', '#d55e00', '#cc79a7'],
+	'classic':	['red',     'green',   'blue',    'magenta', 'cyan',    'yellow',  'black',   'orange' ],
+}
+plt.rcParams['axes.prop_cycle'] = plt.cycler(color=colorcycle['dflt'])
+plt.rcParams['lines.linewidth'] = 0.5
+
+fig, axs = plt.subplots(2, 1, sharex=True, figsize=(12,6))
 fig.tight_layout(pad=1)
 
 def __bf_fill(mag, ang, min):
@@ -57,11 +69,54 @@ def plot_ir(FILE:str, NORM:int, DT:int, NO:int, SR:int):
 		if lo - LO < pad: LO -= pad
 		axs[1].set_ylim(LO, HI)
 
-	lgd = range(0, NO)
 	for ax in axs:
 		ax.margins(1/100, 1/50)
-		ax.legend(lgd, loc='upper right')
-		ax.grid(True)
+		ax.grid(True, linestyle=(0,(1,3)), color='grey', linewidth=0.5)
+		lgd = ax.legend(range(0, NO), loc='upper right')
+		lgd.set_visible(False)
+		for chn, lgl in enumerate(lgd.get_lines()):
+			lgl.__chn = chn
+
+#------------------------------------------------------------------------------
+zorder = 100
+def toggle_obj(obj):
+	global zorder
+	on = not obj.get_visible()
+	if on:
+		zorder += 1
+		obj.set_zorder(zorder)
+	obj.set_visible(on)
+	fig.canvas.draw_idle()
+	return on
+
+def toggle_chn(chn):
+	for ax in axs:
+		if chn >= len(ax.get_lines()):
+			continue
+		on = toggle_obj(ax.get_lines()[chn])
+		ax.get_legend().get_lines()[chn].set_alpha(1.0 if on else 0.2)
+
+def on_pick(event):
+	toggle_chn(event.artist.__chn)
+
+def on_key(event):
+	if event.key == '!':
+		from tkinter.simpledialog import askstring
+		code = askstring('eval', '')
+		try:
+			if code: exec(code, globals())
+		except Exception as e:
+			print(e, file=__import__('sys').stderr)
+	elif event.key == 'x':
+		for ax in axs:
+			on = toggle_obj(ax.get_legend())
+			for lgl in ax.get_legend().get_lines():
+				lgl.set_picker(5 if on else False)
+	elif event.key.isdigit():
+		toggle_chn(int(event.key))
+
+fig.canvas.mpl_connect('pick_event', on_pick)
+fig.canvas.mpl_connect('key_press_event', on_key)
 
 #------------------------------------------------------------------------------
 import array, termios, fcntl, os
