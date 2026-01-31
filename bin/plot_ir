@@ -39,7 +39,7 @@ def bf_fill(mag, ang, min):
 def plot_ir(FILE:str, NORM:int, DT:int, NO:int, SR:int):
 	DT = {4:np.single, 8:np.double, 16:np.longdouble}[DT]
 	if NO > 1: DT = np.dtype((DT, NO))
-	IR = np.fromfile(FILE, dtype = DT)
+	IR = np.memmap(FILE, dtype = DT, mode='r')
 
 	fft = np.fft.rfft(IR.T).T
 	if NORM:
