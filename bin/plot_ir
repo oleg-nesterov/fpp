@@ -112,6 +112,9 @@ def on_key(event):
 			on = toggle_obj(ax.get_legend())
 			for lgl in ax.get_legend().get_lines():
 				lgl.set_picker(5 if on else False)
+	elif event.key == 't':
+		for chn in range(0, 10):
+			toggle_chn(chn)
 	elif event.key.isdigit():
 		toggle_chn(int(event.key))
 
