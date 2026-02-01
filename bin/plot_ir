@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 
+def eprint(*args, **kwargs):
+	print(*args, **kwargs, file = __import__('sys').stderr)
+
 # gnuplot:
 #	set colorsequence {default|classic|podo}
 #	show colornames
@@ -106,7 +109,7 @@ def on_key(event):
 		try:
 			if code: exec(code, globals())
 		except Exception as e:
-			print(e, file=__import__('sys').stderr)
+			eprint("ERR!! exec:", e)
 	elif event.key == 'x':
 		for ax in axs:
 			on = toggle_obj(ax.get_legend())
