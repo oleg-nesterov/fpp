@@ -99,6 +99,29 @@ def toggle_chn(chn):
 		on = toggle_obj(ax.get_lines()[chn])
 		ax.get_legend().get_lines()[chn].set_alpha(1.0 if on else 0.2)
 
+def ax_move(ax, dx, dy, _abs):
+	if dx != 0:
+		lo, hi = ax.get_xlim()
+		if not _abs: dx *= (hi - lo)
+		ax.set_xlim(lo - dx, hi - dx)
+	if dy != 0:
+		lo, hi = ax.get_ylim()
+		if not _abs: dy *= (hi - lo)
+		ax.set_ylim(lo - dy, hi - dy)
+	fig.canvas.draw_idle()
+
+def ax_zoom(ax, kx, ky, at=None):
+	if at is None:
+		at = (sum(ax.get_xlim()) / 2,
+		      sum(ax.get_ylim()) / 2)
+	if kx != 1:
+		(lo, hi), ct = ax.get_xlim(), at[0]
+		ax.set_xlim(ct + (lo - ct) / kx, ct + (hi - ct) / kx)
+	if ky != 1:
+		(lo, hi), ct = ax.get_ylim(), at[1]
+		ax.set_ylim(ct + (lo - ct) / ky, ct + (hi - ct) / ky)
+	fig.canvas.draw_idle()
+
 def on_pick(event):
 	toggle_chn(event.artist.__chn)
 
