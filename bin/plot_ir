@@ -148,6 +148,27 @@ fig.canvas.mpl_connect('pick_event', on_pick)
 fig.canvas.mpl_connect('key_press_event', on_key)
 
 #------------------------------------------------------------------------------
+def on_press(ev):
+	if fig.canvas.toolbar.mode != '':
+		return
+	if ev.inaxes and ev.button == 1:
+		if ev.key == 'shift':
+			fig.canvas.toolbar.zoom()
+		else:
+			fig.canvas.toolbar.pan()
+		fig.canvas.callbacks.process('button_press_event', ev)
+
+def on_release(ev):
+	match fig.canvas.toolbar.mode:
+		case '':		pass
+		case 'pan/zoom':	fig.canvas.toolbar.pan()
+		case 'zoom rect':	fig.canvas.toolbar.zoom()
+		case _:			assert(False)
+
+fig.canvas.mpl_connect('button_press_event', on_press)
+fig.canvas.mpl_connect('button_release_event', on_release)
+
+#------------------------------------------------------------------------------
 import array, termios, fcntl, os
 
 rdy = array.array('I', [0])
