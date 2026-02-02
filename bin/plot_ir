@@ -36,7 +36,7 @@ def bf_fill(mag, ang, min):
 	for m, a in zip(mag, ang):
 		__bf_fill(m,a, min)
 
-def plot_ir(FILE:str, NORM:int, DT:int, NO:int, SR:int):
+def __plot_ir(FILE:str, NORM:int, DT:int, NO:int, SR:int):
 	DT = {4:np.single, 8:np.double, 16:np.longdouble}[DT]
 	if NO > 1: DT = np.dtype((DT, NO))
 	IR = np.memmap(FILE, dtype = DT, mode='r')
@@ -79,6 +79,21 @@ def plot_ir(FILE:str, NORM:int, DT:int, NO:int, SR:int):
 		lgd.set_visible(False)
 		for chn, lgl in enumerate(lgd.get_lines()):
 			lgl.__chn = chn
+
+def plot_ir(*args):
+	lims = [(ax.get_xlim(), ax.get_ylim()) for ax in axs]
+
+	__plot_ir(*args)
+
+	stack = fig.canvas.toolbar._nav_stack
+	elmts = stack._elements
+	if not elmts: return
+
+	# update if not in home (full) view
+	if elmts[0] != elmts[stack._pos]:
+		for ax, (xlim, ylim) in zip(axs, lims):
+			ax.set_xlim(xlim)
+			ax.set_ylim(ylim)
 
 #------------------------------------------------------------------------------
 zorder = 100
