@@ -121,7 +121,13 @@ def toggle_chn(chn):
 		on = toggle_obj(ax.get_lines()[chn])
 		ax.get_legend().get_lines()[chn].set_alpha(1.0 if on else 0.2)
 
+def __push_cur():
+	tb = fig.canvas.toolbar
+	if not tb._nav_stack._elements:
+		tb.push_current()
+
 def ax_move(ax, dx, dy, _abs):
+	__push_cur()
 	if dx != 0:
 		lo, hi = ax.get_xlim()
 		if not _abs: dx *= (hi - lo)
@@ -133,6 +139,7 @@ def ax_move(ax, dx, dy, _abs):
 	fig.canvas.draw_idle()
 
 def ax_zoom(ax, kx, ky, at=None):
+	__push_cur()
 	if at is None:
 		at = (sum(ax.get_xlim()) / 2,
 		      sum(ax.get_ylim()) / 2)
@@ -147,6 +154,11 @@ def ax_zoom(ax, kx, ky, at=None):
 def on_pick(ev):
 	toggle_chn(ev.artist.__chn)
 
+plt.rcParams['keymap.back']     = ['p']
+plt.rcParams['keymap.forward']  = ['n']
+__k_mv = {'left': (-1/20, 0), 'right': (+1/20, 0),
+	  'down': (0, -1/20), 'up':    (0, +1/20)}
+
 def on_key(ev):
 	if ev.key == '!':
 		from tkinter.simpledialog import askstring
@@ -155,6 +167,7 @@ def on_key(ev):
 			if code: exec(code, globals())
 		except Exception as e:
 			eprint("ERR!! exec:", e)
+
 	elif ev.key == 'x':
 		for ax in axs:
 			on = toggle_obj(ax.get_legend())
@@ -165,6 +178,18 @@ def on_key(ev):
 			toggle_chn(chn)
 	elif ev.key.isdigit():
 		toggle_chn(int(ev.key))
+
+	elif not (ax := ev.inaxes):
+		pass
+	elif ev.key == 'z':
+		dx = sum(ax.get_xlim()) / 2 - ev.xdata
+		dy = sum(ax.get_ylim()) / 2 - ev.ydata
+		ax_move(ax, dx, dy, True)
+	elif mv := __k_mv.get(ev.key):
+		ax_move(ax, *mv, False)
+	elif ev.key in '+-':
+		k = 1.1 if ev.key == '+' else 0.9
+		ax_zoom(ax, k, k)
 
 fig.canvas.mpl_connect('pick_event', on_pick)
 fig.canvas.mpl_connect('key_press_event', on_key)
