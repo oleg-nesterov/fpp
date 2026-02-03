@@ -144,27 +144,27 @@ def ax_zoom(ax, kx, ky, at=None):
 		ax.set_ylim(ct + (lo - ct) / ky, ct + (hi - ct) / ky)
 	fig.canvas.draw_idle()
 
-def on_pick(event):
-	toggle_chn(event.artist.__chn)
+def on_pick(ev):
+	toggle_chn(ev.artist.__chn)
 
-def on_key(event):
-	if event.key == '!':
+def on_key(ev):
+	if ev.key == '!':
 		from tkinter.simpledialog import askstring
 		code = askstring('eval', '')
 		try:
 			if code: exec(code, globals())
 		except Exception as e:
 			eprint("ERR!! exec:", e)
-	elif event.key == 'x':
+	elif ev.key == 'x':
 		for ax in axs:
 			on = toggle_obj(ax.get_legend())
 			for lgl in ax.get_legend().get_lines():
 				lgl.set_picker(5 if on else False)
-	elif event.key == 't':
+	elif ev.key == 't':
 		for chn in range(0, 10):
 			toggle_chn(chn)
-	elif event.key.isdigit():
-		toggle_chn(int(event.key))
+	elif ev.key.isdigit():
+		toggle_chn(int(ev.key))
 
 fig.canvas.mpl_connect('pick_event', on_pick)
 fig.canvas.mpl_connect('key_press_event', on_key)
