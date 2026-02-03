@@ -89,8 +89,15 @@ def plot_ir(*args):
 	elmts = stack._elements
 	if not elmts: return
 
-	# update if not in home (full) view
-	if elmts[0] != elmts[stack._pos]:
+	# in home (full) view ?
+	home = elmts[0] == elmts[stack._pos]
+
+	# reset <Home> to new data's full view
+	fig.canvas.toolbar.push_current()
+	elmts[0] = elmts.pop()
+	stack._pos -= 1
+
+	if not home:
 		for ax, (xlim, ylim) in zip(axs, lims):
 			ax.set_xlim(xlim)
 			ax.set_ylim(ylim)
