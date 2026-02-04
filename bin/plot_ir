@@ -39,15 +39,22 @@ def bf_fill(mag, ang, min):
 def __plot_ir(FILE:str, NORM:int, DT:int, NO:int, SR:int):
 	DT = {4:np.single, 8:np.double, 16:np.longdouble}[DT]
 	if NO > 1: DT = np.dtype((DT, NO))
-	IR = np.memmap(FILE, dtype = DT, mode='r')
+	IR = np.memmap(FILE, dtype = DT, mode='r+')
+
+	WF = None
+	if WF:
+		win = WF(IR.shape[0])
+		win *= len(win) / win.sum()	# coherent gain correction
+		if NO > 1: win = win[:, None]	# np.atleast_2d(win).T
+		IR *= win
 
 	fft = np.fft.rfft(IR.T).T
 	if NORM:
 		fft	/= (IR.shape[0] / 2)
 		fft[0]	/= 2
-
 	NB = fft.shape[0]
-	assert(NB - 1 == IR.shape[0] // 2)
+
+	assert NB - 1 == IR.shape[0] // 2
 
 	mag = np.abs(fft)
 	np.maximum(mag, 1e-16, out=mag)
@@ -59,7 +66,7 @@ def __plot_ir(FILE:str, NORM:int, DT:int, NO:int, SR:int):
 	ang = np.unwrap(ang, axis=0) / np.pi
 
 	for ax in axs: ax.clear()
-	xtk = np.arange(NB) * (SR // 2 / (NB - 1))
+	xtk = np.linspace(0, SR // 2, NB)
 	axs[0].plot(xtk, mag)
 	axs[1].plot(xtk, ang)
 
