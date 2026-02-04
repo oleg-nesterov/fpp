@@ -158,13 +158,15 @@ plt.rcParams['keymap.back']     = ['p']
 plt.rcParams['keymap.forward']  = ['n']
 __k_mv = {'left': (-1/20, 0), 'right': (+1/20, 0),
 	  'down': (0, -1/20), 'up':    (0, +1/20)}
+__exec = None
 
 def on_key(ev):
 	if ev.key == '!':
+		global __exec
 		from tkinter.simpledialog import askstring
-		code = askstring('eval', '')
+		__exec = askstring('eval', '', initialvalue=__exec)
 		try:
-			if code: exec(code, globals())
+			if __exec: exec(__exec, globals())
 		except Exception as e:
 			eprint("ERR!! exec:", e)
 
