@@ -163,8 +163,8 @@ def on_pick(ev):
 
 plt.rcParams['keymap.back']     = ['p']
 plt.rcParams['keymap.forward']  = ['n']
-__k_mv = {'left': (+1/20, 0), 'right': (-1/20, 0),
-	  'down': (0, +1/20), 'up':    (0, -1/20)}
+__k_mv = {'left': (+1, 0), 'right': (-1, 0),
+	  'down': (0, +1), 'up':    (0, -1)}
 __exec = None
 
 def on_key(ev):
@@ -195,7 +195,7 @@ def on_key(ev):
 		dy = sum(ax.get_ylim()) / 2 - ev.ydata
 		ax_move(ax, dx, dy, True)
 	elif mv := __k_mv.get(ev.key):
-		ax_move(ax, *mv, False)
+		ax_move(ax, mv[0] / 20, mv[1] / 20, False)
 	elif ev.key in '+-':
 		k = 1.1 if ev.key == '+' else 0.9
 		ax_zoom(ax, k, k)
