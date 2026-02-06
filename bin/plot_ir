@@ -163,8 +163,9 @@ def on_pick(ev):
 
 plt.rcParams['keymap.back']     = ['p']
 plt.rcParams['keymap.forward']  = ['n']
-__k_dir = {'left': (+1, 0), 'right': (-1, 0),
-	   'down': (0, +1), 'up':    (0, -1)}
+__k_dir = {'left': (+1,  0),  'right': (-1,  0),
+	   'down': ( 0, +1),  'up':    ( 0, -1),
+	   '-':    (+1, +1),  '+':     (-1, -1)}
 __exec = None
 
 def on_key(ev):
@@ -195,13 +196,10 @@ def on_key(ev):
 		dy = sum(ax.get_ylim()) / 2 - ev.ydata
 		ax_move(ax, dx, dy, True)
 	elif mv := __k_dir.get(key := ev.key.removeprefix('shift+')):
-		if key is ev.key:
+		if key is ev.key and key not in '+-':
 			ax_move(ax, mv[0] / 20, mv[1] / 20, False)
 		else:
 			ax_zoom(ax, 1 - mv[0] / 10, 1 - mv[1] / 10)
-	elif ev.key in '+-':
-		k = 1.1 if ev.key == '+' else 0.9
-		ax_zoom(ax, k, k)
 
 fig.canvas.mpl_connect('pick_event', on_pick)
 fig.canvas.mpl_connect('key_press_event', on_key)
