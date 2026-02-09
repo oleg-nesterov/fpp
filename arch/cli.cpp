@@ -84,10 +84,10 @@ static void apply_g(unsigned i)
 }
 
 // ----------------------------------------------------------------------------
-static void fifo_run(const char *fifo, const char *comm, const char *argv[])
+static bool fifo_run(const char *fifo, const char *comm, const char *argv[])
 {
 	struct stat st;
-	int fd;
+	int r = 0, fd;
 
 	if (stat(fifo, &st) == 0) {
 		if ((st.st_mode & S_IFMT) != S_IFIFO)
@@ -108,7 +108,8 @@ static void fifo_run(const char *fifo, const char *comm, const char *argv[])
 		goto out;
 	}
 
-	start: fprintf(stderr, "CLI: starting '%s' ...\n", comm);
+start:	fprintf(stderr, "CLI: starting '%s' ...\n", comm);
+	r = 1;
 
 	if (!fork()) {
 		if (!fork()) {
@@ -129,6 +130,7 @@ static void fifo_run(const char *fifo, const char *comm, const char *argv[])
 out:
 	assert(dup2(fd, 1) == 1);
 	close(fd);
+	return r;
 }
 
 #define PROC_OPEN()					\
@@ -201,7 +203,12 @@ static struct O_GP : public O_B {
 	void ini(void)
 	{
 		const char *argv[] = { "CLI-gnuplot", NULL };
-		fifo_run("/tmp/gp.fifo", "gnuplot", argv);
+		const char *icmd =
+			"do for [c=0:9] { bind sprintf('%d', c) sprintf('toggle %d', c+1) }\n"
+			"set grid\n";
+
+		if (fifo_run("/tmp/gp.fifo", "gnuplot", argv))
+			write(1, icmd, strlen(icmd));
 
 		ofd = open("/tmp/gp.data", O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		assert(ofd >= 0);
