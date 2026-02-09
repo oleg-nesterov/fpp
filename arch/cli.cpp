@@ -90,14 +90,13 @@ static bool fifo_run(const char *fifo, const char *comm, const char *argv[])
 	int r = 0, fd;
 
 	if (stat(fifo, &st) == 0) {
-		if ((st.st_mode & S_IFMT) != S_IFIFO)
-			die("'%s' is not fifo.", fifo);
+		if (!S_ISFIFO(st.st_mode))
+			die("'%s' is not a fifo.", fifo);
 	} else {
 		fprintf(stderr, "CLI: create '%s' ...\n", fifo);
 		assert(mkfifo(fifo, 0666) == 0);
 		goto start;
 	}
-
 
 	fd = open(fifo, O_WRONLY|O_NONBLOCK);
 	if (fd < 0)
@@ -114,19 +113,20 @@ start:	fprintf(stderr, "CLI: starting '%s' ...\n", comm);
 	if (!fork()) {
 		if (!fork()) {
 			fd = open(fifo, O_RDONLY);
-			dup2(fd, 0); close(fd);
+			// unused; keep a writer so read(fd) blocks
 			open(fifo, O_WRONLY);
+			dup2(fd, 0); close(fd);
 			execvp(comm, (char**)argv);
 			die("exec '%s' failed: %m", comm);
 		}
-		// sync with the child's O_RDONLY
-		fd = open(fifo, O_WRONLY);
+		// unused; sync with the child's open(O_RDONLY)
+		open(fifo, O_WRONLY);
 		exit(0);
 	}
 
 	wait(NULL);
 	fd = open(fifo, O_WRONLY);
-	assert(fd > 0);
+	assert(fd >= 0);
 out:
 	assert(dup2(fd, 1) == 1);
 	close(fd);
