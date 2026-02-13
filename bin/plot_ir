@@ -245,5 +245,7 @@ def check_input():
 		with open(ack, 'bw', buffering=0) as f:
 			f.write(b"ACK\n")
 
-fig.canvas.new_timer(interval=100, callbacks=[(check_input, [], {})]).start()
+timer = fig.canvas.new_timer(interval=100)
+timer.add_callback(check_input)
+timer.start()
 plt.show()
