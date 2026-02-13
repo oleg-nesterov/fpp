@@ -188,7 +188,7 @@ def on_key(ev):
 			on = toggle_obj(ax.get_legend())
 			for lgl in ax.get_legend().get_lines():
 				lgl.set_picker(5 if on else False)
-	elif ev.key == 't':
+	elif ev.key == 'i':
 		for chn in range(0, 10):
 			toggle_chn(chn)
 	elif ev.key.isdigit():

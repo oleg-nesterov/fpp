@@ -224,7 +224,7 @@ static struct O_GP : public O_B {
 		dprintf(1, "FN='/tmp/gp.data'; DT='%s'; NO=%d\n"
 			"BF = ''; do for [O=1:NO] { BF = BF . DT }\n"
 			"plot [][%s] for [O=1:NO] FN volatile binary format=BF "
-			"u O w l t sprintf('%%d',O)\n",
+			"u O w l t sprintf('%%d',O-1)\n",
 			dt, G.no, ylims);
 
 		PROC_OPEN();
