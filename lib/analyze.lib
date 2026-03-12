@@ -79,6 +79,23 @@ exec:
 
 smoo_stat = __smoo_stat : stat_rsd;
 
+// Linear Regression Slope, units per sample
+lr_slope = FPP(N, y_new) {
+decl:
+	$_float_ $sum_y, $sum_xy;
+exec:
+	unsigned  N = $(N);
+	$_float_ SUM_X = $(N   * (N   - 1) /  2);
+	$_float_ DENOM = $(N^2 * (N^2 - 1) / 12);
+
+	$_float_ y_new = $(y_new);
+	$_float_ y_old = $(y_new @ N);
+
+	$sum_y  += y_new     -  y_old;
+	$sum_xy += y_new * N - $sum_y;
+
+	(N * $sum_xy - SUM_X * $sum_y) / DENOM;
+};
 // ----------------------------------------------------------------------------
 // +-1 after reset, then +-2
 range_cross = FPP(lo,hi, in) pure _int_ {
