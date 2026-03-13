@@ -603,7 +603,8 @@ int main(int argc, char* argv[])
 	assert(G.bs <= BUFSZ);
 	if (GN) check_g();
 
-	DSP.init(G.sr);
+	DSP.instanceClear();
+	DSP.instanceConstants(G.sr);
 	DSP.buildUserInterface((UI*)0);
 	ui_ck_opts();
 
