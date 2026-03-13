@@ -300,16 +300,15 @@ struct O_SOX : public O_B {
 static struct O_N *O = &__o_t;
 
 // ----------------------------------------------------------------------------
-#define NARG	32
+static int ARGC;
 static struct {
 	const char *n;
 	FAUSTFLOAT *v;
-} 		ARGV[NARG];
-static int	ARGN;
+} ARGV[32];
 
 static __typeof__(ARGV+0) cli_get_opt(const char *n)
 {
-	for (int i = 0; i < ARGN; ++i)
+	for (int i = 0; i < ARGC; ++i)
 		if (!strcmp(n,  ARGV[i].n))
 			return &ARGV[i];
 	return NULL;
@@ -317,9 +316,9 @@ static __typeof__(ARGV+0) cli_get_opt(const char *n)
 
 static void ui_add_opt(const char *n, FAUSTFLOAT *e, FAUSTFLOAT v)
 {
-	assert(ARGN < NARG);
+	assert((unsigned)ARGC < sizeof(ARGV)/sizeof(ARGV[0]));
 	assert(!cli_get_opt(n));
-	auto o = ARGV + ARGN++;
+	auto o = ARGV + ARGC++;
 	*(o->v = e) = v;
 	o->n = n;
 }
@@ -444,7 +443,7 @@ static char *rl_next_match(const char *inp, int state)
 
 	if (!state) { idx = 0; len = strlen(inp); }
 
-	while (idx < ARGN) {
+	while (idx < ARGC) {
 		auto arg = ARGV + idx++;
 		if (!strncmp(arg->n, inp, len))
 			return strdup(arg->n);
@@ -523,9 +522,9 @@ void *it_loop(void *)
 		if (sscanf(inp, " %127[^=: ] %[:] %n", n,&c,&eat) == 2) {
 			char *v = inp + eat;
 			if (!*v) {
-				static char dump[1024] = ""; // for ARGN == 0
+				static char dump[1024] = ""; // for ARGC == 0
 				int sz = sizeof(dump), wr = 0;
-				for (int i = 0; i < ARGN; ++i) {
+				for (int i = 0; i < ARGC; ++i) {
 					int w = snprintf(dump+wr,sz,"%s=%.16g ",
 						ARGV[i].n,  double(*ARGV[i].v));
 					wr += w; sz -= w;
@@ -557,7 +556,7 @@ void *it_loop(void *)
 		continue;
 
 dump:		fprintf(stderr, "\n");
-		for (int i = 0; i < ARGN; ++i)
+		for (int i = 0; i < ARGC; ++i)
 			fprintf(stderr, "  %-16s % -.8g\n",
 				ARGV[i].n, double(*ARGV[i].v));
 		fprintf(stderr, "\n");
