@@ -303,11 +303,11 @@ static struct O_N *O = &__o_t;
 #define NARG	32
 static struct {
 	const char *n;
-	FAUSTFLOAT __v, *v;
+	FAUSTFLOAT *v;
 } 		ARGV[NARG];
 static int	ARGN;
 
-__typeof__(ARGV+0) cli_get_opt(const char *n)
+static __typeof__(ARGV+0) cli_get_opt(const char *n)
 {
 	for (int i = 0; i < ARGN; ++i)
 		if (!strcmp(n,  ARGV[i].n))
@@ -315,40 +315,13 @@ __typeof__(ARGV+0) cli_get_opt(const char *n)
 	return NULL;
 }
 
-static auto __add_opt(const char *n, FAUSTFLOAT v, bool f)
-{
-	auto o = cli_get_opt(n);
-	if (!o) {
-		assert(ARGN < NARG);
-		o = ARGV + ARGN++;
-		o->n = n;
-		f = true;
-	}
-
-	if (f) o->__v = v;
-	return o;
-}
-
 static void ui_add_opt(const char *n, FAUSTFLOAT *e, FAUSTFLOAT v)
 {
-	auto o = __add_opt(n, v, false);
-	assert(o->v == NULL);
-	*(o->v = e) = o->__v;
-}
-static void ui_ck_opts(void)
-{
-	const char *w = "WARN! unused opts:";
-	for (int i = 0; i < ARGN; ++i) {
-		auto o = ARGV + i;
-		if (o->v) continue;
-
-		if (w) { fputs(w, stderr); w = NULL; }
-		fprintf(stderr, " %s", o->n);
-
-		for (int d = 0; d < ARGN-i-1; ++d) o[d] = o[d+1];
-		ARGN--; i--;
-	}
-	if (!w) fputs("\n", stderr);
+	assert(ARGN < NARG);
+	assert(!cli_get_opt(n));
+	auto o = ARGV + ARGN++;
+	*(o->v = e) = v;
+	o->n = n;
 }
 
 static void cli_add_opt(char *n, char *p)
@@ -356,7 +329,10 @@ static void cli_add_opt(char *n, char *p)
 	*p++ = 0;
 	char *e; FAUSTFLOAT v = strtod(p, &e);
 	if (e == p || *e) die("bad number: '%s'", p);
-	__add_opt(n, v, true);
+
+	auto o = cli_get_opt(n);
+	if (!o)	fprintf(stderr, "WARN! unused opt '%s'\n", n);
+	else	*o->v = v;
 }
 
 // ----------------------------------------------------------------------------
@@ -593,6 +569,8 @@ int main(int argc, char* argv[])
 	#ifdef CLI_INIT
 	CLI_INIT
 	#endif
+
+	DSP.buildUserInterface(NULL);
 	parse_args(argv);
 
 	if (DSP.getNumInputs() > 0)
@@ -605,8 +583,6 @@ int main(int argc, char* argv[])
 
 	DSP.instanceClear();
 	DSP.instanceConstants(G.sr);
-	DSP.buildUserInterface((UI*)0);
-	ui_ck_opts();
 
 	if (G.it) {
 		pthread_t t;
