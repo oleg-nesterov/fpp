@@ -300,7 +300,7 @@ struct O_SOX : public O_B {
 static struct O_N *O = &__o_t;
 
 // ----------------------------------------------------------------------------
-static int ARGC;
+static unsigned ARGC;
 static struct {
 	const char *n;
 	FAUSTFLOAT *v;
@@ -308,7 +308,7 @@ static struct {
 
 static __typeof__(ARGV+0) cli_get_opt(const char *n)
 {
-	for (int i = 0; i < ARGC; ++i)
+	for (unsigned i = 0; i < ARGC; ++i)
 		if (!strcmp(n,  ARGV[i].n))
 			return &ARGV[i];
 	return NULL;
@@ -316,7 +316,7 @@ static __typeof__(ARGV+0) cli_get_opt(const char *n)
 
 static void ui_add_opt(const char *n, FAUSTFLOAT *e, FAUSTFLOAT v)
 {
-	assert((unsigned)ARGC < sizeof(ARGV)/sizeof(ARGV[0]));
+	assert(ARGC < sizeof(ARGV)/sizeof(ARGV[0]));
 	assert(!cli_get_opt(n));
 	auto o = ARGV + ARGC++;
 	*(o->v = e) = v;
@@ -439,7 +439,7 @@ static char *__it_getline(void)
 #include <readline/history.h>
 static char *rl_next_match(const char *inp, int state)
 {
-	static int idx, len;
+	static unsigned idx, len;
 
 	if (!state) { idx = 0; len = strlen(inp); }
 
@@ -524,7 +524,7 @@ void *it_loop(void *)
 			if (!*v) {
 				static char dump[1024] = ""; // for ARGC == 0
 				int sz = sizeof(dump), wr = 0;
-				for (int i = 0; i < ARGC; ++i) {
+				for (unsigned i = 0; i < ARGC; ++i) {
 					int w = snprintf(dump+wr,sz,"%s=%.16g ",
 						ARGV[i].n,  double(*ARGV[i].v));
 					wr += w; sz -= w;
@@ -556,7 +556,7 @@ void *it_loop(void *)
 		continue;
 
 dump:		fprintf(stderr, "\n");
-		for (int i = 0; i < ARGC; ++i)
+		for (unsigned i = 0; i < ARGC; ++i)
 			fprintf(stderr, "  %-16s % -.8g\n",
 				ARGV[i].n, double(*ARGV[i].v));
 		fprintf(stderr, "\n");
