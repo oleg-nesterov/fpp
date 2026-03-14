@@ -834,6 +834,15 @@ sub lift_const
 	do_lift \$CTRL, 'Slow',  $METH, $EXEC;
 	do_lift \$EXEC, 'Slow',  $METH;
 }
+# incomplete/buggy, but useful for cli hacking
+sub hack_slows
+{
+	my $re_s = qr/${re::DSP}[if]Slow\d+\b/;
+	my $slow; while ($INIT =~ /$re_s/) {
+		$slow ||= { ($CTRL || $EXEC) =~ /($re_s) \s*=[^=]\s* ([^;]+) ;/xg };
+		$INIT =~ s/$re_s/my $s = $slow->{$&} || die; "($s)"/eg;
+	}
+}
 
 sub fill_oobi
 {
@@ -978,6 +987,7 @@ sub expand_all
 	fill_mark $EXEC, 'EXIT', collect 1, qw(exit EXIT);
 
 	fix_typeof $types;
+	hack_slows;
 	lift_const;
 	kill_const;
 }

@@ -3402,6 +3402,103 @@ DSP
 	}
 CPP
 
+[__LINE__, <<'DSP', <<'CPP', <<'O_C'],
+process = FPP() {
+init:	$(nentry("X1", 0,0,1,1) + nentry("X2", 0,0,1,1) : int);
+exec:	$(nentry("X1", 0,0,1,1));
+};
+DSP
+	FAUSTFLOAT fEntry0;
+	FAUSTFLOAT fEntry1;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		(int((float(fEntry1)) + float(fEntry0)));
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		float fSlow0 = float(fEntry1);
+		int iSlow1 = int(fSlow0 + float(fEntry0));
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(({ fSlow0; }));
+		}
+	}
+CPP
+	FAUSTFLOAT fEntry0;
+	FAUSTFLOAT fEntry1;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		dsp->fSampleRate = sample_rate;
+		((int)(((float)(dsp->fEntry1)) + (float)(dsp->fEntry0)));
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		float fSlow0 = (float)(dsp->fEntry1);
+		int iSlow1 = (int)(fSlow0 + (float)(dsp->fEntry0));
+		int i0;
+		for (i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = (FAUSTFLOAT)(({ fSlow0; }));
+		}
+	}
+O_C
+
+[__LINE__, <<'DSP', <<'CPP', <<'O_C'],
+//: -ec
+process = FPP() {
+init:	$(nentry("X1", 0,0,1,1) + nentry("X2", 0,0,1,1) : int);
+exec:	$(nentry("X1", 0,0,1,1));
+};
+DSP
+	FAUSTFLOAT fEntry0;
+	FAUSTFLOAT fEntry1;
+	float fSlow0;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+		(int((float(fEntry1)) + float(fEntry0)));
+	}
+	void control()
+	{
+		fSlow0 = float(fEntry1);
+		int iSlow1 = int(fSlow0 + float(fEntry0));
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = FAUSTFLOAT(({ fSlow0; }));
+		}
+	}
+CPP
+	FAUSTFLOAT fEntry0;
+	FAUSTFLOAT fEntry1;
+	float fSlow0;
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		dsp->fSampleRate = sample_rate;
+		((int)(((float)(dsp->fEntry1)) + (float)(dsp->fEntry0)));
+	}
+	void control()
+	{
+		dsp->fSlow0 = (float)(dsp->fEntry1);
+		int iSlow1 = (int)(dsp->fSlow0 + (float)(dsp->fEntry0));
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		int i0;
+		for (i0 = 0; i0 < count; i0 = i0 + 1) {
+			output0[i0] = (FAUSTFLOAT)(({ dsp->fSlow0; }));
+		}
+	}
+O_C
+
 [__LINE__, <<'DSP', <<'CPP'],
 import("stdfaust.lib");
 
@@ -3431,7 +3528,7 @@ DSP
 			foo_set_fc0(&state__01, fConst0);
 		#endif
 		#if 0
-			foo_set_fc0(&state__02, fSlow0);
+			foo_set_fc0(&state__02, (float(fEntry0)));
 		#endif
 		#if 0
 			foo_set_fc0(&state__03, FC0);
