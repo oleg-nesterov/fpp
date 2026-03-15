@@ -23,7 +23,7 @@ typedef long double quad;
 
 static struct {
 	unsigned sr = 44100, nr = 10, bs = 512, sk, xt;
-	unsigned NO, no, __no;
+	unsigned NO, no;
 	int it;
 } G;
 
@@ -70,14 +70,11 @@ static unsigned GN;
 
 static void check_g(void)
 {
-	G.__no = G.no;
-	for (unsigned o = 0; o < G.__no; o++)
-		if (GV[o].g == FAUSTFLOAT(0)) --G.no;
 	if (!G.no) die("-g: no outputs");
 }
 static void apply_g(unsigned i)
 {
-	for (unsigned __o = 0, o = 0; o < G.__no; o++) {
+	for (unsigned __o = 0, o = 0; o < G.NO; o++) {
 		if (GV[o].g == FAUSTFLOAT(0)) continue;
 		_outputs[__o++][i] = _outputs[o][i] * GV[o].g + GV[o].s;
 	}
@@ -371,9 +368,13 @@ static void parse_o(char *n)
 
 static void parse_g(const char *p)
 {
+	G.no = GN = 0;
+	memset(GV, 0, sizeof(GV));
+
 	if (p) for (char *e;; p = e + 1) {
-		assert(GN < NOUTS);
-		GV[GN].g = strtod(p, &e);
+		assert(GN < G.NO);
+		if ((GV[GN].g = strtod(p, &e)))
+			G.no++;
 		if (e != p) {
 			if (*e == '+' || *e == '-')
 				GV[GN].s = strtod(p = e, &e);
@@ -383,7 +384,7 @@ static void parse_g(const char *p)
 		}
 		break;
 	}
-	die("bad number: '%s'", p);
+	die("-g: bad number: '%s'", p);
 }
 
 static void parse_G(const char *n, const char *v)
