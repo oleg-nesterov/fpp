@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
+#include <semaphore.h>
 #include <assert.h>
 
 typedef long double quad;
@@ -509,7 +510,8 @@ static char *map(const char *k, const char *v)
 	return kv->v;
 }
 
-void *it_loop(void *)
+static struct { sem_t sem[2]; char *cmd; } IT;
+static void *it_loop(void *)
 {
 	for (;;) {
 		char *inp;
@@ -520,6 +522,14 @@ void *it_loop(void *)
 		if ((p = strchr(inp, '\n'))) *p = 0;
 		if ((p = strchr(inp,  '#'))) *p = 0;
 		if (!*inp) goto dump;
+
+		if (*inp == '!') {
+			cli_stop = 0;
+			IT.cmd = inp;
+			sem_post(IT.sem+0);
+			sem_wait(IT.sem+1);
+			continue;
+		}
 
 		if (sscanf(inp, " %127[^=: ] %[:] %n", n,&c,&eat) == 2) {
 			char *v = inp + eat;
@@ -583,18 +593,25 @@ int main(int argc, char* argv[])
 		outputs[o] = _outputs[o];
 
 	DSP.buildUserInterface(NULL);
-
-	// restart
 	parse_args(argv);
 	if (!GN) G.no = G.NO;
 
+restart:
+	if (G.it) {
+		static int run; if (!run++) {
+			pthread_t t;
+			sem_init(IT.sem+0, 0,0);
+			sem_init(IT.sem+1, 0,0);
+			pthread_create(&t, NULL, it_loop, NULL);
+		}
+		sem_wait(IT.sem+0);
+		fprintf(stderr, "CMD: %s\n", IT.cmd);
+		sem_post(IT.sem+1);
+		cli_stop = -1;
+	}
+
 	DSP.instanceClear();
 	DSP.instanceConstants(G.sr);
-
-	if (G.it) {
-		pthread_t t;
-		pthread_create(&t, NULL, it_loop, NULL);
-	}
 
 	O->ini();
 	if (G.nr <= G.nr + G.sk) G.nr += G.sk; // avoid overflow
@@ -620,5 +637,6 @@ int main(int argc, char* argv[])
 	}
 	O->eof();
 
+	if (G.it) goto restart;
 	return 0;
 }
