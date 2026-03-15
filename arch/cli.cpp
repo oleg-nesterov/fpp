@@ -60,25 +60,11 @@ static mydsp DSP;
 #define NOUTS	16
 #define BUFSZ	1024
 static FAUSTFLOAT _outputs[NOUTS][BUFSZ];
-static struct { FAUSTFLOAT g,s; } GV[NOUTS];
-static unsigned GN;
 
 #define die(fmt, ...) do {					\
 	fprintf(stderr, "ERR!! " fmt "\n", ##__VA_ARGS__);	\
 	exit(1);						\
 } while (0)
-
-static void check_g(void)
-{
-	if (!G.no) die("-g: no outputs");
-}
-static void apply_g(unsigned i)
-{
-	for (unsigned __o = 0, o = 0; o < G.NO; o++) {
-		if (GV[o].g == FAUSTFLOAT(0)) continue;
-		_outputs[__o++][i] = _outputs[o][i] * GV[o].g + GV[o].s;
-	}
-}
 
 // ----------------------------------------------------------------------------
 static bool fifo_run(const char *fifo, const char *comm, const char *argv[])
@@ -366,6 +352,16 @@ static void parse_o(char *n)
 		die("bad arg '%s' for -o %s", p, n);
 }
 
+static struct { FAUSTFLOAT g,s; } GV[NOUTS];
+static unsigned GN;
+
+static void apply_g(unsigned i)
+{
+	for (unsigned __o = 0, o = 0; o < G.NO; o++) {
+		if (!GV[o].g) continue;
+		_outputs[__o++][i] = _outputs[o][i] * GV[o].g + GV[o].s;
+	}
+}
 static void parse_g(const char *p)
 {
 	G.no = GN = 0;
@@ -584,9 +580,9 @@ int main(int argc, char* argv[])
 	DSP.buildUserInterface(NULL);
 
 	// restart
-	G.no = G.NO;
 	parse_args(argv);
-	if (GN) check_g();
+	if (!GN) G.no = G.NO;
+	if (!G.no) die("-g: no outputs");
 
 	DSP.instanceClear();
 	DSP.instanceConstants(G.sr);
