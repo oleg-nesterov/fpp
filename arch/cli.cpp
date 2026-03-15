@@ -23,7 +23,7 @@ typedef long double quad;
 
 static struct {
 	unsigned sr = 44100, nr = 10, bs = 512, sk, xt;
-	unsigned no, __no;
+	unsigned NO, no, __no;
 	int it;
 } G;
 
@@ -569,15 +569,22 @@ int main(int argc, char* argv[])
 	CLI_INIT
 	#endif
 
-	DSP.buildUserInterface(NULL);
-	parse_args(argv);
-
 	if (DSP.getNumInputs() > 0)
 		die("no inputs allowed");
 
-	G.no = DSP.getNumOutputs();
-	assert(G.no <= NOUTS);
+	G.NO = DSP.getNumOutputs();
+	assert(G.NO <= NOUTS);
 	assert(G.bs <= BUFSZ);
+
+	FAUSTFLOAT *outputs[NOUTS];
+	for (int o = 0; o < NOUTS; o++)
+		outputs[o] = _outputs[o];
+
+	DSP.buildUserInterface(NULL);
+
+	// restart
+	G.no = G.NO;
+	parse_args(argv);
 	if (GN) check_g();
 
 	DSP.instanceClear();
@@ -587,10 +594,6 @@ int main(int argc, char* argv[])
 		pthread_t t;
 		pthread_create(&t, NULL, it_loop, NULL);
 	}
-
-	FAUSTFLOAT *outputs[NOUTS];
-	for (int o = 0; o < NOUTS; o++)
-		outputs[o] = _outputs[o];
 
 	O->ini();
 	if (G.nr <= G.nr + G.sk) G.nr += G.sk; // avoid overflow
