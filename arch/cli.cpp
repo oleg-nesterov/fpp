@@ -367,8 +367,12 @@ static void parse_g(const char *p)
 	G.no = GN = 0;
 	memset(GV, 0, sizeof(GV));
 
-	if (p) for (char *e;; p = e + 1) {
-		assert(GN < G.NO);
+	if (!p) goto err;
+	if (!strcmp(p, "-")) return;
+
+	for (char *e;; p = e + 1) {
+		if (GN >= G.NO)
+			die("-g: too many args");
 		if ((GV[GN].g = strtod(p, &e)))
 			G.no++;
 		if (e != p) {
@@ -376,11 +380,12 @@ static void parse_g(const char *p)
 				GV[GN].s = strtod(p = e, &e);
 			GN++;
 			if (*e == ',') continue;
-			if (*e == '\0') return;
+			if (*e == '\0') break;
 		}
-		break;
+		err: die("-g: bad number: '%s'", p);
 	}
-	die("-g: bad number: '%s'", p);
+
+	if (!G.no) die("-g: no outputs");
 }
 
 static void parse_G(const char *n, const char *v)
@@ -582,7 +587,6 @@ int main(int argc, char* argv[])
 	// restart
 	parse_args(argv);
 	if (!GN) G.no = G.NO;
-	if (!G.no) die("-g: no outputs");
 
 	DSP.instanceClear();
 	DSP.instanceConstants(G.sr);
