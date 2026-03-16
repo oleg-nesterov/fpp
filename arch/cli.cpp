@@ -68,6 +68,8 @@ static FAUSTFLOAT _outputs[NOUTS][BUFSZ];
 } while (0)
 
 // ----------------------------------------------------------------------------
+#define FIFO_FD	1
+
 static bool fifo_run(const char *fifo, const char *comm, const char *argv[])
 {
 	struct stat st;
@@ -112,8 +114,8 @@ start:	fprintf(stderr, "CLI: starting '%s' ...\n", comm);
 	fd = open(fifo, O_WRONLY);
 	assert(fd >= 0);
 out:
-	if (fd != 1) {
-		assert(dup2(fd, 1) == 1);
+	if (fd != FIFO_FD) {
+		assert(dup2(fd, FIFO_FD) == FIFO_FD);
 		close(fd);
 	}
 	return r;
@@ -129,7 +131,7 @@ out:
 	int r = read(pfd[0], chan, sizeof(chan)-1);	\
 	if (r <= 0 || strncmp(chan, "ACK\n", r))	\
 		die("bad ACK from pipe.");		\
-	close(1); close(pfd[0]); close(pfd[1]);		\
+	close(FIFO_FD); close(pfd[0]); close(pfd[1]);	\
 	O_B::eof(); unlink(tmpf)
 
 //-----------------------------------------------------------------------------
@@ -194,7 +196,7 @@ static struct O_GP : public O_B {
 			"set grid\n";
 
 		if (fifo_run("/tmp/gp.fifo", "gnuplot", argv))
-			write(1, icmd, strlen(icmd));
+			write(FIFO_FD, icmd, strlen(icmd));
 
 		ofd = open("/tmp/gp.data", O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		assert(ofd >= 0);
@@ -207,14 +209,14 @@ static struct O_GP : public O_B {
 				: NULL;
 		if (!dt) die("unsupported gnuplot datasize");
 
-		dprintf(1, "FN='/tmp/gp.data'; DT='%s'; NO=%d\n"
+		dprintf(FIFO_FD, "FN='/tmp/gp.data'; DT='%s'; NO=%d\n"
 			"BF = ''; do for [O=1:NO] { BF = BF . DT }\n"
 			"plot [][%s] for [O=1:NO] FN volatile binary format=BF "
 			"u O w l t sprintf('%%d',O-1)\n",
 			dt, G.no, ylims);
 
 		PROC_OPEN();
-		dprintf(1, "set print '%s'; print 'ACK'; set print\n", chan);
+		dprintf(FIFO_FD, "set print '%s'; print 'ACK'; set print\n", chan);
 		PROC_CLOSE("/tmp/gp.data");
 	}
 } __o_gp;
@@ -234,7 +236,7 @@ static struct O_IR : public O_B {
 	void eof(void)
 	{
 		PROC_OPEN();
-		dprintf(1, "/tmp/ir.data %d %ld %d %d %s\n",
+		dprintf(FIFO_FD, "/tmp/ir.data %d %ld %d %d %s\n",
 				norm, sizeof(FLOAT), G.no, G.sr, chan);
 		PROC_CLOSE("/tmp/ir.data");
 	}
