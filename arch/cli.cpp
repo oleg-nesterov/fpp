@@ -112,8 +112,10 @@ start:	fprintf(stderr, "CLI: starting '%s' ...\n", comm);
 	fd = open(fifo, O_WRONLY);
 	assert(fd >= 0);
 out:
-	assert(dup2(fd, 1) == 1);
-	close(fd);
+	if (fd != 1) {
+		assert(dup2(fd, 1) == 1);
+		close(fd);
+	}
 	return r;
 }
 
@@ -127,7 +129,7 @@ out:
 	int r = read(pfd[0], chan, sizeof(chan)-1);	\
 	if (r <= 0 || strncmp(chan, "ACK\n", r))	\
 		die("bad ACK from pipe.");		\
-	close(pfd[0]); close(pfd[1]);			\
+	close(1); close(pfd[0]); close(pfd[1]);		\
 	O_B::eof(); unlink(tmpf)
 
 //-----------------------------------------------------------------------------
