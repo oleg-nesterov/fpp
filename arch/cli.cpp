@@ -430,6 +430,8 @@ static void parse_args(char* argv[])
 		else
 			parse_G(n, *++argv);
 	}
+
+	if (!GN) G.no = G.NO;
 }
 
 // ----------------------------------------------------------------------------
@@ -515,6 +517,30 @@ static char *map(const char *k, const char *v)
 }
 
 static struct { sem_t sem[2]; char *cmd; } IT;
+
+static void parse_it_cmd(unsigned argc, const char *cmd)
+{
+	static char* argv[32];
+
+	#define PUSH(arg) \
+		free(argv[argc]); argv[argc++] = arg
+
+	for (const char *p = cmd;;) {
+		while (*p &&  isspace(*p)) ++p;
+		const char *a = p;
+		while (*p && !isspace(*p)) ++p;
+		if (a == p) break;
+
+		assert(argc + 1 < sizeof(argv)/sizeof(argv[0]));
+		PUSH(strndup(a, p - a));
+	}
+
+	PUSH(NULL);
+	#undef PUSH
+
+	parse_args(argv - 1);
+}
+
 static void *it_loop(void *)
 {
 	for (;;) {
@@ -529,7 +555,7 @@ static void *it_loop(void *)
 
 		if (*inp == '!') {
 			cli_stop = 0;
-			IT.cmd = inp;
+			IT.cmd = inp + 1;
 			sem_post(IT.sem+0);
 			sem_wait(IT.sem+1);
 			continue;
@@ -598,7 +624,6 @@ int main(int argc, char* argv[])
 
 	DSP.buildUserInterface(NULL);
 	parse_args(argv);
-	if (!GN) G.no = G.NO;
 
 restart:
 	if (G.it) {
@@ -609,7 +634,7 @@ restart:
 			pthread_create(&t, NULL, it_loop, NULL);
 		}
 		sem_wait(IT.sem+0);
-		fprintf(stderr, "CMD: %s\n", IT.cmd);
+		parse_it_cmd(0, IT.cmd);
 		sem_post(IT.sem+1);
 		cli_stop = -1;
 	}
