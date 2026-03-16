@@ -149,7 +149,7 @@ static struct O_T : public O_N {
 	}
 	void eof()
 	{
-		fclose(stdout);
+		fflush(stdout);
 	}
 } __o_t;
 
