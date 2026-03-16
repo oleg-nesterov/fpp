@@ -418,17 +418,17 @@ err:	die("bad option '%s'", n);
 
 static void parse_args(char* argv[])
 {
-	for (char *n; (n = *++argv);) {
+	for (char *n; (n = *argv++);) {
 		if (char *p = strchr(n, '='))
 			cli_add_opt(n, p);
 		else IF (-i)
 			G.it = 1;
 		else IF (-o)
-			parse_o(*++argv);
+			parse_o(*argv++);
 		else IF (-g)
-			parse_g(*++argv);
+			parse_g(*argv++);
 		else
-			parse_G(n, *++argv);
+			parse_G(n, *argv++);
 	}
 
 	if (!GN) G.no = G.NO;
@@ -538,7 +538,7 @@ static void parse_it_cmd(unsigned argc, const char *cmd)
 	PUSH(NULL);
 	#undef PUSH
 
-	parse_args(argv - 1);
+	parse_args(argv);
 }
 
 static void *it_loop(void *)
@@ -623,7 +623,7 @@ int main(int argc, char* argv[])
 		outputs[o] = _outputs[o];
 
 	DSP.buildUserInterface(NULL);
-	parse_args(argv);
+	parse_args(++argv);
 
 restart:
 	if (G.it) {
