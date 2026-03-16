@@ -128,7 +128,7 @@ out:
 	if (r <= 0 || strncmp(chan, "ACK\n", r))	\
 		die("bad ACK from pipe.");		\
 	close(pfd[0]); close(pfd[1]);			\
-	unlink(tmpf)
+	O_B::eof(); unlink(tmpf)
 
 //-----------------------------------------------------------------------------
 static struct O_N {
