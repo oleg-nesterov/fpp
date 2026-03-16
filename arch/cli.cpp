@@ -643,8 +643,9 @@ restart:
 	DSP.instanceConstants(G.sr);
 
 	O->ini();
-	if (G.nr <= G.nr + G.sk) G.nr += G.sk; // avoid overflow
-	for (unsigned count, stopped = 0, nr = G.nr; nr; nr -= count) {
+	unsigned G_nr = G.nr, G_sk = G.sk;
+	if (G_nr <= G_nr + G_sk) G_nr += G_sk; // avoid overflow
+	for (unsigned count, stopped = 0, nr = G_nr; nr; nr -= count) {
 		count = G.bs;
 		if (count > nr) count = nr;
 
@@ -656,7 +657,7 @@ restart:
 		}
 
 		for (unsigned i = 0; i < count; i++) {
-			if (G.sk) G.sk--;
+			if (G_sk) G_sk--;
 			else {
 				if (GN) apply_g(i);
 				O->out(i);
