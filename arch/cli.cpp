@@ -495,14 +495,14 @@ static inline char *it_readline(void)
 	return 1 ? __it_readline() : __it_getline();
 }
 
+static struct { char *k, *v; } __map[128];
 static char *map(const char *k, const char *v)
 {
-	static struct { char *k, *v; } map[128];
-	__typeof__(map + 0) kv = NULL;
+	__typeof__(__map + 0) kv = NULL;
 
-	for (unsigned i = 0; i < sizeof(map)/sizeof(map[0]); ++i)
-		if (!map[i].k || !strcmp(map[i].k, k)) {
-			kv = map + i;
+	for (unsigned i = 0; i < sizeof(__map)/sizeof(__map[0]); ++i)
+		if (!__map[i].k || !strcmp(__map[i].k, k)) {
+			kv = __map + i;
 			break;
 		}
 
@@ -611,6 +611,10 @@ dump:		fprintf(stderr, "\n");
 		for (unsigned i = 0; i < ARGC; ++i)
 			fprintf(stderr, "  %-16s % -.8g\n",
 				ARGV[i].n, double(*ARGV[i].v));
+		if (__map[0].k)
+			fprintf(stderr, "\n");
+		for (unsigned i = 0; i < sizeof(__map)/sizeof(__map[0]) && __map[i].k; ++i)
+			fprintf(stderr, "  %s: %s\n", __map[i].k, __map[0].v);
 		fprintf(stderr, "\n");
 	}
 }
