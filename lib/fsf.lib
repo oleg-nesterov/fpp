@@ -52,14 +52,19 @@ FILE:
 		fprintf(stderr, "SF(%s) " fmt, (fsf)->file, ##__VA_ARGS__)
 	#define fsf_die(fsf, fmt, ...)	\
 		do { fsf_msg(fsf, "ERR!! " fmt, ##__VA_ARGS__); exit(1); } while (0)
-	#define	fsf_warn(fsf, fmt, ...)	\
-		do { fsf_msg(fsf, "WARN! " fmt, ##__VA_ARGS__); } while (0)
+	#define	fsf_warn(fsf, fmt, ...) do {				\
+		if (fsf->nmsg) {					\
+			fsf_msg(fsf, "WARN! " fmt, ##__VA_ARGS__);	\
+			if (!--fsf->nmsg) fsf_msg(fsf, "last warn.\n");	\
+		}							\
+	} while (0)
 
 	struct fsf_struct {
 		SNDFILE	*	sndf;
 		const char *	file;
 		unsigned	chan;
 
+		int		nmsg;
 		unsigned 	pos, cur, end;
 		float		buf[FSF_BUFSZ];
 	};
@@ -68,6 +73,8 @@ FILE:
 	{
 		unsigned long fd = (unsigned long)file;
 		SF_INFO info;
+
+		fsf->nmsg = 4;
 
 		if (fd < 4096) {
 			lseek(fd, 0, SEEK_SET);
