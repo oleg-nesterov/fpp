@@ -518,27 +518,37 @@ static char *map(const char *k, const char *v)
 
 static struct { sem_t sem[2]; char *cmd; } IT;
 
-static void parse_it_cmd(unsigned argc, const char *cmd)
+static unsigned parse_it_cmd(int rec, unsigned argc, const char *cmd)
 {
 	static char* argv[32];
 
+	assert(rec < 8);
 	#define PUSH(arg) \
-		free(argv[argc]); argv[argc++] = arg
+		do { free(argv[argc]), argv[argc++] = arg; } while (0)
 
-	for (const char *p = cmd;;) {
+	for (const char *m, *p = cmd;;) {
 		while (*p &&  isspace(*p)) ++p;
 		const char *a = p;
 		while (*p && !isspace(*p)) ++p;
 		if (a == p) break;
 
 		assert(argc + 1 < sizeof(argv)/sizeof(argv[0]));
-		PUSH(strndup(a, p - a));
+		char *arg = strndup(a, p - a);
+		if ((m = map(arg, NULL))) {
+			argc = parse_it_cmd(rec+1, argc, m);
+			free(arg);
+		} else {
+			PUSH(arg);
+		}
 	}
 
-	PUSH(NULL);
-	#undef PUSH
+	if (!rec) {
+		PUSH(NULL);
+		parse_args(argv);
+	}
 
-	parse_args(argv);
+	#undef PUSH
+	return argc;
 }
 
 static void *it_loop(void *)
@@ -634,7 +644,7 @@ restart:
 			pthread_create(&t, NULL, it_loop, NULL);
 		}
 		sem_wait(IT.sem+0);
-		parse_it_cmd(0, IT.cmd);
+		parse_it_cmd(0, 0, IT.cmd);
 		sem_post(IT.sem+1);
 		cli_stop = -1;
 	}
