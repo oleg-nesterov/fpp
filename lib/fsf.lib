@@ -50,8 +50,10 @@ FILE:
 
 	#define fsf_msg(fsf, fmt, ...)	\
 		fprintf(stderr, "SF(%s) " fmt, (fsf)->file, ##__VA_ARGS__)
-	#define fsf_die(fsf, ...)	\
-		do { fsf_msg(fsf, ##__VA_ARGS__); exit(1); } while (0)
+	#define fsf_die(fsf, fmt, ...)	\
+		do { fsf_msg(fsf, "ERR!! " fmt, ##__VA_ARGS__); exit(1); } while (0)
+	#define	fsf_warn(fsf, fmt, ...)	\
+		do { fsf_msg(fsf, "WARN! " fmt, ##__VA_ARGS__); } while (0)
 
 	struct fsf_struct {
 		SNDFILE	*	sndf;
@@ -74,18 +76,18 @@ FILE:
 			fsf->file = file;
 			fd = open(file, O_RDONLY);
 			if (fd < 0)
-				fsf_die(fsf, "ERR!! open: %m\n");
+				fsf_die(fsf, "open: %m\n");
 		}
 
 		fsf->sndf = sf_open_fd(fd, SFM_READ, &info, 0);
 		if (!fsf->sndf)
-			fsf_die(fsf, "ERR!! open: %s\n", sf_strerror(NULL));
+			fsf_die(fsf, "open: %s\n", sf_strerror(NULL));
 
 		fsf->chan = info.channels;
 		fsf->pos = fsf->cur = fsf->end = 0;
 
 		if (sr && sr != info.samplerate)
-			fsf_msg(fsf, "WARN! samplerate %d != %d\n", info.samplerate, sr);
+			fsf_warn(fsf, "samplerate %d != %d\n", info.samplerate, sr);
 		return 0;
 	}
 
@@ -105,8 +107,8 @@ FILE:
 			if (sf_seek(fsf->sndf, off, SF_SEEK_SET) >= 0)
 				fsf->pos = off;
 			else {
-				fsf_msg(fsf, "ERR!! seek(%d) failed: %s\n",
-					off, sf_strerror(fsf->sndf));
+				fsf_warn(fsf, "seek(%d) failed: %s\n",
+					 off, sf_strerror(fsf->sndf));
 				return -1;
 			}
 		}
@@ -125,7 +127,7 @@ FILE:
 		else if (!sf_error(fsf->sndf))
 			return 0;
 		else
-			fsf_die(fsf, "ERR!! read(%d) fail: %s\n",
+			fsf_die(fsf, "read(%d) fail: %s\n",
 				fsf->pos, sf_strerror(fsf->sndf));
 	}
 
@@ -143,7 +145,7 @@ FILE:
 			}
 
 			if (cnt)
-				fsf_msg(fsf, "WARN! read(%d) eof\n", fsf->pos);
+				fsf_warn(fsf, "read(%d) eof\n", fsf->pos);
 			fsf->pos = -1u;
 		}
 	}
@@ -155,7 +157,7 @@ exec:	[=$fsf, fsf_read(&$fsf, $off, $cnt, $ctl)];
 
 sf_ch = FPP(ch, fsf, ret) pure float {
 init:	if (unsigned($ch) >= $fsf.chan)
-		fsf_die(&$fsf, "ERR!! bad chan %d\n", $ch);
+		fsf_die(&$fsf, "bad chan %d\n", $ch);
 exec:	(($ret ? $ret[unsigned($ch)] : 0.0f))
 };
 
