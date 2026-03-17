@@ -73,8 +73,9 @@ FILE:
 			if (fd < 0)
 				fsf_die(fsf, "ERR!! open: %m\n");
 		} else {
-			fsf->file = "<stdin>";
 			fd = 0;
+			lseek(fd, 0, SEEK_SET);
+			fsf->file = "<stdin>";
 		}
 
 		fsf->sndf = sf_open_fd(fd, SFM_READ, &info, 0);
