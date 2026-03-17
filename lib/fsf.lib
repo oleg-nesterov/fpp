@@ -64,18 +64,17 @@ FILE:
 
 	static int fsf_open(struct fsf_struct *fsf, const char *file, int sr)
 	{
+		unsigned long fd = (unsigned long)file;
 		SF_INFO info;
-		int fd;
 
-		if (file) {
+		if (fd < 4096) {
+			lseek(fd, 0, SEEK_SET);
+			asprintf((char**)&fsf->file, "FD=%ld", fd);
+		} else {
 			fsf->file = file;
 			fd = open(file, O_RDONLY);
 			if (fd < 0)
 				fsf_die(fsf, "ERR!! open: %m\n");
-		} else {
-			fd = 0;
-			lseek(fd, 0, SEEK_SET);
-			fsf->file = "<stdin>";
 		}
 
 		fsf->sndf = sf_open_fd(fd, SFM_READ, &info, 0);
@@ -150,7 +149,7 @@ FILE:
 	}
 
 decl:	struct fsf_struct $fsf;
-init:	fsf_open(&$fsf, $file, sample_rate);
+init:	fsf_open(&$fsf, (const char *)$file, sample_rate);
 exec:	[=$fsf, fsf_read(&$fsf, $off, $cnt, $ctl)];
 };
 
