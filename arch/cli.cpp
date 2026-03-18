@@ -652,7 +652,7 @@ restart:
 			pthread_create(&t, NULL, it_loop, NULL);
 		}
 		do {
-			sem_wait(IT.sem+0);
+			if (sem_wait(IT.sem+0)) exit(1);
 			TRY(parse_it_cmd(0, 0, IT.cmd));
 			sem_post(IT.sem+1);
 			cli_stop = -1;
