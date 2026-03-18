@@ -469,6 +469,11 @@ static char **rl_cmpl_func(const char *inp, int start, int end)
 	rl_attempted_completion_over = 1;
 	return rl_completion_matches(inp, rl_next_match);
 }
+void __rl_on_exit(int, void *)
+{
+	kill(getpid(), SIGINT); // why ???
+	rl_deprep_terminal();
+};
 static char *__it_readline(void)
 {
 	static char *inp;
@@ -478,6 +483,7 @@ static char *__it_readline(void)
 		assert((rl_instream  = fopen("/dev/tty", "r")));
 		assert((rl_outstream = fopen("/dev/tty", "w")));
 		rl_attempted_completion_function = rl_cmpl_func;
+		on_exit(__rl_on_exit, NULL);
 	}
 
 	inp = readline(": ");
