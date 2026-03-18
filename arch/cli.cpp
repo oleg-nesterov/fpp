@@ -62,10 +62,14 @@ static mydsp DSP;
 #define BUFSZ	1024
 static FAUSTFLOAT _outputs[NOUTS][BUFSZ];
 
+static int _try_;
 #define die(fmt, ...) do {					\
 	fprintf(stderr, "ERR!! " fmt "\n", ##__VA_ARGS__);	\
-	exit(1);						\
+	if (_try_) { throw 0; } exit(1);			\
 } while (0)
+
+#define TRY(expr)	\
+	do { try { _try_ = 1; expr; _try_ = 0; } catch (...) {} } while (0)
 
 // ----------------------------------------------------------------------------
 #define FIFO_FD	1
@@ -647,10 +651,12 @@ restart:
 			sem_init(IT.sem+1, 0,0);
 			pthread_create(&t, NULL, it_loop, NULL);
 		}
-		sem_wait(IT.sem+0);
-		parse_it_cmd(0, 0, IT.cmd);
-		sem_post(IT.sem+1);
-		cli_stop = -1;
+		do {
+			sem_wait(IT.sem+0);
+			TRY(parse_it_cmd(0, 0, IT.cmd));
+			sem_post(IT.sem+1);
+			cli_stop = -1;
+		} while (_try_);
 	}
 
 	DSP.instanceClear();
