@@ -575,6 +575,7 @@ static void *it_loop(void *)
 
 		if (*inp == '!') {
 			cli_stop = 0;
+			if (inp[1] == '!') continue;
 			IT.cmd = inp + 1;
 			sem_post(IT.sem+0);
 			sem_wait(IT.sem+1);
