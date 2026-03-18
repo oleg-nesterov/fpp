@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <ctype.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -306,8 +307,11 @@ static __typeof__(ARGV+0) cli_get_opt(const char *n)
 	return NULL;
 }
 
-static void ui_add_opt(const char *n, FAUSTFLOAT *e, FAUSTFLOAT v)
+static void ui_add_opt(const char *__n, FAUSTFLOAT *e, FAUSTFLOAT v)
 {
+	char *n = strdup(__n);
+	for (char *p = n; *p; p++)
+		if (isspace(*p)) *p = '_';
 	assert(ARGC < sizeof(ARGV)/sizeof(ARGV[0]));
 	assert(!cli_get_opt(n));
 	auto o = ARGV + ARGC++;
