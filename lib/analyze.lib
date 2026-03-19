@@ -83,6 +83,8 @@ smoo_stat = __smoo_stat : stat_rsd;
 lr_slope = FPP(N, stable, y_new[N]) {
 decl:
 	$_float_ $sum_y, $sum_xy;
+init:
+	$sum_y = $sum_xy = 0;
 exec:
 	unsigned     N = $(N);
 	$_float_ SUM_X = $(N * (N   - 1) /  2);
