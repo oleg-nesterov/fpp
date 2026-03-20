@@ -403,18 +403,19 @@ static void parse_g(const char *p)
 
 static void parse_G(const char *n, const char *v)
 {
-	const  char *o = n;
 	int x; char *e = NULL;
+
+	if (*n != '-') goto err;
 
 	if (v) x = strtoll(v, &e, 0);
 	if (e == v || *e)
-		die("bad number: '%s'", v);
+		die("%s: bad number: '%s'", n, v);
 
-	if (*o++ == '-') for (;;)
-		switch (*o++) {
+	for (const char *o = n;;)
+		switch (*++o) {
 		case   0: return;
-		case 'r': G.sr = x; break;
 		case 'n': G.nr = x; break;
+		case 'r': G.sr = x; break;
 		case 's': G.sk = x; break;
 		case 'x': G.xt = x; break;
 		case 'b': G.bs = x; break;
