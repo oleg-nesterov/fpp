@@ -458,6 +458,7 @@ static void parse_args(char* argv[])
 			parse_G(n, *argv++);
 	}
 
+	assert(G.bs <= BUFSZ);
 	if (!GN) G.no = G.NO;
 }
 
@@ -664,7 +665,6 @@ int main(int argc, char* argv[])
 
 	G.NO = DSP.getNumOutputs();
 	assert(G.NO <= NOUTS);
-	assert(G.bs <= BUFSZ);
 
 	FAUSTFLOAT *outputs[NOUTS];
 	for (int o = 0; o < NOUTS; o++)
