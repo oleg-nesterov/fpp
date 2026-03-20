@@ -64,6 +64,8 @@ static mydsp DSP;
 #define BUFSZ	1024
 static FAUSTFLOAT _outputs[NOUTS][BUFSZ];
 
+#define eprint(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
+
 static int _try_;
 #define die(fmt, ...) do {					\
 	fprintf(stderr, "ERR!! " fmt "\n", ##__VA_ARGS__);	\
@@ -294,6 +296,7 @@ struct O_SOX : public O_B {
 	}
 } __o_sox;
 
+static const char *__ON = "t";
 static struct O_N *O = &__o_t;
 
 // ----------------------------------------------------------------------------
@@ -339,6 +342,7 @@ static void cli_add_opt(char *n, char *p)
 
 static void parse_o(char *n)
 {
+	static char __on[64];
 	char *p = NULL;
 
 	if (n && (p = strchr(n, '=')))
@@ -365,8 +369,14 @@ static void parse_o(char *n)
 	else
 		err: die("bad -o name: '%s'", n);
 
-	if (p && (!*p || !O->cli(p)))
+	__ON = strcpy(__on, n);
+	if (!p) return;
+
+	if (!*p || !O->cli(p))
 		die("bad arg '%s' for -o %s", p, n);
+
+	assert(strlen(n) + 1 + strlen(p) < sizeof(__on));
+	sprintf(__on + strlen(n), "=%s", p);
 }
 
 static struct { FAUSTFLOAT g,s; } GV[NOUTS];
@@ -460,6 +470,21 @@ static void parse_args(char* argv[])
 
 	assert(G.bs <= BUFSZ);
 	if (!GN) G.no = G.NO;
+}
+
+static void dump_args(void)
+{
+	eprint("  ! -r %d", G.sr);
+	if (G.sk_s || G.sk)
+		G.sk_s ? eprint(" -S %g", G.sk_s) : eprint(" -s %d", G.sk);
+	if (1)
+		G.nr_s ? eprint(" -N %g", G.nr_s) : eprint(" -n %d", G.nr);
+	for (unsigned gn = 0; gn < GN; ++gn) {
+		gn == 0 ? eprint(" -g ") : eprint(",");
+		eprint("%g", GV[gn].g);
+		if (GV[gn].s) eprint("%+g", GV[gn].s);
+	}
+	eprint(" -o %s\n\n", __ON);
 }
 
 // ----------------------------------------------------------------------------
@@ -642,7 +667,7 @@ static void *it_loop(void *)
 		}
 		continue;
 
-dump:		fprintf(stderr, "\n");
+dump:		dump_args();
 		for (unsigned i = 0; i < ARGC; ++i)
 			fprintf(stderr, "  %-16s % -.8g\n",
 				ARGV[i].n, double(*ARGV[i].v));
