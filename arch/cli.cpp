@@ -25,6 +25,7 @@ typedef long double quad;
 
 static struct {
 	unsigned sr = 44100, nr = 10, bs = 512, sk, xt;
+	double   nr_s, sk_s;
 	unsigned NO, no;
 	int it;
 } G;
@@ -403,20 +404,34 @@ static void parse_g(const char *p)
 
 static void parse_G(const char *n, const char *v)
 {
-	int x; char *e = NULL;
+	int x; float f;
+	char *e = NULL;
+	bool s = false;
 
-	if (*n != '-') goto err;
+	if (n[0] != '-' || n[1] ==  0)  goto err;
+	if (n[1] == 'N' || n[1] == 'S') s = true;
 
-	if (v) x = strtoll(v, &e, 0);
+	if (v) {
+		if (s) f = strtod(v, &e);
+		else   x = strtoll(v, &e, 0);
+	}
 	if (e == v || *e)
 		die("%s: bad number: '%s'", n, v);
 
+	if (s) {
+		if (n[2]) goto err;
+		switch (n[1]) {
+		case 'N': G.nr_s = f; G.nr = 0; break;
+		case 'S': G.sk_s = f; G.sk = 0; break;
+		}
+		return;
+	}
 	for (const char *o = n;;)
 		switch (*++o) {
 		case   0: return;
-		case 'n': G.nr = x; break;
+		case 'n': G.nr = x; G.nr_s = 0; break;
+		case 's': G.sk = x; G.sk_s = 0; break;
 		case 'r': G.sr = x; break;
-		case 's': G.sk = x; break;
 		case 'x': G.xt = x; break;
 		case 'b': G.bs = x; break;
 		default: goto err;
@@ -675,7 +690,8 @@ restart:
 	DSP.instanceConstants(G.sr);
 
 	O->ini();
-	unsigned G_nr = G.nr, G_sk = G.sk;
+	unsigned G_nr = G.nr ?: G.nr_s * G.sr + .5;
+	unsigned G_sk = G.sk ?: G.sk_s * G.sr + .5;
 	if (G_nr <= G_nr + G_sk) G_nr += G_sk; // avoid overflow
 	for (unsigned count, stopped = 0, nr = G_nr; nr; nr -= count) {
 		count = G.bs;
