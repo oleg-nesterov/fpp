@@ -142,11 +142,12 @@ out:
 
 //-----------------------------------------------------------------------------
 static struct O_N {
-	virtual bool cli(char*) { return false; }
-	virtual void ini(void) {}
-	virtual void out(unsigned) {};
-	virtual void eob(void) {}
-	virtual void eof(void) {}
+	virtual bool _ck(void)		{ return true; }
+	virtual bool cli(char*)		{ return false; }
+	virtual void ini(void)		{}
+	virtual void out(unsigned)	{};
+	virtual void eob(void)		{}
+	virtual void eof(void)		{}
 } __o_n;
 
 static struct O_T : public O_N {
@@ -249,6 +250,8 @@ static struct O_IR : public O_B {
 } __o_ir;
 
 struct O_SOX : public O_B {
+	bool _ck(void) { return !!file; }
+
 	const char *file;
 	int pid;
 
@@ -690,6 +693,7 @@ restart:
 	DSP.instanceConstants(G.sr);
 
 	O->ini();
+	bool _ck = O->_ck(); unsigned total = 0;
 	unsigned G_nr = G.nr ?: G.nr_s * G.sr + .5;
 	unsigned G_sk = G.sk ?: G.sk_s * G.sr + .5;
 	if (G_nr <= G_nr + G_sk) G_nr += G_sk; // avoid overflow
@@ -712,6 +716,11 @@ restart:
 			}
 		}
 		O->eob();
+
+		if (_ck && (total += count) >= 1000000) {
+			fprintf(stderr, "WARN! stop at total=%d\n", total);
+			break;
+		}
 	}
 	O->eof();
 
