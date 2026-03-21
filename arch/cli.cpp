@@ -87,7 +87,7 @@ static bool fifo_run(const char *fifo, const char *comm, const char *argv[])
 		if (!S_ISFIFO(st.st_mode))
 			die("'%s' is not a fifo.", fifo);
 	} else {
-		fprintf(stderr, "CLI: create '%s' ...\n", fifo);
+		eprint("CLI: create '%s' ...\n", fifo);
 		assert(mkfifo(fifo, 0666) == 0);
 		goto start;
 	}
@@ -101,7 +101,7 @@ static bool fifo_run(const char *fifo, const char *comm, const char *argv[])
 		goto out;
 	}
 
-start:	fprintf(stderr, "CLI: starting '%s' ...\n", comm);
+start:	eprint("CLI: starting '%s' ...\n", comm);
 	r = 1;
 
 	if (!fork()) {
@@ -333,7 +333,7 @@ static void cli_add_opt(char *n, char *p)
 	if (e == p || *e) die("bad number: '%s'", p);
 
 	auto o = cli_get_opt(n);
-	if (!o)	fprintf(stderr, "WARN! unused opt '%s'\n", n);
+	if (!o)	eprint("WARN! unused opt '%s'\n", n);
 	else	*o->v = v;
 }
 
@@ -493,7 +493,7 @@ static char *__it_getline(void)
 	static char *line = NULL;
 	static size_t size = 0;
 
-	fprintf(stderr, ": ");
+	eprint(": ");
 	return getline(&line, &size, stdin) >= 0 ? line : NULL;
 }
 
@@ -647,12 +647,12 @@ static void *it_loop(void *)
 			}
 
 			if (!map(n, v))
-				fprintf(stderr, "ERR!! map is full.\n");
+				eprint("ERR!! map is full.\n");
 			continue;
 		}
 		if (sscanf(inp, " %127[^=: ] %c", n,&c) == 1) {
 			if (!(inp = map(n, NULL))) {
-				fprintf(stderr, "ERR!! '%s' wasn't defined.\n", n);
+				eprint("ERR!! '%s' wasn't defined.\n", n);
 				continue;
 			}
 		}
@@ -669,13 +669,12 @@ static void *it_loop(void *)
 
 dump:		dump_args();
 		for (unsigned i = 0; i < ARGC; ++i)
-			fprintf(stderr, "  %-16s % -.8g\n",
-				ARGV[i].n, double(*ARGV[i].v));
+			eprint("  %-16s % -.8g\n", ARGV[i].n, double(*ARGV[i].v));
 		if (__map[0].k)
-			fprintf(stderr, "\n");
+			eprint("\n");
 		for (unsigned i = 0; i < sizeof(__map)/sizeof(__map[0]) && __map[i].k; ++i)
-			fprintf(stderr, "  %s: %s\n", __map[i].k, __map[0].v);
-		fprintf(stderr, "\n");
+			eprint("  %s: %s\n", __map[i].k, __map[0].v);
+		eprint("\n");
 	}
 }
 
@@ -743,7 +742,7 @@ restart:
 		O->eob();
 
 		if (_ck && (total += count) >= 1000000) {
-			fprintf(stderr, "WARN! stop at total=%d\n", total);
+			eprint("WARN! stop at total=%d\n", total);
 			break;
 		}
 	}
