@@ -484,7 +484,7 @@ static void dump_args(void)
 		eprint("%g", GV[gn].g);
 		if (GV[gn].s) eprint("%+g", GV[gn].s);
 	}
-	eprint(" -o %s\n\n", __ON);
+	eprint(" -o %s\n", __ON);
 }
 
 // ----------------------------------------------------------------------------
@@ -672,12 +672,11 @@ next:
 		continue;
 
 dump:		dump_args();
+		for (unsigned i = 0; i < sizeof(__map)/sizeof(__map[0]) && __map[i].k; ++i)
+			eprint("  %s: %s\n", __map[i].k, __map[i].v);
+		eprint("\n");
 		for (unsigned i = 0; i < ARGC; ++i)
 			eprint("  %-16s % -.8g\n", ARGV[i].n, double(*ARGV[i].v));
-		if (__map[0].k)
-			eprint("\n");
-		for (unsigned i = 0; i < sizeof(__map)/sizeof(__map[0]) && __map[i].k; ++i)
-			eprint("  %s: %s\n", __map[i].k, __map[0].v);
 		eprint("\n");
 	}
 }
