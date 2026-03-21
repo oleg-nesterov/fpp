@@ -617,6 +617,11 @@ static void *it_loop(void *)
 		char *p, c;  int eat;
 		char n[128]; float v;
 
+		#define next(fmt, ...) do {				\
+			eprint("ERR!! " fmt "\n", ##__VA_ARGS__);	\
+			goto next;					\
+		} while (0)
+next:
 		if(!(inp = it_readline())) _exit(0);
 		if ((p = strchr(inp, '\n'))) *p = 0;
 		if ((p = strchr(inp,  '#'))) *p = 0;
@@ -650,19 +655,18 @@ static void *it_loop(void *)
 				eprint("ERR!! map is full.\n");
 			continue;
 		}
+
 		if (sscanf(inp, " %127[^=: ] %c", n,&c) == 1) {
-			if (!(inp = map(n, NULL))) {
-				eprint("ERR!! '%s' wasn't defined.\n", n);
-				continue;
-			}
+			if (!(inp = map(n, NULL)))
+				next("undefined '%s'", n);
 		}
 
 		for (; *inp; inp += eat) {
 			if (sscanf(inp, " %127[^= ] %*[=] %f %n", n,&v,&eat) != 2)
-				goto dump;
+				next("can't parse '%s'", inp);
 			auto o = cli_get_opt(n);
 			if (!o)
-				goto dump;
+				next("bad option '%s'", n);
 			*o->v = v;
 		}
 		continue;
