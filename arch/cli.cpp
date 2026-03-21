@@ -559,9 +559,9 @@ static char *map(const char *k, const char *v)
 {
 	__typeof__(__map + 0) kv = NULL;
 
-	for (unsigned i = 0; i < sizeof(__map)/sizeof(__map[0]); ++i)
-		if (!__map[i].k || !strcmp(__map[i].k, k)) {
-			kv = __map + i;
+	for (auto &__kv : __map)
+		if (!__kv.k || !strcmp(__kv.k, k)) {
+			kv = &__kv;
 			break;
 		}
 
@@ -672,8 +672,10 @@ next:
 		continue;
 
 dump:		dump_args();
-		for (unsigned i = 0; i < sizeof(__map)/sizeof(__map[0]) && __map[i].k; ++i)
-			eprint("  %s: %s\n", __map[i].k, __map[i].v);
+		for (const auto &kv : __map) {
+			if (kv.k) eprint("  %s: %s\n", kv.k, kv.v);
+			else	  break;
+		}
 		eprint("\n");
 		for (unsigned i = 0; i < ARGC; ++i)
 			eprint("  %-16s % -.8g\n", ARGV[i].n, double(*ARGV[i].v));
