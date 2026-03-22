@@ -488,6 +488,8 @@ static void dump_args(void)
 }
 
 // ----------------------------------------------------------------------------
+static struct { char *k, *v; } __map[128];
+
 static char *__it_getline(void)
 {
 	static char *line = NULL;
@@ -509,6 +511,13 @@ static char *rl_next_match(const char *inp, int state)
 		auto arg = ARGV + idx++;
 		if (!strncmp(arg->n, inp, len))
 			return strdup(arg->n);
+	}
+
+	while (idx - ARGC < sizeof(__map)/sizeof(__map[0])) {
+		auto kv = __map + idx++ - ARGC;
+		if (!kv->k) break;
+		if (!strncmp(kv->k, inp, len))
+			return strdup(kv->k);
 	}
 
 	return NULL;
@@ -554,7 +563,7 @@ static inline char *it_readline(void)
 	return 1 ? __it_readline() : __it_getline();
 }
 
-static struct { char *k, *v; } __map[128];
+// ----------------------------------------------------------------------------
 static char *map(const char *k, const char *v)
 {
 	__typeof__(__map + 0) kv = NULL;
