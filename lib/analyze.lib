@@ -103,6 +103,10 @@ exec:
 
 	(N * $sum_xy - SUM_X * $sum_y) / DENOM;
 };
+
+lr_slope_fir(N) = fi.fir(par(n,N, b(N,n))) with {
+	b(N,n) = (6 * (N - 1) - 12 * n) / (N^2 - 1);
+};
 // ----------------------------------------------------------------------------
 // +-1 after reset, then +-2
 range_cross = FPP(lo,hi, in) pure _int_ {
