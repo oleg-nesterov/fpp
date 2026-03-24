@@ -87,8 +87,8 @@ init:
 	$sum_y = $sum_xy = 0;
 exec:
 	unsigned     N = $(N);
-	$_float_ SUM_X = $(N * (N   - 1) /  2);
-	$_float_ DENOM = $(N * (N^2 - 1) / 12);
+	$_float_ SUM_X = $((N   - 1) /  2);
+	$_float_ DENOM = $((N^2 - 1) / 12);
 
 	if ($stable) {
 		$sum_y = $sum_xy = 0;
@@ -101,7 +101,7 @@ exec:
 		$sum_xy += $y_new[0] * N - $sum_y;
 	}
 
-	(N * $sum_xy - SUM_X * $sum_y) / DENOM;
+	($sum_xy - SUM_X * $sum_y) / DENOM;
 };
 
 lr_slope_fir(N) = fi.fir(par(n,N, b(N,n))) with {
