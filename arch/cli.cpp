@@ -189,11 +189,12 @@ static struct O_B : public O_N {
 } __o_b;
 
 static struct O_GP : public O_B {
-	const char *ylims = "";
+	char ylims[32] = {0};
 
 	bool cli(char *arg)
 	{
-		ylims = arg;
+		assert(strlen(arg) < sizeof(ylims));
+		strcpy(ylims, arg);
 		return true;
 	}
 
@@ -372,11 +373,11 @@ static void parse_o(char *n)
 	__ON = strcpy(__on, n);
 	if (!p) return;
 
-	if (!*p || !O->cli(p))
+	if (!O->cli(p))
 		die("bad arg '%s' for -o %s", p, n);
 
 	assert(strlen(n) + 1 + strlen(p) < sizeof(__on));
-	sprintf(__on + strlen(n), "=%s", p);
+	if (*p) sprintf(__on + strlen(n), "=%s", p);
 }
 
 static struct { FAUSTFLOAT g,s; } GV[NOUTS];
