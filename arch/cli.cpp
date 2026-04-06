@@ -76,7 +76,7 @@ static int _try_;
 	do { try { _try_ = 1; expr; _try_ = 0; } catch (...) {} } while (0)
 
 // ----------------------------------------------------------------------------
-#define FIFO_FD	1
+#define FIFO_FD	512
 
 static bool fifo_run(const char *fifo, const char *comm, const char *argv[])
 {
