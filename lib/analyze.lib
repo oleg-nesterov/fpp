@@ -62,7 +62,8 @@ stat_rsd(a,v) = a, select2(abs(a) > ma.EPSILON, 0, sqrt(v)/abs(a));
 // s = 1 - (sqrt(12*(N^2+2))-6)/(N^2-1)  "exact" variance
 //
 __smoo_stat = FPP(upd, s, x) {
-decl:	float	$avg = 0, $var = 0; //reset
+decl:	float $avg, $var;
+init:	$avg = $var = 0; // reset
 exec:
 	float s = $s, x = $x;
 	float diff = x - $avg;
@@ -110,7 +111,8 @@ lr_slope_fir(N) = fi.fir(par(n,N, b(N,n))) with {
 // ----------------------------------------------------------------------------
 // +-1 after reset, then +-2
 range_cross = FPP(lo,hi, in) pure _int_ {
-decl:	int $st = 0;
+decl:	int $st;
+init:	$st = 0; // reset
 exec:	auto lo = $lo; auto hi = $hi;
 	auto in = $in; int  st = $st;
 
@@ -124,7 +126,8 @@ exec:	auto lo = $lo; auto hi = $hi;
 extremum = _ <: mem-_ : range_cross(0,0);
 
 env_foll2 = FPP(rel, in) {
-decl:	float $lo = 0, $hi = 0;
+decl:	float $lo, $hi;
+init:	$lo = $hi = 0; // reset
 exec:	float p  = $(ba.tau2pole(rel));
 	float in = $in, lo = $lo, hi = $hi;
 	int   gr = in < lo ? -1 :
@@ -144,9 +147,11 @@ exec:	float p  = $(ba.tau2pole(rel));
 // ----------------------------------------------------------------------------
 __pick_peaks = FPP(i_extr, i_peak) _int_,unsigned,float {
 FILE:	#include <$_INCDIR_/fpp.h>
-decl:	int		$s_extr = 0; // reset
+decl:	int		$s_extr;
 	unsigned	$s_time;
 	float		$s_peak;
+
+init:	$s_extr = 0; // reset;
 
 stmt:	unsigned	$r_time _unused_;
 	float		$r_peak _unused_;
@@ -171,10 +176,13 @@ pick_peaks_bpf(rel) = _ <: (env_foll2(rel) : _,!,!), _ : __pick_peaks;
 
 __pick_turns = FPP(rel,sens, i_extr, i_peak) _int_,unsigned,float {
 FILE:	#include <$_INCDIR_/fpp.h>
-decl:	int		$s_extr = 0; // reset
-	unsigned	$s_time = 0;
-	float		$s_peak = 0;
-	float		$s_leap = 0;
+decl:	int		$s_extr;
+	unsigned	$s_time;
+	float		$s_peak;
+	float		$s_leap;
+
+init:	$s_extr = $s_time = 0;
+	$s_peak = $s_leap = 0;
 
 stmt:	unsigned	$r_time _unused_;
 	float		$r_peak _unused_;
@@ -208,7 +216,8 @@ pick_turns_bpf(rel,sens) = _ <: extremum, mem : __pick_turns(rel, sens);
 
 // ----------------------------------------------------------------------------
 __extr_dt = FPP(extr, time, peak) pure _int_,unsigned,float {
-decl:	unsigned $t_lo = 0, $t_hi = 0;
+decl:	unsigned $t_lo, $t_hi;
+init:	$t_lo = $t_hi = 0;
 exec:	unsigned dt = 0; // for -Wmaybe-uninitialized
 
 	$!CK_PRIM($extr, $time, $peak);
@@ -243,9 +252,13 @@ FILE:	#include <queue>
 	static int $ID;
 
 decl:	std::queue<$tv> $q;
-	int	$t0, $t1 = 0;
-	float	$v0, $v1 = 0;
 	int	$id = ++$ID;
+	int	$t0, $t1;
+	float	$v0, $v1;
+
+init:	$q  = {};
+	$t0 = $t1 = 0;
+	$v0 = $v1 = 0;
 
 exec:	if ($push) $q.push({$time, float($val)});
 
