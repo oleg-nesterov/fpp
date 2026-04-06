@@ -480,6 +480,8 @@ static void dump_args(void)
 		G.sk_s ? eprint(" -S %g", G.sk_s) : eprint(" -s %d", G.sk);
 	if (1)
 		G.nr_s ? eprint(" -N %g", G.nr_s) : eprint(" -n %d", G.nr);
+	if (G.xt)
+		eprint(" -x %d", G.xt);
 	for (unsigned gn = 0; gn < GN; ++gn) {
 		gn == 0 ? eprint(" -g ") : eprint(",");
 		eprint("%g", GV[gn].g);
