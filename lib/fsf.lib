@@ -82,17 +82,14 @@ FILE:
 
 		if (fd < 4096) {
 			asprintf((char**)&fsf->file, "FD=%ld", fd);
+			fsf->sndf = sf_open_fd(fd, SFM_READ, &info, 0);
 		} else {
 			fsf->file = file;
-			fd = open(file, O_RDONLY);
-			if (fd < 0)
-				fsf_die(fsf, "open: %m\n");
+			fsf->sndf = sf_open(file, SFM_READ, &info);
 		}
 
-		fsf->sndf = sf_open_fd(fd, SFM_READ, &info, 0);
 		if (!fsf->sndf)
 			fsf_die(fsf, "open: %s\n", sf_strerror(NULL));
-
 		fsf->chan = info.channels;
 	rewind:
 		if (sr && sr != info.samplerate)
