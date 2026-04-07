@@ -60,7 +60,7 @@ FILE:
 	} while (0)
 
 	struct fsf_struct {
-		SNDFILE	*	sndf;
+		SNDFILE	*	sndf = NULL;
 		const char *	file;
 		unsigned	chan;
 
@@ -75,9 +75,12 @@ FILE:
 		SF_INFO info;
 
 		fsf->nmsg = 4;
+		if (fsf->sndf) {
+			sf_seek(fsf->sndf, 0, SF_SEEK_SET);
+			goto rewind;
+		}
 
 		if (fd < 4096) {
-			lseek(fd, 0, SEEK_SET);
 			asprintf((char**)&fsf->file, "FD=%ld", fd);
 		} else {
 			fsf->file = file;
@@ -91,10 +94,10 @@ FILE:
 			fsf_die(fsf, "open: %s\n", sf_strerror(NULL));
 
 		fsf->chan = info.channels;
-		fsf->pos = fsf->cur = fsf->end = 0;
-
+	rewind:
 		if (sr && sr != info.samplerate)
 			fsf_warn(fsf, "samplerate %d != %d\n", info.samplerate, sr);
+		fsf->pos = fsf->cur = fsf->end = 0;
 		return 0;
 	}
 
