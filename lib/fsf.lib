@@ -34,8 +34,8 @@ sfL(file, L) = sf_io(file) <: par(c, outputs(L), sf_ch(ba.take(c+1,L)));
 
 // ----------------------------------------------------------------------------
 sf_io = FPP(file, off, cnt, ctl) struct fsf_struct*, float* {
-FILE:
-	#include <stdio.h>
+MAKE:	-lsndfile
+FILE:	#include <stdio.h>
 	#include <fcntl.h>
 	#include <unistd.h>
 	#include <stdlib.h>
