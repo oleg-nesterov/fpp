@@ -237,7 +237,7 @@ sub __expand_fpp; sub __expand_fpp
 
 	local ($CODE, $THIS, $DICT) = ($code, $this, \$dict);
 
-	expand 1, qw(PERL FILE DECL METH INIT CALL LOOP POST EXIT AUTO);
+	expand 1, qw(PERL FILE DECL METH INIT CALL LOOP POST EXIT AUTO MAKE);
 	expand 0, qw(     file decl meth init call loop post exit auto exec);
 	$dict;
 }
@@ -468,7 +468,7 @@ sub parse_code
 	/oeg;
 
 	my @r = parse_args $_[0], $with;
-	CORE::state $re_z = re_z 'FILE|DECL|METH|INIT|CALL|LOOP|POST|EXIT|AUTO|PERL|'.
+	CORE::state $re_z = re_z 'FILE|DECL|METH|INIT|CALL|LOOP|POST|EXIT|AUTO|PERL|MAKE|'.
 				 'file|decl|meth|init|call|loop|post|exit|auto|stmt|exec';
 	@r, parse_zone $re_z, 'exec';
 }
@@ -604,7 +604,7 @@ sub parse_dep
 	$2 or die 'expected ;';
 
 	local $_ = $1;
-	CORE::state $re_z = re_z 'FILE|DECL|METH|INIT|LOOP|POST|PERL';
+	CORE::state $re_z = re_z 'FILE|DECL|METH|INIT|LOOP|POST|PERL|MAKE';
 	my $code = parse_zone $re_z, 'FILE';
 	$code->{name} = $name;
 
@@ -990,6 +990,8 @@ sub expand_all
 	hack_slows;
 	lift_const;
 	kill_const;
+
+	collect 0, 'MAKE';
 }
 
 sub read_cpp
@@ -1125,6 +1127,14 @@ sub kill_C99_loops
 	}e;
 }
 
+my ($MKF, $MAKE); sub dump_make
+{
+	my $mkf = \*STDERR;
+	open $mkf, '>', $MKF or die "ERR!! can't open '$MKF': $!\n"
+		unless $MKF eq '-';
+	print $mkf $MAKE;
+}
+
 sub do_cpp
 {
 	my ($fd, $extra, $funcs) = @_;
@@ -1144,7 +1154,7 @@ sub do_cpp
 	if ($O_C) { kill_C99_loops for $EXEC }
 
 	make_zmap;
-	expand_all	$extra, $funcs;
+	$MAKE = expand_all $extra, $funcs;
 
 	pp_dsp::fix_strn for $FILE, $INIT, $EXEC;
 
@@ -1280,6 +1290,7 @@ sub main
 		elsif ($_ eq '-faust')			{ $faust = shift // narg; next; }
 		elsif ($_ eq '-O')			{ $OUT = shift // narg; next; }
 		elsif ($_ eq '-o')			{ $out = shift // narg; next; }
+		elsif ($_ eq '-mk')			{ $MKF = shift // narg; next; }
 		elsif ($_ eq '-IC')			{ $_INCDIR_ = shift // narg; next; }
 		elsif ($_ eq '-I0')			{ push @INCDIR, shift // narg; next; }
 		elsif (/^-(I|-import-dir)$/)		{ push @INCDIR, $_[0] }
@@ -1439,6 +1450,8 @@ sub main
 	} else {
 		print s/\b\Q$temp\E\b/$name/or for @$code;
 	}
+
+	pp_cpp::dump_make if $MKF;
 }
 
 main @ARGV;
