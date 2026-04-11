@@ -33,7 +33,7 @@ my @F_DEPS = map "$_/*", grep -d $_, map "$FPP_DIR/$_", qw(lib arch);
 my @C_DEPS = map "$_/*", grep -d $_, map "$FPP_DIR/$_", qw(include);
 
 my $FPP_CMD = "fpp $FLT -it -ct 0";
-my $CPP_CMD = "\$(CXX) -std=c++14 -Wall -Ofast -lsndfile";
+my $CPP_CMD = "\$(CXX) -std=c++14 -Wall -Ofast";
 
 my ($FAUST_BIN, $FAUST_DIR) = which 'faust', 3; # /build/bin/faust
 my ($FAUST_LIB, $FAUST_ARC) = map "$FAUST_DIR/$_", qw(libraries architecture);
@@ -58,13 +58,13 @@ my %MAKE = (
 
 open my $fd, '|-', 'make', qw(-s -f -) or die;
 print $fd <<EOM;
-.INTERMEDIATE: $BIN.cpp
+.INTERMEDIATE: $BIN.cpp $BIN.mk
 
-$BIN: $BIN.cpp @C_DEPS
-	$CPP_CMD $MAKE{$TGT}[0] \$< -o \$@
+$BIN: $BIN.cpp $BIN.mk @C_DEPS
+	$CPP_CMD `cat $BIN.mk`	$MAKE{$TGT}[0] \$< -o \$@
 
-$BIN.cpp: $DSP.dsp $FPP_BIN @F_DEPS
-	$FPP_CMD $MAKE{$TGT}[1] \$< -o \$@
+$BIN.cpp $BIN.mk: $DSP.dsp $FPP_BIN @F_DEPS
+	$FPP_CMD  -mk $BIN.mk	$MAKE{$TGT}[1] \$< -o \$@
 EOM
 
 $ENV{HOME} = '/tmp';
