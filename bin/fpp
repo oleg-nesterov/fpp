@@ -629,7 +629,7 @@ sub parse_lit
 	CORE::state $f; $f->{$r} ||= mk_eval 1,0, $r;
 }
 
-my $RUN_CPP; sub parse_cpp
+my $RUN_CPP; sub parse_ppl
 {
 	$RUN_CPP = 1; s/^.*?\v// or die; "\n#$&";
 }
@@ -663,7 +663,7 @@ sub parse_dsp
 
 	my $dsp = ''; while (m{
 		\$		(?{\&parse_lit})	|
-		\v\h*\#	(?{\&parse_cpp})	|
+		\v\h*\#		(?{\&parse_ppl})	|
 		(?: \b (?:
 			__FPP	(?{\&parse_dep})	|
 			  FPP	(?{\&parse_fpp})	|
