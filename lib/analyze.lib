@@ -54,20 +54,24 @@ __glide(mode, tt1, tgt) = tick ~ (_,_) with {
 glide = __glide(1) : _,!;
 
 // ----------------------------------------------------------------------------
-// relative standard deviation
-stat_rsd(a,v) = a, select2(abs(a) > ma.EPSILON, 0, sqrt(v)/abs(a));
-
-// for ba.time or const input:
-// s = 1 - 2/(N+1)			 "exact" mean
-// s = 1 - (sqrt(12*(N^2+2))-6)/(N^2-1)  "exact" variance
+// compared to classical textbooks the usage of s and 1-s is swapped, so
+// avg = si.smooth(s)
 //
-__smoo_stat = FPP(upd, s, x) {
-decl:	float $avg, $var;
+// var = stddev ^ 2 can be < 0 due to FP underflows if input is ~constant
+//
+// for ba.time or const input:
+// s = 1 - 2/(N+1)			 "exact" avg
+// s = 1 - (sqrt(12*(N^2+2))-6)/(N^2-1)  "exact" var
+//
+// If N = ma.SR * t, then s = 1 - 2/(N+1) is very close to tau2pole(t/2)
+// unless 't' is close to 1/ma.SR where 's' crosses zero.
+__ema_stat = FPP(upd, s, x) {
+decl:	$_float_ $avg, $var;
 init:	$avg = $var = 0; // reset
 exec:
-	float s = $s, x = $x;
-	float diff = x - $avg;
-	float incr = (1-s) * diff;
+	$_float_ s = $s, x = $x;
+	$_float_ diff = x - $avg;
+	$_float_ incr = (1-s) * diff;
 	int upd = $upd;
 	if (upd < 0)
 		$avg = $var = 0;
@@ -78,8 +82,12 @@ exec:
 	[=$avg, =$var];
 };
 
-smoo_stat = __smoo_stat : stat_rsd;
+ema_stat = __ema_stat(1);
 
+// relative standard deviation
+stat_rsd(a,v) = sqrt(abs(v)) / (abs(a) + ma.EPSILON);
+
+// ----------------------------------------------------------------------------
 // Linear Regression Slope, units per window
 lr_slope = FPP(N, stable, y_new[N]) {
 decl:
