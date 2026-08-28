@@ -119,6 +119,13 @@ exec:
 lr_slope_fir(N) = fi.fir(par(n,N, b(N,n))) with {
 	b(N,n) = (6 * (N - 1) - 12 * n) / (N^2 - 1);
 };
+
+// EMA Regression Slope, *(ma.SR) leads to units per second
+ema_slope(s) = lp <: _ - oms * lp : *(oms^2 / s) : *(ma.SR)
+with {
+	lp = fi.pole(s);
+	oms = 1 - s;
+};
 // ----------------------------------------------------------------------------
 // +-1 after reset, then +-2
 range_cross = FPP(lo,hi, in) pure _int_ {
