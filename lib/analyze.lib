@@ -87,6 +87,9 @@ ema_stat = __ema_stat(1);
 // relative standard deviation
 stat_rsd(a,v) = sqrt(abs(v)) / (abs(a) + ma.EPSILON);
 
+// Z-Score Outlier Detector
+ema_zscore(s,x) = ema_stat(s,x) : \(a,v).((x - a) / (sqrt(abs(v)) + ma.EPSILON));
+
 // ----------------------------------------------------------------------------
 // Linear Regression Slope, units per window
 lr_slope = FPP(N, stable, y_new[N]) {
