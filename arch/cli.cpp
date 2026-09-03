@@ -731,6 +731,7 @@ restart:
 	}
 
 	DSP.instanceClear();
+	DSP.staticInit(G.sr);
 	DSP.instanceConstants(G.sr);
 
 	O->ini();
