@@ -60,11 +60,11 @@ open my $fd, '|-', 'make', qw(-s -f -) or die;
 print $fd <<EOM;
 .INTERMEDIATE: $BIN.cpp $BIN.mk
 
-$BIN: $BIN.cpp $BIN.mk @C_DEPS
-	$CPP_CMD `cat $BIN.mk`	$MAKE{$TGT}[0] \$< -o \$@
+$BIN : $BIN.cpp $BIN.mk @C_DEPS
+	$CPP_CMD `cat $BIN.mk`	$MAKE{$TGT}[0] \$< -o $BIN
 
-$BIN.cpp $BIN.mk: $DSP.dsp $FPP_BIN @F_DEPS
-	$FPP_CMD  -mk $BIN.mk	$MAKE{$TGT}[1] \$< -o \$@
+$BIN.cpp $BIN.mk &: $DSP.dsp $FPP_BIN @F_DEPS
+	$FPP_CMD  -mk $BIN.mk	$MAKE{$TGT}[1] \$< -o $BIN.cpp
 EOM
 
 $ENV{HOME} = '/tmp';
