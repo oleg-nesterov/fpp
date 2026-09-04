@@ -56,9 +56,12 @@ my %MAKE = (
 		    "-a pa-gtk.cpp"],
 );
 
-open my $fd, '|-', 'make', qw(-s -f -) or die;
+open my $fd, '|-', 'make', qw(-f -) or die;
 print $fd <<EOM;
 .INTERMEDIATE: $BIN.cpp $BIN.mk
+
+.PHONY: all
+all: $BIN ; \@:
 
 $BIN : $BIN.cpp $BIN.mk @C_DEPS
 	$CPP_CMD `cat $BIN.mk`	$MAKE{$TGT}[0] \$< -o $BIN
