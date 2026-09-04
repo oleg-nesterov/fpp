@@ -4,7 +4,7 @@ use strict;
 my ($TGT, $FLT, $DSP) = ('cli', '-single');
 
 while (defined($_ = shift)) {
-	if (/^-(cli|gtk|pagtk)$/)		{ $TGT = $1; }
+	if (/^-(cli|gtk|pagtk)$/)	{ $TGT = $1; }
 	elsif (/^-(double|quad)$/)	{ $FLT = $_; }
 	elsif (s/\.dsp$//)		{ $DSP = $_; last; }
 	else {
@@ -64,10 +64,10 @@ print $fd <<EOM;
 all: $BIN ; \@:
 
 $BIN : $BIN.cpp $BIN.mk @C_DEPS
-	$CPP_CMD `cat $BIN.mk`	$MAKE{$TGT}[0] \$< -o $BIN
+	$CPP_CMD \$(file < $BIN.mk)	$MAKE{$TGT}[0] \$< -o $BIN
 
 $BIN.cpp $BIN.mk &: $DSP.dsp $FPP_BIN @F_DEPS
-	$FPP_CMD  -mk $BIN.mk	$MAKE{$TGT}[1] \$< -o $BIN.cpp
+	$FPP_CMD    -mk    $BIN.mk	$MAKE{$TGT}[1] \$< -o $BIN.cpp
 EOM
 
 $ENV{HOME} = '/tmp';

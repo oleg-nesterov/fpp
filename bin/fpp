@@ -1132,6 +1132,7 @@ my ($MKF, $MAKE); sub dump_make
 	my $mkf = \*STDERR;
 	open $mkf, '>', $MKF or die "ERR!! can't open '$MKF': $!\n"
 		unless $MKF eq '-';
+	$MAKE =~ s/\v/ /g;
 	print $mkf $MAKE;
 }
 
