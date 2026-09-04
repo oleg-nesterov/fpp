@@ -1452,7 +1452,7 @@ sub main
 		print s/\b\Q$temp\E\b/$name/or for @$code;
 	}
 
-	pp_cpp::dump_make if $MKF;
+	pp_cpp::dump_make if $MKF && $MAKE;
 }
 
 main @ARGV;
