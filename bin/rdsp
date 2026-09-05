@@ -62,12 +62,13 @@ print $fd <<EOM;
 
 .PHONY: all
 all: $BIN ; \@:
+$BIN.mk:  ; \@:
 
 $BIN : $BIN.cpp $BIN.mk @C_DEPS
-	$CPP_CMD \$(file < $BIN.mk)	$MAKE{$TGT}[0] \$< -o $BIN
+	$CPP_CMD \$(file < $BIN.mk)	$MAKE{$TGT}[0] \$< -o \$@
 
-$BIN.cpp $BIN.mk &: $DSP.dsp $FPP_BIN @F_DEPS
-	$FPP_CMD    -mk    $BIN.mk	$MAKE{$TGT}[1] \$< -o $BIN.cpp
+$BIN.cpp : $DSP.dsp $FPP_BIN @F_DEPS
+	$FPP_CMD    -mk    $BIN.mk	$MAKE{$TGT}[1] \$< -o \$@
 EOM
 
 $ENV{HOME} = '/tmp';
