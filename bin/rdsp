@@ -64,10 +64,10 @@ print $fd <<EOM;
 all: $BIN ; \@:
 $BIN.mk:  ; \@:
 
-$BIN : $BIN.cpp $BIN.mk @C_DEPS
+$BIN : $BIN.cpp @C_DEPS
 	$CPP_CMD \$(file < $BIN.mk)	$MAKE{$TGT}[0] \$< -o \$@
 
-$BIN.cpp : $DSP.dsp $FPP_BIN @F_DEPS
+$BIN.cpp : $DSP.dsp $BIN.mk $FPP_BIN @F_DEPS
 	$FPP_CMD    -mk    $BIN.mk	$MAKE{$TGT}[1] \$< -o \$@
 EOM
 

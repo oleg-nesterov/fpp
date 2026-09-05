@@ -1430,6 +1430,9 @@ sub main
 	open my$fd, '<', $cpp or die "ERR!! can't open '$cpp': $!\n";
 	my $code = pp_cpp::do_cpp $fd, $DEPS{''}, \%FUNC;
 
+	# do this early to ensure $out is newer than $MKF for rdsp
+	pp_cpp::dump_make if $MKF && $MAKE;
+
 	open STDOUT,'>', $out or die "ERR!! can't open '$out': $!\n"
 		if defined $out;
 
@@ -1451,8 +1454,6 @@ sub main
 	} else {
 		print s/\b\Q$temp\E\b/$name/or for @$code;
 	}
-
-	pp_cpp::dump_make if $MKF && $MAKE;
 }
 
 main @ARGV;
