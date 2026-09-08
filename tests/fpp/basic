@@ -3499,6 +3499,60 @@ CPP
 	}
 O_C
 
+[__LINE__, <<'DSP', <<'CPP', <<'O_C'],
+__FPP() { PERL: $pp_cpp::KV0 = 1 };
+cnt(N) = +(N) ~ _ : @(2);
+nokv0 = FPP(x[0]) { ($x[0]) };
+process = cnt(10), (cnt(20) : nokv0);
+DSP
+	int iRec0[2];
+	int iRec1[3];
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			int iRec0_0 = iRec0[0] + 10;
+			output0[i0] = FAUSTFLOAT(iRec0[1]);
+			iRec1[0] = iRec1[1] + 20;
+			output1[i0] = FAUSTFLOAT(iRec1[0 - 0 + 2]);
+			iRec0[1] = iRec0[0];
+			iRec0[0] = iRec0_0;
+			iRec1[2] = iRec1[1];
+			iRec1[1] = iRec1[0];
+		}
+	}
+CPP
+	int iRec0[2];
+	int iRec1[3];
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		dsp->fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* output0 = outputs[0];
+		FAUSTFLOAT* output1 = outputs[1];
+		int i0;
+		for (i0 = 0; i0 < count; i0 = i0 + 1) {
+			int iRec0_0 = dsp->iRec0[0] + 10;
+			output0[i0] = (FAUSTFLOAT)(dsp->iRec0[1]);
+			dsp->iRec1[0] = dsp->iRec1[1] + 20;
+			output1[i0] = (FAUSTFLOAT)(dsp->iRec1[0 - 0 + 2]);
+			dsp->iRec0[1] = dsp->iRec0[0];
+			dsp->iRec0[0] = iRec0_0;
+			dsp->iRec1[2] = dsp->iRec1[1];
+			dsp->iRec1[1] = dsp->iRec1[0];
+		}
+	}
+O_C
+
 [__LINE__, <<'DSP', <<'CPP'],
 import("stdfaust.lib");
 

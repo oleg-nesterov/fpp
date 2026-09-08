@@ -1119,6 +1119,21 @@ sub perl::core::__z_map($$)
 	my $expr = $_[0]; $ZMAP{$expr} //= __zmap $expr;
 }
 
+our $KV0; sub kill_vec0
+{
+	my ($name, %type);
+	$type{$2} = $1 while $DECL =~ /^\h*(.+?)\b([if][VR]ec\d+)\[\d+\];$/mg;
+
+	$name = re::list keys %type or return;
+	do { delete $type{$1} while /\b($name)\b(?!\[\d+\])/g }
+		for $INIT, $EXEC;
+
+	$name = re::list keys %type or return;
+	s/$re::DSP($name)\[0\](?=(\h*=[^=])?)/($2 ? $type{$1}: '') . "$1_0"/eg
+		for $INIT, $EXEC;
+
+	s/\b(?:$name)\[\K(\d+)/$1 - 1/eg for $DECL, $INIT, $EXEC;
+}
 # ----------------------------------------------------------------------------
 sub kill_C99_loops
 {
@@ -1156,6 +1171,7 @@ sub do_cpp
 
 	make_zmap;
 	$MAKE = expand_all $extra, $funcs;
+	kill_vec0 if $KV0;
 
 	pp_dsp::fix_strn for $FILE, $INIT, $EXEC;
 
@@ -1294,6 +1310,7 @@ sub main
 		elsif ($_ eq '-mk')			{ $MKF = shift // narg; next; }
 		elsif ($_ eq '-IC')			{ $_INCDIR_ = shift // narg; next; }
 		elsif ($_ eq '-I0')			{ push @INCDIR, shift // narg; next; }
+		elsif ($_ eq '-kv0')			{ $KV0 = 1; next; }
 		elsif (/^-(I|-import-dir)$/)		{ push @INCDIR, $_[0] }
 		elsif (/^-{1,2}(double|quad)\b/)	{ $O_FLOAT = $1 }
 		elsif (/^-(fx|-fixed-point)$/)		{ $O_FLOAT = 'fixpoint_t' }
