@@ -1135,7 +1135,7 @@ our $KV0; sub kill_vec0
 	$type{$2} = $1 while $DECL =~ /^\h*(.+?)\b($re_v)\[\d+\];$/omg;
 
 	$name = re::list keys %type or return;
-	do { delete $type{$1} while /\b($name)\b(?!\[\d+\])/g }
+	do { delete $type{$1} while /\b($name)\[(?!\d+\])/g }
 		for $INIT, $EXEC;
 
 	$name = re::list keys %type or return;
@@ -1143,6 +1143,8 @@ our $KV0; sub kill_vec0
 		for $INIT, $EXEC;
 
 	s/\b(?:$name)\[\K(\d+)/$1 - 1/eg for $DECL, $INIT, $EXEC;
+
+	$EXEC =~ s/\bSHIFT_VEC\(($re::DSP)($name)\);\K/ ${1}${2}[0]=${2}_0;/g;
 }
 # ----------------------------------------------------------------------------
 sub kill_C99_loops
