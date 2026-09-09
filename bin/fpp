@@ -1121,8 +1121,18 @@ sub perl::core::__z_map($$)
 
 our $KV0; sub kill_vec0
 {
+	my $re_v = '[if][VR]ec\d+';
+        $EXEC =~ s{
+                ^\h* \K \bfor\b .+ \{ \s*
+                ($re::DSP$re_v)\[(\w+)\] \h*=\h* \1\[\2\h*-\h*1\]\;
+                \s* \}
+        }{SHIFT_VEC($1);}xomg and $FILE .= <<~'EOD';
+		#define SHIFT_VEC(v)	\
+			for (unsigned i = sizeof(v)/sizeof(v[0]); --i; v[i]=v[i-1]);
+		EOD
+
 	my ($name, %type);
-	$type{$2} = $1 while $DECL =~ /^\h*(.+?)\b([if][VR]ec\d+)\[\d+\];$/mg;
+	$type{$2} = $1 while $DECL =~ /^\h*(.+?)\b($re_v)\[\d+\];$/omg;
 
 	$name = re::list keys %type or return;
 	do { delete $type{$1} while /\b($name)\b(?!\[\d+\])/g }
