@@ -1153,12 +1153,24 @@ sub kill_C99_loops
 	}oe;
 }
 
+sub kill_wraps
+{
+	s/faust_wrap_(add|sub|mul)($re::bal_par)/
+		my $o = {qw(add + sub - mul *)}->{$1};
+		&kill_wraps for my @a = re::split_args $2;
+		"$a[0] $o $a[1]" # lacks parens!!!
+	/xeg;
+}
+
 sub apply_kludges
 {
 	# they annoy me and see 120d5fd23c7a
 	if ($O_C) { kill_C99_loops for $EXEC }
 	# adapt to faust commit cf65ee3172a5
 	else { s/static_cast<(.*?)>/$1/g for $INIT, $CTRL, $EXEC; }
+
+	# adapt to faust commit 88b5c93ae726
+	kill_wraps for $INIT, $EXEC;
 }
 
 my ($MKF, $MAKE); sub dump_make
