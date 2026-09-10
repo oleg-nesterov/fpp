@@ -501,7 +501,7 @@ struct bounds { float min, max; };
 		FAUSTFLOAT* output2 = outputs[2];
 		FAUSTFLOAT* output3 = outputs[3];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			iRec0[0] = iRec0[1] + 1;
+			iRec0[0] = 1 + iRec0[1];
 			float aux0__01; float aux1__01;
 			{ bounds_compute(&b__01, iRec0[0]); aux0__01 = b__01.min; aux1__01 = b__01.max; }
 			output0[i0] = aux0__01;
@@ -1345,7 +1345,7 @@ DSP
 		FAUSTFLOAT* output0 = outputs[0];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
 			int iTemp0 = iRec0[(IOTA0 - 1) & 127];
-			iRec0[IOTA0 & 127] = iTemp0 + 1;
+			iRec0[IOTA0 & 127] = 1 + iTemp0;
 			output0[i0] = FAUSTFLOAT(({ 0; }));
 			IOTA0 = IOTA0 + 1;
 
@@ -1942,7 +1942,7 @@ DSP
 	{
 		FAUSTFLOAT* output0 = outputs[0];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			output0[i0] = FAUSTFLOAT(iConst0 + ({ 1; }));
+			output0[i0] = FAUSTFLOAT(({ 1; }) + iConst0);
 		}
 	}
 CPP
@@ -2229,7 +2229,7 @@ DSP
 	void instanceConstants(int sample_rate)
 	{
 		fSampleRate = sample_rate;
-		fConst0 = float(y) + float(x);
+		fConst0 = float(x) + float(y);
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
@@ -3028,7 +3028,7 @@ DSP
 	{
 		iSlow0 = F0(float(fEntry0));
 		{ aux0__02 = F2(float(fEntry2)); }
-		fSlow4 = aux0__01 + float(fEntry3);
+		fSlow4 = float(fEntry3) + aux0__01;
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
@@ -3062,7 +3062,7 @@ CPP
 	{
 		dsp->iSlow0 = F0((float)(dsp->fEntry0));
 		{ dsp->aux0__02 = F2((float)(dsp->fEntry2)); }
-		dsp->fSlow4 = dsp->aux0__01 + (float)(dsp->fEntry3);
+		dsp->fSlow4 = (float)(dsp->fEntry3) + dsp->aux0__01;
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
@@ -3101,10 +3101,10 @@ DSP
 	}
 	void control()
 	{
-		float fSlow0 = float(fEntry1);
+		float fSlow0 = float(fEntry0);
 		float aux0__01;
 		{ aux0__01 = F(fSlow0); }
-		fSlow2 = aux0__01 + float(fEntry0);
+		fSlow2 = float(fEntry1) + aux0__01;
 		fSlow3 = fConst0 + float(fEntry2);
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
@@ -3131,10 +3131,10 @@ CPP
 	}
 	void control()
 	{
-		float fSlow0 = (float)(dsp->fEntry1);
+		float fSlow0 = (float)(dsp->fEntry0);
 		float aux0__01;
 		{ aux0__01 = F(fSlow0); }
-		dsp->fSlow2 = aux0__01 + (float)(dsp->fEntry0);
+		dsp->fSlow2 = (float)(dsp->fEntry1) + aux0__01;
 		dsp->fSlow3 = dsp->fConst0 + (float)(dsp->fEntry2);
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
@@ -3519,9 +3519,9 @@ DSP
 		FAUSTFLOAT* output0 = outputs[0];
 		FAUSTFLOAT* output1 = outputs[1];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			int iRec0_0 = iRec0[0] + 10;
+			int iRec0_0 = 10 + iRec0[0];
 			output0[i0] = FAUSTFLOAT(iRec0[2]);
-			iRec1[0] = iRec1[1] + 20;
+			iRec1[0] = 20 + iRec1[1];
 			output1[i0] = FAUSTFLOAT(iRec1[0 - 0 + 3]);
 			SHIFT_VEC(iRec0); iRec0[0]=iRec0_0;
 			SHIFT_VEC(iRec1);
@@ -3542,9 +3542,9 @@ CPP
 		FAUSTFLOAT* output0 = outputs[0];
 		FAUSTFLOAT* output1 = outputs[1];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			int iRec0_0 = dsp->iRec0[0] + 10;
+			int iRec0_0 = 10 + dsp->iRec0[0];
 			output0[i0] = (FAUSTFLOAT)(dsp->iRec0[2]);
-			dsp->iRec1[0] = dsp->iRec1[1] + 20;
+			dsp->iRec1[0] = 20 + dsp->iRec1[1];
 			output1[i0] = (FAUSTFLOAT)(dsp->iRec1[0 - 0 + 3]);
 			SHIFT_VEC(dsp->iRec0); dsp->iRec0[0]=iRec0_0;
 			SHIFT_VEC(dsp->iRec1);
