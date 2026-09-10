@@ -710,9 +710,6 @@ sub uncast_all
 
 sub fix_types
 {
-	# temporary kludge for faust commit cf65ee3172a5
-	s/static_cast<(.*?)>/$1/g for $INIT, $CTRL, $EXEC;
-
 	my $funcs = shift;
 
 	my %ftype; while (my ($n, $f) = each %$funcs) {
@@ -1156,6 +1153,14 @@ sub kill_C99_loops
 	}oe;
 }
 
+sub apply_kludges
+{
+	# they annoy me and see 120d5fd23c7a
+	if ($O_C) { kill_C99_loops for $EXEC }
+	# adapt to faust commit cf65ee3172a5
+	else { s/static_cast<(.*?)>/$1/g for $INIT, $CTRL, $EXEC; }
+}
+
 my ($MKF, $MAKE); sub dump_make
 {
 	my $mkf = \*STDERR;
@@ -1180,8 +1185,7 @@ sub do_cpp
 		control			=> \*CTRL;
 
 	my $code = read_cpp $fd, @items;
-	# just because they annoy me so much
-	if ($O_C) { kill_C99_loops for $EXEC }
+	apply_kludges;
 
 	make_zmap;
 	$MAKE = expand_all $extra, $funcs;
