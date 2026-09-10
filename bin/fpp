@@ -1150,8 +1150,10 @@ our $KV0; sub kill_vec0
 sub kill_C99_loops
 {
 	1 while s{\h*/\* C99 loop \*/\s+($re::bal_crl)\h*\v}{
-		re::chop2($1) =~ s/\h*$//r =~ s/^\t//mgr
-	}e;
+		re::chop2($1)
+			=~ s/\h*$//r =~ s/^\t//mgr
+			=~ s/\bint\h+(\w+);\s*for\h*\(\1\h*=/for (int $1 =/gr
+	}oe;
 }
 
 my ($MKF, $MAKE); sub dump_make

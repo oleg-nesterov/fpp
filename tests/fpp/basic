@@ -669,15 +669,13 @@ CPP
 		FAUSTFLOAT* output0 = outputs[0];
 		FAUSTFLOAT* output1 = outputs[1];
 		FAUSTFLOAT* output2 = outputs[2];
-		int i0;
-		for (i0 = 0; i0 < count; i0 = i0 + 1) {
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
 			dsp->fVec0[0] = (float)(input0[i0]);
 			output0[i0] = dsp->fVec0[1];
 			dsp->fVec1[dsp->IOTA0 & 127] = (float)(input1[i0]);
 			output1[i0] = dsp->fVec1[(dsp->IOTA0 - -2 + 5 - 105) & 127];
 			output2[i0] = 0;
-			int j0;
-			for (j0 = 5; j0 > 0; j0 = j0 - 1) {
+			for (int j0 = 5; j0 > 0; j0 = j0 - 1) {
 				dsp->fVec0[j0] = dsp->fVec0[j0 - 1];
 			}
 			dsp->IOTA0 = dsp->IOTA0 + 1;
@@ -1222,8 +1220,7 @@ CPP
 		FAUSTFLOAT* output4 = outputs[4];
 		FAUSTFLOAT* output5 = outputs[5];
 
-		int i0;
-		for (i0 = 0; i0 < count; i0 = i0 + 1) {
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
 			float fTemp0 = (float)(input0[i0]);
 			dsp->fVec0[0] = fTemp0;
 			output0[i0] = (FAUSTFLOAT)(dsp->fVec0[1]);
@@ -2343,8 +2340,7 @@ CPP
 	{
 		FAUSTFLOAT* output0 = outputs[0];
 
-		int i0;
-		for (i0 = 0; i0 < count; i0 = i0 + 1) {
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
 			output0[i0] = iConst123=dsp->iConst0+dsp->iConst4+dsp->iConst8=dsp->fConst10+dsp->fConst14+dsp->fConst18=dsp->iConst100+dsp->iConst101+dsp->fConst100+dsp->fConst101=dsp->iConst200;
 		}
 	}
@@ -2398,8 +2394,7 @@ CPP
 	{
 		FAUSTFLOAT* output0 = outputs[0];
 
-		int i0;
-		for (i0 = 0; i0 < count; i0 = i0 + 1) {
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
 			output0[i0] = dsp->fSlow100 + dsp->fSlow0;
 		}
 	}
@@ -2581,8 +2576,7 @@ CPP
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
 		FAUSTFLOAT* output0 = outputs[0];
-		int i0;
-		for (i0 = 0; i0 < count; i0 = i0 + 1) {
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
 			output0[i0] = (FAUSTFLOAT)(0+1);
 		}
 	}
@@ -3066,8 +3060,7 @@ CPP
 		FAUSTFLOAT* output1 = outputs[1];
 		FAUSTFLOAT* output2 = outputs[2];
 		FAUSTFLOAT* output3 = outputs[3];
-		int i0;
-		for (i0 = 0; i0 < count; i0 = i0 + 1) {
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
 			output0[i0] = dsp->iSlow0;
 			output1[i0] = F1((float)(dsp->fEntry1));
 			output2[i0] = dsp->aux0__02;
@@ -3138,8 +3131,7 @@ CPP
 	{
 		FAUSTFLOAT* output0 = outputs[0];
 		FAUSTFLOAT* output1 = outputs[1];
-		int i0;
-		for (i0 = 0; i0 < count; i0 = i0 + 1) {
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
 			output0[i0] = (FAUSTFLOAT)(dsp->fSlow2);
 			output1[i0] = (FAUSTFLOAT)(dsp->fSlow3);
 		}
@@ -3439,8 +3431,7 @@ CPP
 		FAUSTFLOAT* output0 = outputs[0];
 		float fSlow0 = (float)(dsp->fEntry1);
 		int iSlow1 = (int)(fSlow0 + (float)(dsp->fEntry0));
-		int i0;
-		for (i0 = 0; i0 < count; i0 = i0 + 1) {
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
 			output0[i0] = (FAUSTFLOAT)(({ fSlow0; }));
 		}
 	}
@@ -3492,8 +3483,7 @@ CPP
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
 		FAUSTFLOAT* output0 = outputs[0];
-		int i0;
-		for (i0 = 0; i0 < count; i0 = i0 + 1) {
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
 			output0[i0] = (FAUSTFLOAT)(({ dsp->fSlow0; }));
 		}
 	}
@@ -3541,15 +3531,12 @@ CPP
 	{
 		FAUSTFLOAT* output0 = outputs[0];
 		FAUSTFLOAT* output1 = outputs[1];
-		int i0;
-		for (i0 = 0; i0 < count; i0 = i0 + 1) {
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
 			int iRec0_0 = dsp->iRec0[0] + 10;
 			output0[i0] = (FAUSTFLOAT)(dsp->iRec0[2]);
 			dsp->iRec1[0] = dsp->iRec1[1] + 20;
 			output1[i0] = (FAUSTFLOAT)(dsp->iRec1[0 - 0 + 3]);
-			int j0;
 			SHIFT_VEC(dsp->iRec0); dsp->iRec0[0]=iRec0_0;
-			int j1;
 			SHIFT_VEC(dsp->iRec1);
 		}
 	}
