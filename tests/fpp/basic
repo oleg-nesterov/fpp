@@ -1807,21 +1807,25 @@ f3 = FPP(x) pure { $V=$x; AUTO: $V; };
 process = par(i,4,FPP(i)eval{X$i}(i)) <: f1,f1,f1(10),f1(11), f2,f2, f3(20),f3(21) :> _;
 DSP
 	float fConst0;
+	float fConst1;
+	float fConst2;
 	int fSampleRate;
 	void instanceConstants(int sample_rate)
 	{
 		fSampleRate = sample_rate;
 		V__01;
+		fConst0 = ({ V__01=21; }) + ({ V__01=20; });
 		V__02;
-		fConst0 = ({ V__01=10; }) + ({ V__01=11; }) + ({ V__02=21; }) + ({ V__02=20; });
+		fConst1 = ({ V__02=11; });
+		fConst2 = ({ V__02=10; });
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
-		V__01;
+		V__02;
 		V__03;
 		FAUSTFLOAT* output0 = outputs[0];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			output0[i0] = FAUSTFLOAT(fConst0 + ({ V__01=X0; }) + ({ V__01=X1; }) + ({ V__03=X3; }) + ({ V__03=X2; }));
+			output0[i0] = FAUSTFLOAT(({ V__02=X0; }) + ({ V__02=X1; }) + fConst2 + fConst1 + ({ V__03=X2; }) + ({ V__03=X3; }) + fConst0);
 		}
 	}
 CPP
