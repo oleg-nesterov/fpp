@@ -1155,10 +1155,11 @@ sub kill_C99_loops
 
 sub kill_wraps
 {
-	s/faust_wrap_(add|sub|mul)($re::bal_par)/
-		my $o = {qw(add + sub - mul *)}->{$1};
-		&kill_wraps for my @a = re::split_args $2;
-		"$a[0] $o $a[1]" # lacks parens!!!
+	s/([=\[(])? \h* \K \bfaust_wrap_(add|sub|mul)($re::bal_par) (?=(?:\h*)([;)\]]))?/
+		my $p = not $1 && $4;
+		my $o = {qw(add + sub - mul *)}->{$2};
+		&kill_wraps for my @a = re::split_args $3;
+		$p ? "($a[0] $o $a[1])" : "$a[0] $o $a[1]";
 	/xeg;
 }
 

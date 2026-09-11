@@ -301,7 +301,7 @@ DSP
 	{
 		FAUSTFLOAT* output0 = outputs[0];
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
-			output0[i0] = FAUSTFLOAT(float(0 + 2 + 1) + 3 + 4 + 6 + 5);
+			output0[i0] = FAUSTFLOAT(float(0 + (2 + 1)) + 3 + 4 + 6 + 5);
 		}
 	}
 CPP
@@ -586,7 +586,7 @@ DSP
 			output0[i0] = z__03;
 			z__03 = z__02;
 			z__02 = z__01;
-			z__01 = IOTA0 + 100;
+			z__01 = (IOTA0 + 100);
 			IOTA0++;
 		}
 	}
@@ -1940,7 +1940,7 @@ DSP
 		ini(state__02, iConst20 + iConst30);
 		ini(state__03, iConst30);
 		ini(state__04, iConst80);
-		iConst0 = ({ exe(state__01, iConst10 + iConst50); }) + ({ exe(state__02, iConst20 + iConst30); }) + ({ exe(state__03, iConst30); }) + ({ exe(state__04, iConst80); });
+		iConst0 = ({ exe(state__01, iConst10 + iConst50); }) + (({ exe(state__02, iConst20 + iConst30); }) + (({ exe(state__03, iConst30); }) + ({ exe(state__04, iConst80); })));
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
