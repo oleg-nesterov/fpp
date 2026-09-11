@@ -13,9 +13,18 @@ die "ERR!! /tmp/ doesn't exist or not writable\n"
 sub rd { open my $f, '<', $_[0] or die; join  '', <$f>; }
 sub wr { open my $f, '>', $_[0] or die; print $f $_[1]; }
 
+my ($EXIT, $LINE) = (0, 0);
+while (my $a = $ARGV[0]) {
+	if    ($a eq '-E') { shift; $EXIT = 1; }
+	elsif ($a eq '-N') { shift; ($LINE = shift) =~ /^\d+$/ or die "bad -N '$LINE'\n"; }
+	else { last }
+}
+warn "WARN! EXIT=$EXIT LINE=$LINE\n\n" if $EXIT || $LINE;
+
 sub do_test
 {
 	my $lnr = shift || return;
+	return if $LINE && $LINE != $lnr;
 	my ($dsp, $cpp, $o_c, $fst) = @_;
 
 	$dsp = $dsp->() if ref $dsp;
@@ -39,6 +48,7 @@ sub do_test
 		wr '/tmp/x2.cpp', $res;
 		warn "ERROR [$lnr]!! ---------------------\n$dsp\n";
 		system 'diff -u /tmp/x1.cpp /tmp/x2.cpp >&2' or die;
+		exit 1 if $EXIT;
 	}
 
 	if ($fst and $fst ne (my $fpp = rd '/tmp/__FPP__.dsp')) {
