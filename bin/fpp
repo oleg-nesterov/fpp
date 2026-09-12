@@ -1185,7 +1185,7 @@ my ($MKF, $MAKE); sub dump_make
 
 sub do_cpp
 {
-	my ($fd, $extra, $funcs) = @_;
+	my ($o_x, $fd, $extra, $funcs) = @_;
 
 	my @items = (
 		-file			=> \*FILE,
@@ -1198,14 +1198,17 @@ sub do_cpp
 		control			=> \*CTRL;
 
 	my $code = read_cpp $fd, @items;
+	goto ret if $o_x == 1;
+
 	apply_kludges;
+	goto ret if $o_x == 2;
 
 	make_zmap;
 	$MAKE = expand_all $extra, $funcs;
 	kill_vec0 if $KV0;
 
 	pp_dsp::fix_strn for $FILE, $INIT, $EXEC;
-
+ret:
 	$code;
 }
 
@@ -1321,7 +1324,7 @@ sub narg { die "fpp: '$_' needs an arg.\n" }
 sub main
 {
 	our @TMPF; END { unlink @TMPF }
-	my ($faust, $dumb, $notc, $shrt, $ktf) = ('faust', '');
+	my ($faust, $o_x, $dumb, $notc, $shrt, $ktf) = ('faust', 3, '');
 	my (@opt, @inp, $OUT, $out);
 
 	if (my $dir = (readlink $0 or $0) =~ s|(?:/[^/]+){2}$||r) {
@@ -1342,6 +1345,7 @@ sub main
 		elsif ($_ eq '-IC')			{ $_INCDIR_ = shift // narg; next; }
 		elsif ($_ eq '-I0')			{ push @INCDIR, shift // narg; next; }
 		elsif ($_ eq '-kv0')			{ $KV0 = 1; next; }
+		elsif (/^-x([123])$/)			{ $o_x = $1; next; }
 		elsif (/^-(I|-import-dir)$/)		{ push @INCDIR, $_[0] }
 		elsif (/^-{1,2}(double|quad)\b/)	{ $O_FLOAT = $1 }
 		elsif (/^-(fx|-fixed-point)$/)		{ $O_FLOAT = 'fixpoint_t' }
@@ -1476,7 +1480,7 @@ sub main
 	exit if $dumb || $notc;
 
 	open my$fd, '<', $cpp or die "ERR!! can't open '$cpp': $!\n";
-	my $code = pp_cpp::do_cpp $fd, $DEPS{''}, \%FUNC;
+	my $code = pp_cpp::do_cpp $o_x, $fd, $DEPS{''}, \%FUNC;
 
 	# do this early to ensure $out is newer than $MKF for rdsp
 	pp_cpp::dump_make if $MKF && $MAKE;
