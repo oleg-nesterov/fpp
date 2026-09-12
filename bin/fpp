@@ -1324,7 +1324,7 @@ sub narg { die "fpp: '$_' needs an arg.\n" }
 sub main
 {
 	our @TMPF; END { unlink @TMPF }
-	my ($faust, $o_x, $dumb, $notc, $shrt, $ktf) = ('faust', 3, '');
+	my ($faust, $o_x, $dumb, $notc, $shrt, $ktf) = ('faust', 3);
 	my (@opt, @inp, $OUT, $out);
 
 	if (my $dir = (readlink $0 or $0) =~ s|(?:/[^/]+){2}$||r) {
@@ -1461,9 +1461,7 @@ sub main
 		# parses STDIN if !@inp; so parse_file $_ for @inp won't work
 		do { parse_file shift @inp } while @inp;
 		close FAUST;
-	}
-
-	if ($dumb eq -v or $dumb eq '--version') {
+	} elsif ($dumb eq -v or $dumb eq '--version') {
 		print "FPP   Version $VERS\n";
 	} elsif ($dumb eq -h or $dumb eq '--help') {
 		print "FPP   faust pre/post processor version $VERS\n";
