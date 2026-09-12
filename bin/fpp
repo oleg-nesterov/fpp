@@ -680,7 +680,7 @@ sub parse_dsp
 #------------------------------------------------------------------------------
 package pp_cpp;
 our ($O_FLOAT, $O_C, $O_EC, $O_OS) = 'float';
-our (%ZMAP, $FILE, $DECL, $METH, $INIT, $CTRL, $EXEC);
+our (%ZMAP, $FILE, $DECL, $METH, $ICLR, $INIT, $CTRL, $EXEC);
 
 sub re_cast { qr/(\()? \b$_[0]\b (?(1)\)) \(($_[1])\)/x; }
 sub re_call { my $f = &re::list; "\\b($f)\\s*($re::bal_par)"; }
@@ -1166,7 +1166,7 @@ sub kill_wraps
 sub apply_kludges
 {
 	# they annoy me and see 120d5fd23c7a
-	if ($O_C) { kill_C99_loops for $EXEC }
+	if ($O_C) { kill_C99_loops for $ICLR, $EXEC }
 	# adapt to faust commit cf65ee3172a5
 	else { s/static_cast<(.*?)>/$1/g for $INIT, $CTRL, $EXEC; }
 
@@ -1191,6 +1191,7 @@ sub do_cpp
 		-file			=> \*FILE,
 		-decl			=> \*DECL,
 		-meth			=> \*METH,
+		instanceClear		=> \*ICLR,
 		instanceConstants	=> \*INIT,
 		$O_OS?'frame':'compute'	=> \*EXEC,
 	);
