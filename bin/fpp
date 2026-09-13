@@ -1353,7 +1353,7 @@ sub main
 		elsif ($_ eq '-IC')			{ $_INCDIR_ = shift // narg; next; }
 		elsif ($_ eq '-I0')			{ push @INCDIR, shift // narg; next; }
 		elsif ($_ eq '-kv0')			{ $KV0 = 1; next; }
-		elsif (/^-x([123])$/)			{ $o_x = $1; next; }
+		elsif (/^-x([0123])$/)			{ $o_x = $1; next; }
 		elsif (/^-(I|-import-dir)$/)		{ push @INCDIR, $_[0] }
 		elsif (/^-{1,2}(double|quad)\b/)	{ $O_FLOAT = $1 }
 		elsif (/^-(fx|-fixed-point)$/)		{ $O_FLOAT = 'fixpoint_t' }
@@ -1469,6 +1469,10 @@ sub main
 		# parses STDIN if !@inp; so parse_file $_ for @inp won't work
 		do { parse_file shift @inp } while @inp;
 		close FAUST;
+
+		run_cpp $dsp if $RUN_CPP;
+		print slurp_file $dsp and exit
+			unless $o_x;
 	} elsif ($dumb eq -v or $dumb eq '--version') {
 		print "FPP   Version $VERS\n";
 	} elsif ($dumb eq -h or $dumb eq '--help') {
@@ -1481,7 +1485,6 @@ sub main
 		print "\n";
 	}
 
-	run_cpp $dsp if $RUN_CPP;
 	system $faust, @opt and die "$faust error.\n";
 	exit if $dumb || $notc;
 
