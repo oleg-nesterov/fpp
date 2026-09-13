@@ -1119,11 +1119,18 @@ sub perl::core::__z_map($$)
 our $KV0; sub kill_vec0
 {
 	my $re_v = '[if][VR]ec\d+';
-        $EXEC =~ s{
-                ^\h* \K \bfor\b .+ \{ \s*
-                ($re::DSP$re_v)\[(\w+)\] \h*=\h* \1\[\2\h*-\h*1\]\;
-                \s* \}
-        }{SHIFT_VEC($1);}xomg and $FILE .= <<~'EOD';
+
+	$ICLR =~ s{
+		^\h* \K \bfor\b .+ \{ \s*
+		($re::DSP$re_v)\[(\w+)\] \h*=\h* \V+
+		\s* \}
+	}{memset($1, 0, sizeof($1));}xomg;
+
+	$EXEC =~ s{
+		^\h* \K \bfor\b .+ \{ \s*
+		($re::DSP$re_v)\[(\w+)\] \h*=\h* \1\[\2\h*-\h*1\]\;
+		\s* \}
+	}{SHIFT_VEC($1);}xomg and $FILE .= <<~'EOD';
 		#define SHIFT_VEC(v)	\
 			for (unsigned i = sizeof(v)/sizeof(v[0]); --i; v[i]=v[i-1]);
 		EOD

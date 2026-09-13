@@ -730,7 +730,7 @@ restart:
 		} while (_try_);
 	}
 
-	memset((void*)&DSP, 0, sizeof(DSP)); // DSP.instanceClear();
+	DSP.instanceClear();
 	DSP.staticInit(G.sr);
 	DSP.instanceConstants(G.sr);
 
