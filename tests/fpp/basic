@@ -654,7 +654,7 @@ DSP
 			fVec0[0] = float(input0[i0]);
 			output0[i0] = fVec0[1];
 			fVec1[IOTA0 & 127] = float(input1[i0]);
-			output1[i0] = fVec1[(IOTA0 - -2 + 5 - 105) & 127];
+			output1[i0] = fVec1[(IOTA0 - 98) & 127];
 			output2[i0] = 0;
 			for (int j0 = 5; j0 > 0; j0 = j0 - 1) {
 				fVec0[j0] = fVec0[j0 - 1];
@@ -683,7 +683,7 @@ CPP
 			dsp->fVec0[0] = (float)(input0[i0]);
 			output0[i0] = dsp->fVec0[1];
 			dsp->fVec1[dsp->IOTA0 & 127] = (float)(input1[i0]);
-			output1[i0] = dsp->fVec1[(dsp->IOTA0 - -2 + 5 - 105) & 127];
+			output1[i0] = dsp->fVec1[(dsp->IOTA0 - 98) & 127];
 			output2[i0] = 0;
 			for (int j0 = 5; j0 > 0; j0 = j0 - 1) {
 				dsp->fVec0[j0] = dsp->fVec0[j0 - 1];
@@ -1011,7 +1011,7 @@ DSP
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
 			fVec0[0] = float(input2[i0]);
 			fVec1[0] = float(input1[i0]);
-			output0[i0] = FAUSTFLOAT(({ =fVec1[0 - 0 + 1]=; }) + ({ =fVec0[3]=; }) + ({ =input0[i0]=; }));
+			output0[i0] = FAUSTFLOAT(({ =fVec1[1]=; }) + ({ =fVec0[3]=; }) + ({ =input0[i0]=; }));
 			for (int j0 = 3; j0 > 0; j0 = j0 - 1) {
 				fVec0[j0] = fVec0[j0 - 1];
 			}
@@ -1096,7 +1096,7 @@ DSP
 			float fTemp1 = float(input1[i0]);
 			fVec0[0] = fTemp1;
 			output1[i0] = FAUSTFLOAT(({ float x = 0; x += 10 * fVec0[0]; x += 20 * fVec0[1]; x += 30 * fVec0[2]; x; }));
-			output2[i0] = FAUSTFLOAT(({ float x = 0; x += 100 * fVec0[0 - 1 + 4]; x += 200 * fVec0[1 - 1 + 4]; x; }));
+			output2[i0] = FAUSTFLOAT(({ float x = 0; x += 100 * fVec0[3]; x += 200 * fVec0[4]; x; }));
 			for (int j0 = 4; j0 > 0; j0 = j0 - 1) {
 				fVec0[j0] = fVec0[j0 - 1];
 
@@ -1261,12 +1261,11 @@ DSP
 	int IOTA0;
 	float fVec1[32];
 	int fSampleRate;
-
 	void instanceConstants(int sample_rate)
 	{
 		fSampleRate = sample_rate;
-		fVec0[(4 - 0)] = -1; fVec0[(4 - 1)] = -2; fVec0[(4 - 2)] = -3; fVec0[(4 - 3)] = -4;
-		fVec1[(IOTA0 - (16 - 0)) & 31] = -1; fVec1[(IOTA0 - (16 - 1)) & 31] = -2; fVec1[(IOTA0 - (16 - 2)) & 31] = -3; fVec1[(IOTA0 - (16 - 3)) & 31] = -4; fVec1[(IOTA0 - (16 - 4)) & 31] = -5; fVec1[(IOTA0 - (16 - 5)) & 31] = -6; fVec1[(IOTA0 - (16 - 6)) & 31] = -7; fVec1[(IOTA0 - (16 - 7)) & 31] = -8; fVec1[(IOTA0 - (16 - 8)) & 31] = -9; fVec1[(IOTA0 - (16 - 9)) & 31] = -10; fVec1[(IOTA0 - (16 - 10)) & 31] = -11; fVec1[(IOTA0 - (16 - 11)) & 31] = -12; fVec1[(IOTA0 - (16 - 12)) & 31] = -13; fVec1[(IOTA0 - (16 - 13)) & 31] = -14; fVec1[(IOTA0 - (16 - 14)) & 31] = -15; fVec1[(IOTA0 - (16 - 15)) & 31] = -16;
+		fVec0[4] = -1; fVec0[3] = -2; fVec0[2] = -3; fVec0[1] = -4;
+		fVec1[(IOTA0 - 16) & 31] = -1; fVec1[(IOTA0 - 15) & 31] = -2; fVec1[(IOTA0 - 14) & 31] = -3; fVec1[(IOTA0 - 13) & 31] = -4; fVec1[(IOTA0 - 12) & 31] = -5; fVec1[(IOTA0 - 11) & 31] = -6; fVec1[(IOTA0 - 10) & 31] = -7; fVec1[(IOTA0 - 9) & 31] = -8; fVec1[(IOTA0 - 8) & 31] = -9; fVec1[(IOTA0 - 7) & 31] = -10; fVec1[(IOTA0 - 6) & 31] = -11; fVec1[(IOTA0 - 5) & 31] = -12; fVec1[(IOTA0 - 4) & 31] = -13; fVec1[(IOTA0 - 3) & 31] = -14; fVec1[(IOTA0 - 2) & 31] = -15; fVec1[(IOTA0 - 1) & 31] = -16;
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
@@ -1281,12 +1280,9 @@ DSP
 			output1[i0] = FAUSTFLOAT(({ fVec1[(IOTA0 - 16) & 31]; }));
 			for (int j0 = 4; j0 > 0; j0 = j0 - 1) {
 				fVec0[j0] = fVec0[j0 - 1];
-
 			}
 			IOTA0 = IOTA0 + 1;
-
 		}
-
 	}
 CPP
 
@@ -3512,7 +3508,7 @@ DSP
 #define SHIFT_VEC(v)	\
 	for (unsigned i = sizeof(v)/sizeof(v[0]); --i; v[i]=v[i-1]);
 	int iRec0[3];
-	int iRec1[4];
+	int iRec1[3];
 	int fSampleRate;
 	void instanceConstants(int sample_rate)
 	{
@@ -3525,17 +3521,17 @@ DSP
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
 			int iRec0_0 = 10 + iRec0[0];
 			output0[i0] = FAUSTFLOAT(iRec0[2]);
-			iRec1[0] = 20 + iRec1[1];
-			output1[i0] = FAUSTFLOAT(iRec1[0 - 0 + 3]);
+			int iRec1_0 = 20 + iRec1[0];
+			output1[i0] = FAUSTFLOAT(iRec1[2]);
 			SHIFT_VEC(iRec0); iRec0[0]=iRec0_0;
-			SHIFT_VEC(iRec1);
+			SHIFT_VEC(iRec1); iRec1[0]=iRec1_0;
 		}
 	}
 CPP
 #define SHIFT_VEC(v)	\
 	for (unsigned i = sizeof(v)/sizeof(v[0]); --i; v[i]=v[i-1]);
 	int iRec0[3];
-	int iRec1[4];
+	int iRec1[3];
 	int fSampleRate;
 	void instanceConstants(int sample_rate)
 	{
@@ -3548,10 +3544,10 @@ CPP
 		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
 			int iRec0_0 = 10 + dsp->iRec0[0];
 			output0[i0] = (FAUSTFLOAT)(dsp->iRec0[2]);
-			dsp->iRec1[0] = 20 + dsp->iRec1[1];
-			output1[i0] = (FAUSTFLOAT)(dsp->iRec1[0 - 0 + 3]);
+			int iRec1_0 = 20 + dsp->iRec1[0];
+			output1[i0] = (FAUSTFLOAT)(dsp->iRec1[2]);
 			SHIFT_VEC(dsp->iRec0); dsp->iRec0[0]=iRec0_0;
-			SHIFT_VEC(dsp->iRec1);
+			SHIFT_VEC(dsp->iRec1); dsp->iRec1[0]=iRec1_0;
 		}
 	}
 O_C

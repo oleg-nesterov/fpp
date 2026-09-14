@@ -57,6 +57,12 @@ sub __z_size($$) { $_[1] }
 sub __z_pure($$) { &__z_map =~ /^\w+\[[^]]+\]$/ ? 1 : 0 }
 sub __z_iota($$) { &__z_map =~ /\bIOTA0\b/ ? 1 : 0 }
 
+sub __cie
+{
+	my $e = shift;
+	$e =~ /[^-+*()\d\s]/ ? $e : eval($e) //
+		die "bad const expr: '$e'\n";
+}
 sub __z_item($$$)
 {
 	my ($vec, $len, $idx) = @_;
@@ -69,9 +75,27 @@ sub __z_item($$$)
 #	my @inp = pp_cpp::inputs($expr);
 #	warn "WARN! delay line '$vec' inputs: @inp\n" if @inp;
 
-	$expr =~ /\[(\(${re::DSP}IOTA0\s*-\s*)?/og;
-	my $full = $1 ? "$idx + $len - " : "$idx - $len + ";
-	$expr =~ s/\G(\Q$len\E\b)?/defined $1 ? $idx : $full/er;
+	$expr =~ s{($re::bal_sqr)$}{
+		my $r = re::chop2 $1;
+		if ($r =~ /^\(${re::DSP}IOTA0/o) {
+			$r =~ s{^($re::bal_par)}{
+				my $i = re::chop2 $1;
+				$i =~ s{^${re::DSP}IOTA0\s*\K(.+)}{
+					my $n = __cie $1 =~ /^-\s*\Q$len\E$/ ?
+						      "-$idx" : "$1 + $len - $idx";
+					$n =~ s/^-\K/ / or die; # WRONG !!!
+					$n;
+				}oe or die;
+				"($i)";
+			}oe or die;
+		} else {
+			$r = __cie $r =~ /^\Q$len\E$/ ?
+				   $idx : "$r + $idx - $len";
+		}
+		"[$r]";
+	}oe or die;
+
+	return $expr;
 }
 
 sub __l_len($) { 0 + &re::split_args }
