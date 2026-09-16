@@ -3553,6 +3553,28 @@ CPP
 O_C
 
 [__LINE__, <<'DSP', <<'CPP'],
+process = FPP(x[16]) X { ($x[0] + $x[(-1)]) };
+DSP
+	int IOTA0;
+	float fVec0[32];
+	int fSampleRate;
+	void instanceConstants(int sample_rate)
+	{
+		fSampleRate = sample_rate;
+	}
+	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
+	{
+		FAUSTFLOAT* input0 = inputs[0];
+		FAUSTFLOAT* output0 = outputs[0];
+		for (int i0 = 0; i0 < count; i0 = i0 + 1) {
+			fVec0[IOTA0 & 31] = float(input0[i0]);
+			output0[i0] = fVec0[(IOTA0 ) & 31] + fVec0[(IOTA0 + 1) & 31];
+			IOTA0 = IOTA0 + 1;
+		}
+	}
+CPP
+
+[__LINE__, <<'DSP', <<'CPP'],
 import("stdfaust.lib");
 
 foo = FPP(fc0, inp) {

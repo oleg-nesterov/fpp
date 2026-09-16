@@ -83,7 +83,7 @@ sub __z_item($$$)
 				$i =~ s{^${re::DSP}IOTA0\s*\K(.+)}{
 					my $n = __cie $1 =~ /^-\s*\Q$len\E$/ ?
 						      "-$idx" : "$1 + $len - $idx";
-					$n =~ s/^-\K/ / or die; # WRONG !!!
+					$n =~ s/^-\K/ / or $n = $n ? "+ $n" : '';
 					$n;
 				}oe or die;
 				"($i)";
