@@ -67,9 +67,8 @@ sub __z_item($$$)
 {
 	my ($vec, $len, $idx) = @_;
 
-	$idx =~ s/^\(([+-]?\w+)\)$/$1/;
 	my $expr = &__z_map ||
-		return	$vec eq '0' || $idx eq '0' && $len eq '0' ?
+		return	$vec eq '0' || $idx eq '(0)' && $len eq '0' ?
 			$vec : die "bad delay line: '$vec' [$idx]\n";
 
 #	my @inp = pp_cpp::inputs($expr);

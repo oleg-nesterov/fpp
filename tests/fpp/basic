@@ -3553,7 +3553,7 @@ CPP
 O_C
 
 [__LINE__, <<'DSP', <<'CPP'],
-process = FPP(x[16]) X { ($x[0] + $x[(-1)]) };
+process = FPP(x[16]) X { ($x[0] + $x[-1]) };
 DSP
 	int IOTA0;
 	float fVec0[32];
