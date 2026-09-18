@@ -10,16 +10,20 @@ use strict;
 die "ERR!! /tmp/ doesn't exist or not writable\n"
 	unless -d -w '/tmp/';
 
-sub rd { open my $f, '<', $_[0] or die; join  '', <$f>; }
-sub wr { open my $f, '>', $_[0] or die; print $f $_[1]; }
-
 my ($EXIT, $LINE) = (0, 0);
-while (my $a = $ARGV[0]) {
-	if    ($a eq '-E') { shift; $EXIT = 1; }
-	elsif ($a eq '-N') { shift; ($LINE = shift) =~ /^\d+$/ or die "bad -N '$LINE'\n"; }
-	else { last }
+
+for (my $i = 0; $i < @ARGV; ) {
+	my ($a, $d) = $ARGV[$i];
+	if    ($a eq '-E') { $d = 1; $EXIT = 1; }
+	elsif ($a eq '-N') { $d = 2; $LINE = $ARGV[$i+1] // '';
+				     $LINE =~ /^\d+$/ or die "bad -N '$LINE'\n"; }
+	else  { ++$i; next; }
+	splice @ARGV, $i, $d;
 }
 warn "WARN! EXIT=$EXIT LINE=$LINE\n\n" if $EXIT || $LINE;
+
+sub rd { open my $f, '<', $_[0] or die; join  '', <$f>; }
+sub wr { open my $f, '>', $_[0] or die; print $f $_[1]; }
 
 sub do_test
 {
