@@ -48,7 +48,7 @@ elsif ($FLT eq '-double') { $BIN .= 'd'; $CLI_FLT = '-D FAUSTFLOAT=double'; }
 elsif ($FLT eq '-quad')	  { $BIN .= 'q'; $CLI_FLT = '-D FAUSTFLOAT=quad';   }
 
 my %MAKE = (
-	cli	=> ["$CLI_FLT -lpthread -lreadline",
+	cli	=> ["-Wno-array-bounds $CLI_FLT -lpthread -lreadline",
 		    "-a cli.cpp -scn '' -nvi"],
 	gtk	=> ["-w -D__PresetUI_H__ `pkg-config --cflags --libs gtk+-2.0`",
 		    "-a ma-gtk.cpp"],
