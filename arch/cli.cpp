@@ -297,6 +297,42 @@ struct O_SOX : public O_B {
 	}
 } __o_sox;
 
+struct O_TR : public O_B {
+	bool _ck(void) { return false; }
+
+	void ini(void)
+	{
+		int fds[2], pid;
+		assert(!pipe(fds));
+
+		if ((pid = fork())) {
+			ofd = fds[1];
+			close(fds[0]);
+		} else {
+			close(fds[1]);
+			assert(dup2(fds[0], 0) == 0);
+
+			char o_c[16], o_f[2];
+			sprintf(o_c, "%da", G.no);
+			sprintf(o_f, "%c",
+				sizeof(FLOAT) == 4 ? 'f' :
+				sizeof(FLOAT) == 8 ? 'd' :
+				({ die("unsupported trend format"); 0; })
+			);
+
+			const char *argv[] = {
+				"trend", "-", "-s",
+				"-f", o_f, "-c", o_c,
+				"500",
+				NULL,
+			};
+
+			execvp(argv[0], (char**)argv);
+			die("exec '%s' failed: %m", argv[0]);
+		}
+	}
+} __o_tr;
+
 static const char *__ON = "t";
 static struct O_N *O = &__o_t;
 
@@ -363,6 +399,8 @@ static void parse_o(char *n)
 		O = &__o_sox, __o_sox.file = "-";
 	else IF (gp)
 		O = &__o_gp;
+	else IF (tr)
+		O = &__o_tr;
 	else IF (ir)
 		O = &__o_ir, __o_ir.norm = 0;
 	else IF (fr)
