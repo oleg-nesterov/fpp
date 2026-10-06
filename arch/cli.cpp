@@ -300,6 +300,23 @@ struct O_SOX : public O_B {
 struct O_TR : public O_B {
 	bool _ck(void) { return false; }
 
+	char as[64], *av[5] = { (char*)"1024" };
+
+	bool cli(char *arg)
+	{
+		assert(strlen(arg) < sizeof(as));
+		strcpy(as, arg);
+
+		unsigned i = 0;
+		for (char *str = as; (av[i] = strtok(str, ",")); str = NULL) {
+			if (++i >= sizeof(av)/sizeof(av[0]))
+				die("too many args for trend");
+		}
+		if (!i) av[i++] = (char*)"1024";
+		av[i] = NULL;
+		return true;
+	}
+
 	void ini(void)
 	{
 		int fds[2], pid;
@@ -321,10 +338,10 @@ struct O_TR : public O_B {
 			);
 
 			const char *argv[] = {
-				"trend", "-", "-s",
+				"trend", "-", "-s", "-d",
+				"-S", "-geometry", "1400x400-0+0",
 				"-f", o_f, "-c", o_c,
-				"500",
-				NULL,
+				av[0], av[1], av[2], av[3], av[4]
 			};
 
 			execvp(argv[0], (char**)argv);
