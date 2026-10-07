@@ -148,7 +148,7 @@ static struct O_N {
 	virtual bool cli(char*)		{ return false; }
 	virtual void ini(void)		{}
 	virtual void out(unsigned)	{};
-	virtual void eob(void)		{}
+	virtual bool eob(void)		{ return true; }
 	virtual void eof(void)		{}
 } __o_n;
 
@@ -177,10 +177,11 @@ static struct O_B : public O_N {
 			buf[cnt++] = _outputs[o][i];
 		}
 	}
-	void eob(void)
+	bool eob(void)
 	{
-		write(ofd, buf, sizeof(buf[0]) * cnt);
+		long c = sizeof(buf[0]) * cnt;
 		cnt = 0;
+		return c == write(ofd, buf, c);
 	}
 	void eof()
 	{
@@ -371,7 +372,7 @@ struct O_TR : public O_B {
 		}
 	}
 
-	void eob(void)
+	bool eob(void)
 	{
 		if (r_n) nanosleep(&r_s, NULL);
 		return O_B::eob();
@@ -846,7 +847,11 @@ restart:
 				O->out(i);
 			}
 		}
-		O->eob();
+
+		if (!O->eob()) {
+			eprint("ERR!! eob: %m\n");
+			break;
+		}
 
 		if (_ck && (total += count) >= 1000000) {
 			eprint("WARN! stop at total=%d\n", total);
