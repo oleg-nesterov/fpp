@@ -804,6 +804,7 @@ int main(int argc, char* argv[])
 	DSP.buildUserInterface(NULL);
 	parse_args(++argv);
 
+	signal(SIGPIPE, SIG_IGN);
 restart:
 	if (G.it) {
 		static int run; if (!run++) {
@@ -849,7 +850,7 @@ restart:
 		}
 
 		if (!O->eob()) {
-			eprint("ERR!! eob: %m\n");
+			if (errno != EPIPE) eprint("ERR!! eob: %m\n");
 			break;
 		}
 
