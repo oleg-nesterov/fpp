@@ -302,6 +302,7 @@ struct O_TR : public O_B {
 
 	double r_n = 0; struct timespec r_s;
 	char as[64], *av[5] = { (char*)"1024" };
+	int pid;
 
 	bool __cli(char *arg)
 	{
@@ -340,7 +341,7 @@ struct O_TR : public O_B {
 			r_s.tv_nsec = (r - r_s.tv_sec) * 1000000000;
 		}
 
-		int fds[2], pid;
+		int fds[2];
 		assert(!pipe(fds));
 
 		if ((pid = fork())) {
@@ -374,6 +375,12 @@ struct O_TR : public O_B {
 	{
 		if (r_n) nanosleep(&r_s, NULL);
 		return O_B::eob();
+	}
+
+	void eof(void)
+	{
+		O_B::eof();
+		waitpid(pid, NULL, 0);
 	}
 } __o_tr;
 
