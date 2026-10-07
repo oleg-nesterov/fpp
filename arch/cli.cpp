@@ -253,38 +253,20 @@ static struct O_IR : public O_B {
 	}
 } __o_ir;
 
-struct O_SOX : public O_B {
-	bool _ck(void) { return !!file; }
-
-	const char *file;
+struct __O_pipe : public O_B {
 	int pid;
 
-	void ini(void)
+	void run(const char *argv[])
 	{
 		int fds[2];
 		assert(!pipe(fds));
 
-		if ((pid = fork())) {
-			ofd = fds[1];
+		if ((pid = vfork())) {
 			close(fds[0]);
+			ofd = fds[1];
 		} else {
 			close(fds[1]);
-			assert(dup2(fds[0], 0) == 0);
-
-			char o_b[16], o_r[64], o_c[64];
-			sprintf(o_b, "-b%d", int(sizeof(FLOAT))*8);
-			sprintf(o_r, "-r%d", G.sr);
-			sprintf(o_c, "-c%d", G.no);
-
-			const char *argv[] = {
-				file ? "sox" : "play",
-				"-q", "-traw", "-ef",
-				o_b, o_r, o_c,
-				"-",
-				file ? "-t.wav" : NULL,
-				file,
-				NULL,
-			};
+			dup2(fds[0], 0);
 
 			execvp(argv[0], (char**)argv);
 			die("exec '%s' failed: %m", argv[0]);
@@ -296,14 +278,39 @@ struct O_SOX : public O_B {
 		O_B::eof();
 		waitpid(pid, NULL, 0);
 	}
+};
+
+struct O_SOX : public __O_pipe {
+	bool _ck(void) { return !!file; }
+
+	const char *file;
+
+	void ini(void)
+	{
+		char o_b[16], o_r[64], o_c[64];
+		sprintf(o_b, "-b%d", int(sizeof(FLOAT))*8);
+		sprintf(o_r, "-r%d", G.sr);
+		sprintf(o_c, "-c%d", G.no);
+
+		const char *argv[] = {
+			file ? "sox" : "play",
+			"-q", "-traw", "-ef",
+			o_b, o_r, o_c,
+			"-",
+			file ? "-t.wav" : NULL,
+			file,
+			NULL,
+		};
+
+		run(argv);
+	}
 } __o_sox;
 
-struct O_TR : public O_B {
+struct O_TR : public __O_pipe {
 	bool _ck(void) { return false; }
 
 	double r_n = 0; struct timespec r_s;
 	char as[64], *av[5] = { (char*)"1024" };
-	int pid;
 
 	bool __cli(char *arg)
 	{
@@ -342,46 +349,28 @@ struct O_TR : public O_B {
 			r_s.tv_nsec = (r - r_s.tv_sec) * 1000000000;
 		}
 
-		int fds[2];
-		assert(!pipe(fds));
+		char o_c[16], o_f[2];
+		sprintf(o_c, "%da", G.no);
+		sprintf(o_f, "%c",
+			sizeof(FLOAT) == 4 ? 'f' :
+			sizeof(FLOAT) == 8 ? 'd' :
+			({ die("unsupported trend format"); 0; })
+		);
 
-		if ((pid = fork())) {
-			ofd = fds[1];
-			close(fds[0]);
-		} else {
-			close(fds[1]);
-			assert(dup2(fds[0], 0) == 0);
+		const char *argv[] = {
+			"trend", "-", "-s", "-d",
+			"-S", "-geometry", "1400x400-0+0",
+			"-f", o_f, "-c", o_c,
+			av[0], av[1], av[2], av[3], av[4]
+		};
 
-			char o_c[16], o_f[2];
-			sprintf(o_c, "%da", G.no);
-			sprintf(o_f, "%c",
-				sizeof(FLOAT) == 4 ? 'f' :
-				sizeof(FLOAT) == 8 ? 'd' :
-				({ die("unsupported trend format"); 0; })
-			);
-
-			const char *argv[] = {
-				"trend", "-", "-s", "-d",
-				"-S", "-geometry", "1400x400-0+0",
-				"-f", o_f, "-c", o_c,
-				av[0], av[1], av[2], av[3], av[4]
-			};
-
-			execvp(argv[0], (char**)argv);
-			die("exec '%s' failed: %m", argv[0]);
-		}
+		run(argv);
 	}
 
 	bool eob(void)
 	{
 		if (r_n) nanosleep(&r_s, NULL);
 		return O_B::eob();
-	}
-
-	void eof(void)
-	{
-		O_B::eof();
-		waitpid(pid, NULL, 0);
 	}
 } __o_tr;
 
