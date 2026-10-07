@@ -300,15 +300,29 @@ struct O_SOX : public O_B {
 struct O_TR : public O_B {
 	bool _ck(void) { return false; }
 
+	double r_n = 0; struct timespec r_s;
 	char as[64], *av[5] = { (char*)"1024" };
+
+	bool __cli(char *arg)
+	{
+		if (*arg == '^') {
+			char *e; r_n = strtod(++arg, &e);
+			if (e == arg || *e) die("bad r_n: '%s'", arg);
+			return true;
+		}
+		return false;
+	}
 
 	bool cli(char *arg)
 	{
 		assert(strlen(arg) < sizeof(as));
 		strcpy(as, arg);
 
+		r_n = 0;
+
 		unsigned i = 0;
 		for (char *str = as; (av[i] = strtok(str, ",")); str = NULL) {
+			if (__cli(av[i])) continue;
 			if (++i >= sizeof(av)/sizeof(av[0]))
 				die("too many args for trend");
 		}
@@ -319,6 +333,13 @@ struct O_TR : public O_B {
 
 	void ini(void)
 	{
+		if (r_n) {
+			double r = r_n;
+			if (r < 0) r = -r * G.sr;
+			r_s.tv_sec  =  r = G.bs / r;
+			r_s.tv_nsec = (r - r_s.tv_sec) * 1000000000;
+		}
+
 		int fds[2], pid;
 		assert(!pipe(fds));
 
@@ -347,6 +368,12 @@ struct O_TR : public O_B {
 			execvp(argv[0], (char**)argv);
 			die("exec '%s' failed: %m", argv[0]);
 		}
+	}
+
+	void eob(void)
+	{
+		if (r_n) nanosleep(&r_s, NULL);
+		return O_B::eob();
 	}
 } __o_tr;
 
