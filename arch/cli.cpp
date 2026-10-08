@@ -23,6 +23,8 @@ typedef long double quad;
 #define FLOAT FAUSTFLOAT
 #endif
 
+#define ARRAY_SIZE(a)	(sizeof(a) / sizeof(a[0]))
+
 static struct {
 	unsigned sr = 44100, nr = 10, bs = 512, sk, xt;
 	double   nr_s, sk_s;
@@ -332,7 +334,7 @@ struct O_TR : public __O_pipe {
 		unsigned i = 0;
 		for (char *str = as; (av[i] = strtok(str, ",")); str = NULL) {
 			if (__cli(av[i])) continue;
-			if (++i >= sizeof(av)/sizeof(av[0]))
+			if (++i >= ARRAY_SIZE(av))
 				die("too many args for trend");
 		}
 		if (!i) av[i++] = (char*)"1024";
@@ -397,7 +399,7 @@ static void ui_add_opt(const char *__n, FAUSTFLOAT *e, FAUSTFLOAT v)
 	char *n = strdup(__n);
 	for (char *p = n; *p; p++)
 		if (isspace(*p)) *p = '_';
-	assert(ARGC < sizeof(ARGV)/sizeof(ARGV[0]));
+	assert(ARGC < ARRAY_SIZE(ARGV));
 	assert(!cli_get_opt(n));
 	auto o = ARGV + ARGC++;
 	*(o->v = e) = v;
@@ -595,7 +597,7 @@ static char *rl_next_match(const char *inp, int state)
 			return strdup(arg->n);
 	}
 
-	while (idx - ARGC < sizeof(__map)/sizeof(__map[0])) {
+	while (idx - ARGC < ARRAY_SIZE(__map)) {
 		auto kv = __map + idx++ - ARGC;
 		if (!kv->k) break;
 		if (!strncmp(kv->k, inp, len))
@@ -682,7 +684,7 @@ static unsigned parse_it_cmd(int rec, unsigned argc, const char *cmd)
 		while (*p && !isspace(*p)) ++p;
 		if (a == p) break;
 
-		assert(argc + 1 < sizeof(argv)/sizeof(argv[0]));
+		assert(argc + 1 < ARRAY_SIZE(argv));
 		char *arg = strndup(a, p - a);
 		if ((m = map(arg, NULL))) {
 			argc = parse_it_cmd(rec+1, argc, m);
