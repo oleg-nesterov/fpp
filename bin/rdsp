@@ -60,19 +60,19 @@ open my $__, '>&', \*STDOUT;
 open STDOUT, '>&', \*STDERR;
 
 open my $fd, '|-', 'make', qw(-f -) or die;
-print $fd <<EOM;
-.INTERMEDIATE: $BIN.cpp $BIN.mk
+print $fd <<~EOM;
+	.INTERMEDIATE: $BIN.cpp $BIN.mk
 
-.PHONY: all
-all: $BIN ; \@:
-$BIN.mk:  ; \@:
+	.PHONY: all
+	all: $BIN ; \@:
+	$BIN.mk:  ; \@:
 
-$BIN : $BIN.cpp @C_DEPS
-	$CPP_CMD \$(file < $BIN.mk)	$MAKE{$TGT}[0] \$< -o \$@
+	$BIN : $BIN.cpp @C_DEPS
+		$CPP_CMD \$(file < $BIN.mk)	$MAKE{$TGT}[0] \$< -o \$@
 
-$BIN.cpp : $DSP.dsp $BIN.mk $FPP_BIN @F_DEPS
-	$FPP_CMD    -mk    $BIN.mk	$MAKE{$TGT}[1] \$< -o \$@
-EOM
+	$BIN.cpp : $DSP.dsp $BIN.mk $FPP_BIN @F_DEPS
+		$FPP_CMD    -mk    $BIN.mk	$MAKE{$TGT}[1] \$< -o \$@
+	EOM
 
 $ENV{HOME} = '/tmp';
 open STDOUT, '>&', $__; close $__;
