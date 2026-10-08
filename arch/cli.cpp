@@ -794,14 +794,13 @@ int main(int argc, char* argv[])
 	parse_args(++argv);
 
 	signal(SIGPIPE, SIG_IGN);
-restart:
+
 	if (G.it) {
-		static int run; if (!run++) {
-			pthread_t t;
-			sem_init(IT.sem+0, 0,0);
-			sem_init(IT.sem+1, 0,0);
-			pthread_create(&t, NULL, it_loop, NULL);
-		}
+		pthread_t t;
+		sem_init(IT.sem+0, 0,0);
+		sem_init(IT.sem+1, 0,0);
+		pthread_create(&t, NULL, it_loop, NULL);
+restart:
 		do {
 			if (sem_wait(IT.sem+0)) exit(1);
 			TRY(parse_it_cmd(0, 0, IT.cmd));
