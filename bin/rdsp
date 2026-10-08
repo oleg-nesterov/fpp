@@ -56,6 +56,9 @@ my %MAKE = (
 		    "-a pa-gtk.cpp"],
 );
 
+open my $__, '>&', \*STDOUT;
+open STDOUT, '>&', \*STDERR;
+
 open my $fd, '|-', 'make', qw(-f -) or die;
 print $fd <<EOM;
 .INTERMEDIATE: $BIN.cpp $BIN.mk
@@ -72,4 +75,5 @@ $BIN.cpp : $DSP.dsp $BIN.mk $FPP_BIN @F_DEPS
 EOM
 
 $ENV{HOME} = '/tmp';
+open STDOUT, '>&', $__; close $__;
 close $fd and exec $BIN, @ARGV;
