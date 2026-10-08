@@ -11,6 +11,7 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <semaphore.h>
+#include <sys/prctl.h>
 #include <assert.h>
 
 typedef long double quad;
@@ -795,6 +796,7 @@ int main(int argc, char* argv[])
 	DSP.buildUserInterface(NULL);
 	parse_args(++argv);
 
+	prctl(PR_SET_TIMERSLACK, 1);
 	signal(SIGPIPE, SIG_IGN);
 
 	if (G.it) {
