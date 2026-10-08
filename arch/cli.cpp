@@ -107,7 +107,7 @@ static bool fifo_run(const char *fifo, const char *comm, const char *argv[])
 start:	eprint("CLI: starting '%s' ...\n", comm);
 	r = 1;
 
-	if (!fork()) {
+	if (!vfork()) {
 		if (!fork()) {
 			fd = open(fifo, O_RDONLY);
 			// unused; keep a writer so read(fd) blocks
