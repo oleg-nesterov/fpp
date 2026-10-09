@@ -149,7 +149,7 @@ out:
 static struct O_N {
 	virtual bool _ck(void)		{ return true; }
 	virtual bool cli(char*)		{ return false; }
-	virtual void ini(void)		{}
+	virtual bool ini(void)		{ return true; }
 	virtual void out(unsigned)	{};
 	virtual bool eob(void)		{ return true; }
 	virtual void eof(void)		{}
@@ -202,7 +202,7 @@ static struct O_GP : public O_B {
 		return true;
 	}
 
-	void ini(void)
+	bool ini(void)
 	{
 		const char *argv[] = { "CLI-gnuplot", NULL };
 		const char *icmd =
@@ -214,6 +214,7 @@ static struct O_GP : public O_B {
 
 		ofd = open("/tmp/gp.data", O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		assert(ofd >= 0);
+		return true;
 	}
 
 	void eof(void)
@@ -238,13 +239,14 @@ static struct O_GP : public O_B {
 static struct O_IR : public O_B {
 	int norm;
 
-	void ini(void)
+	bool ini(void)
 	{
 		const char *argv[] = { "CLI-plot_ir", NULL };
 		fifo_run("/tmp/ir.fifo", "plot_ir", argv);
 
 		ofd = open("/tmp/ir.data", O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		assert(ofd >= 0);
+		return true;
 	}
 
 	void eof(void)
@@ -259,7 +261,7 @@ static struct O_IR : public O_B {
 struct __O_pipe : public O_B {
 	int pid;
 
-	void run(const char *argv[])
+	bool run(const char *argv[])
 	{
 		int fds[2];
 		assert(!pipe(fds));
@@ -267,6 +269,7 @@ struct __O_pipe : public O_B {
 		if ((pid = vfork())) {
 			close(fds[0]);
 			ofd = fds[1];
+			return true;
 		} else {
 			close(fds[1]);
 			dup2(fds[0], 0);
@@ -296,7 +299,7 @@ struct O_SOX : public __O_pipe {
 		return true;
 	}
 
-	void ini(void)
+	bool ini(void)
 	{
 		const char *file = !is_f ? NULL :
 				   name[0] ? name : "-";
@@ -316,7 +319,7 @@ struct O_SOX : public __O_pipe {
 			NULL,
 		};
 
-		run(argv);
+		return run(argv);
 	}
 } __o_sox;
 
@@ -354,7 +357,7 @@ struct O_TR : public __O_pipe {
 		return true;
 	}
 
-	void ini(void)
+	bool ini(void)
 	{
 		if (r_n) {
 			double r = r_n;
@@ -378,7 +381,7 @@ struct O_TR : public __O_pipe {
 			av[0], av[1], av[2], av[3], av[4]
 		};
 
-		run(argv);
+		return run(argv);
 	}
 
 	bool eob(void)
@@ -828,41 +831,42 @@ restart:
 	DSP.staticInit(G.sr);
 	DSP.instanceConstants(G.sr);
 
-	O->ini();
-	bool _ck = O->_ck(); unsigned total = 0;
-	unsigned G_nr = G.nr ?: G.nr_s * G.sr + .5;
-	unsigned G_sk = G.sk ?: G.sk_s * G.sr + .5;
-	if (G_nr <= G_nr + G_sk) G_nr += G_sk; // avoid overflow
-	for (unsigned count, stopped = 0, nr = G_nr; nr; nr -= count) {
-		count = G.bs;
-		if (count > nr) count = nr;
-
-		DSP.compute(count, 0, outputs);
-		if (cli_stop >= 0 && !stopped) {
-			nr = cli_stop + G.xt;
+	if (O->ini()) {
+		bool _ck = O->_ck(); unsigned total = 0;
+		unsigned G_nr = G.nr ?: G.nr_s * G.sr + .5;
+		unsigned G_sk = G.sk ?: G.sk_s * G.sr + .5;
+		if (G_nr <= G_nr + G_sk) G_nr += G_sk; // avoid overflow
+		for (unsigned count, stopped = 0, nr = G_nr; nr; nr -= count) {
+			count = G.bs;
 			if (count > nr) count = nr;
-			stopped = 1;
-		}
 
-		for (unsigned i = 0; i < count; i++) {
-			if (G_sk) G_sk--;
-			else {
-				if (GN) apply_g(i);
-				O->out(i);
+			DSP.compute(count, 0, outputs);
+			if (cli_stop >= 0 && !stopped) {
+				nr = cli_stop + G.xt;
+				if (count > nr) count = nr;
+				stopped = 1;
+			}
+
+			for (unsigned i = 0; i < count; i++) {
+				if (G_sk) G_sk--;
+				else {
+					if (GN) apply_g(i);
+					O->out(i);
+				}
+			}
+
+			if (!O->eob()) {
+				if (errno != EPIPE) eprint("ERR!! eob: %m\n");
+				break;
+			}
+
+			if (_ck && (total += count) >= 1000000) {
+				eprint("WARN! stop at total=%d\n", total);
+				break;
 			}
 		}
-
-		if (!O->eob()) {
-			if (errno != EPIPE) eprint("ERR!! eob: %m\n");
-			break;
-		}
-
-		if (_ck && (total += count) >= 1000000) {
-			eprint("WARN! stop at total=%d\n", total);
-			break;
-		}
+		O->eof();
 	}
-	O->eof();
 
 	if (G.it) goto restart;
 	return 0;
