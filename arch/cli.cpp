@@ -193,7 +193,7 @@ static struct O_B : public O_N {
 } __o_b;
 
 static struct O_GP : public O_B {
-	char ylims[32] = {0};
+	char ylims[32] = {};
 
 	bool cli(char *arg)
 	{
@@ -284,12 +284,23 @@ struct __O_pipe : public O_B {
 };
 
 struct O_SOX : public __O_pipe {
-	bool _ck(void) { return !!file; }
+	bool _ck(void) { return is_f; }
 
-	const char *file;
+	bool is_f; char name[64] = {};
+
+	bool cli(char *arg)
+	{
+		if (!is_f) return false;
+		assert(strlen(arg) < sizeof(name));
+		strcpy(name, arg);
+		return true;
+	}
 
 	void ini(void)
 	{
+		const char *file = !is_f ? NULL :
+				   name[0] ? name : "-";
+
 		char o_b[16], o_r[64], o_c[64];
 		sprintf(o_b, "-b%d", int(sizeof(FLOAT))*8);
 		sprintf(o_r, "-r%d", G.sr);
@@ -438,9 +449,9 @@ static void parse_o(char *n)
 	else IF (b)
 		O = &__o_b;
 	else IF (p)
-		O = &__o_sox, __o_sox.file = NULL;
+		O = &__o_sox, __o_sox.is_f = 0;
 	else IF (f)
-		O = &__o_sox, __o_sox.file = "-";
+		O = &__o_sox, __o_sox.is_f = 1;
 	else IF (gp)
 		O = &__o_gp;
 	else IF (tr)
