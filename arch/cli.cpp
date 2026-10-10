@@ -301,8 +301,23 @@ struct O_SOX : public __O_pipe {
 
 	bool ini(void)
 	{
-		const char *file = !is_f ? NULL :
-				   name[0] ? name : "-";
+		const char *file = NULL, *err = NULL;
+		if (is_f) {
+			if (*(file = name) == '^') {
+				++file;
+			} else if (*file && strcmp(file, "-")) {
+				if (access(file, F_OK) == 0)
+					err = "ERR!! -o f: '%s' exists\n";
+			} else {
+				if (isatty(STDOUT_FILENO))
+					err = "ERR!! -o f: stdout is tty\n";
+				file =  "-";
+			}
+			if (err) {
+				eprint(err, file);
+				return false;
+			}
+		}
 
 		char o_b[16], o_r[64], o_c[64];
 		sprintf(o_b, "-b%d", int(sizeof(FLOAT))*8);
