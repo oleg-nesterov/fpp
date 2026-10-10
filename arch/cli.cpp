@@ -450,14 +450,10 @@ static void cli_add_opt(char *n, char *p)
 static void parse_o(char *n)
 {
 	static char __on[64];
-	char *p = NULL;
+	char *p = strchr(n, '=');
+	if (p) *p++ = 0;
 
-	if (n && (p = strchr(n, '=')))
-		*p++ = 0;
-
-	if (!n)
-		goto err;
-	else IF (t)
+	IF (t)
 		O = &__o_t;
 	else IF (n)
 		O = &__o_n;
@@ -476,7 +472,7 @@ static void parse_o(char *n)
 	else IF (fr)
 		O = &__o_ir, __o_ir.norm = 1;
 	else
-		err: die("bad -o name: '%s'", n);
+		die("bad -o name: '%s'", n);
 
 	__ON = strcpy(__on, n);
 	if (!p) return;
@@ -502,8 +498,6 @@ static void parse_g(const char *p)
 {
 	G.no = GN = 0;
 	memset(GV, 0, sizeof(GV));
-
-	if (!p) goto err;
 	if (!strcmp(p, "-")) return;
 
 	for (char *e;; p = e + 1) {
@@ -518,15 +512,13 @@ static void parse_g(const char *p)
 			if (*e == ',') continue;
 			if (*e == '\0') break;
 		}
-		err: die("-g: bad number: '%s'", p);
+		die("-g: bad number: '%s'", p);
 	}
 
 	if (!G.no) die("-g: no outputs");
 }
 static void parse_c(char *p)
 {
-	if (!p) die("-c: no channels");
-
 	G.no = GN = 0;
 	memset(GV, 0, sizeof(GV));
 
@@ -583,6 +575,11 @@ static void parse_G(const char *n, const char *v)
 err:	die("bad option '%s'", n);
 }
 
+static char *ck_arg(const char *n, char *arg)
+{
+	if (arg && *arg) return arg;
+	die("%s requires an arg", n);
+}
 static void parse_args(char* argv[])
 {
 	for (char *n; (n = *argv++);) {
@@ -591,11 +588,11 @@ static void parse_args(char* argv[])
 		else IF (-i)
 			G.it = 1;
 		else IF (-o)
-			parse_o(*argv++);
+			parse_o(ck_arg(n, *argv++));
 		else IF (-g)
-			parse_g(*argv++);
+			parse_g(ck_arg(n, *argv++));
 		else IF (-c)
-			parse_c(*argv++);
+			parse_c(ck_arg(n, *argv++));
 		else
 			parse_G(n, *argv++);
 	}
