@@ -488,7 +488,7 @@ static void parse_o(char *n)
 	if (*p) sprintf(__on + strlen(n), "=%s", p);
 }
 
-static struct { FAUSTFLOAT g,s; } GV[NOUTS];
+static struct { double g, s; } GV[NOUTS];
 static unsigned GN;
 
 static void apply_g(unsigned i)
