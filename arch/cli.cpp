@@ -69,10 +69,11 @@ static FAUSTFLOAT _outputs[NOUTS][BUFSZ];
 
 #define eprint(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
 
+#define err(fmt, ...)	({ eprint("ERR!! " fmt "\n", ##__VA_ARGS__); false; })
+
 static int _try_;
-#define die(fmt, ...) do {					\
-	fprintf(stderr, "ERR!! " fmt "\n", ##__VA_ARGS__);	\
-	if (_try_) { throw 0; } exit(1);			\
+#define die(fmt, ...) do {						\
+	err(fmt, ##__VA_ARGS__); if (_try_) { throw 0; } exit(1);	\
 } while (0)
 
 #define TRY(expr)	\
@@ -301,21 +302,17 @@ struct O_SOX : public __O_pipe {
 
 	bool ini(void)
 	{
-		const char *file = NULL, *err = NULL;
+		const char *file = NULL;
 		if (is_f) {
 			if (*(file = name) == '^') {
 				++file;
 			} else if (*file && strcmp(file, "-")) {
 				if (access(file, F_OK) == 0)
-					err = "ERR!! -o f: '%s' exists\n";
+					return err("-o f: '%s' exists", file);
 			} else {
 				if (isatty(STDOUT_FILENO))
-					err = "ERR!! -o f: stdout is tty\n";
+					return err("-o f: stdout is tty");
 				file =  "-";
-			}
-			if (err) {
-				eprint(err, file);
-				return false;
 			}
 		}
 
@@ -741,8 +738,7 @@ static void *it_loop(void *)
 		char n[128]; float v;
 
 		#define next(fmt, ...) do {				\
-			eprint("ERR!! " fmt "\n", ##__VA_ARGS__);	\
-			goto next;					\
+			err(fmt, ##__VA_ARGS__); goto next;		\
 		} while (0)
 next:
 		if(!(inp = it_readline())) _exit(0);
@@ -774,8 +770,7 @@ next:
 				v = dump;
 			}
 
-			if (!map(n, v))
-				eprint("ERR!! map is full.\n");
+			if (!map(n, v)) err("map is full");
 			continue;
 		}
 
