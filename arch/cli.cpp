@@ -523,6 +523,27 @@ static void parse_g(const char *p)
 
 	if (!G.no) die("-g: no outputs");
 }
+static void parse_c(char *p)
+{
+	if (!p) die("-c: no channels");
+
+	G.no = GN = 0;
+	memset(GV, 0, sizeof(GV));
+
+	for (char *e;; p = e + 1) {
+		unsigned n = strtol(p, &e, 0);
+		if (e == p || !(*e == ',' || *e == 0))
+			break;
+		if (n >= G.NO) { *e = 0; break; }
+
+		if (!GV[n].g) {
+			GV[n].g = 1.0; G.no++;
+			if (GN <= n) GN = n+1;
+		}
+		if (!*e) return;
+	}
+	die("-c bad channel: '%s'", p);
+}
 
 static void parse_G(const char *n, const char *v)
 {
@@ -573,6 +594,8 @@ static void parse_args(char* argv[])
 			parse_o(*argv++);
 		else IF (-g)
 			parse_g(*argv++);
+		else IF (-c)
+			parse_c(*argv++);
 		else
 			parse_G(n, *argv++);
 	}
