@@ -545,42 +545,30 @@ static char *get_arg(char *n, char **argv[])
 	die("%s requires an arg", n);
 }
 
-static void parse_G(const char *n, const char *v)
+static bool parse_G(char *n, char **argv[])
 {
-	int x; float f;
-	char *e = NULL;
-	bool s = false;
+	char o = n[1], *e;
+	if (!strchr("rnNsSbx", o)) return false;
+	union { unsigned u; double d; };
 
-	if (n[0] != '-' || n[1] ==  0)  goto err;
-	if (n[1] == 'N' || n[1] == 'S') s = true;
+	char *v = get_arg(n, argv);
 
-	if (v) {
-		if (s) f = strtod(v, &e);
-		else   x = strtoll(v, &e, 0);
+	if (o == 'N' || o == 'S') d = strtod(v, &e);
+	else			  u = strtol(v, &e, 0);
+
+	if (e == v || *e) die("-%c: bad number: '%s'", o, v);
+
+	switch (o) {
+	case 'r': G.sr = u; break;
+	case 'n': G.nr = u; G.nr_s = 0; break;
+	case 'N': G.nr = 0; G.nr_s = d; break;
+	case 's': G.sk = u; G.sk_s = 0; break;
+	case 'S': G.sk = 0; G.sk_s = d; break;
+	case 'x': G.xt = u; break;
+	case 'b': G.bs = u; break;
 	}
-	if (e == v || *e)
-		die("%s: bad number: '%s'", n, v);
 
-	if (s) {
-		if (n[2]) goto err;
-		switch (n[1]) {
-		case 'N': G.nr_s = f; G.nr = 0; break;
-		case 'S': G.sk_s = f; G.sk = 0; break;
-		}
-		return;
-	}
-	for (const char *o = n;;)
-		switch (*++o) {
-		case   0: return;
-		case 'n': G.nr = x; G.nr_s = 0; break;
-		case 's': G.sk = x; G.sk_s = 0; break;
-		case 'r': G.sr = x; break;
-		case 'x': G.xt = x; break;
-		case 'b': G.bs = x; break;
-		default: goto err;
-		};
-
-err:	die("bad option '%s'", n);
+	return true;
 }
 
 static void parse_args(char* argv[])
@@ -593,8 +581,7 @@ static void parse_args(char* argv[])
 			case 'o': parse_o(get_arg(n, &argv)); continue;
 			case 'g': parse_g(get_arg(n, &argv)); continue;
 			case 'c': parse_c(get_arg(n, &argv)); continue;
-			default:  if (!strchr("rnNsSbx", n[1])) break;
-				  parse_G(n, *argv++); continue;
+			default:  if (parse_G(n, &argv)) continue;
 			}
 		} else if (char *p = strchr(n, '=')) {
 			cli_add_opt(n, p);
