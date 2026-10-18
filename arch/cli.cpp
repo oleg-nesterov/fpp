@@ -537,6 +537,14 @@ static void parse_c(char *p)
 	die("-c bad channel: '%s'", p);
 }
 
+static char *get_arg(char *n, char **argv[])
+{
+	if (n[2]) return n + 2;
+	char *arg = *(*argv)++;
+	if (arg && *arg) return arg;
+	die("%s requires an arg", n);
+}
+
 static void parse_G(const char *n, const char *v)
 {
 	int x; float f;
@@ -575,26 +583,25 @@ static void parse_G(const char *n, const char *v)
 err:	die("bad option '%s'", n);
 }
 
-static char *ck_arg(const char *n, char *arg)
-{
-	if (arg && *arg) return arg;
-	die("%s requires an arg", n);
-}
 static void parse_args(char* argv[])
 {
 	for (char *n; (n = *argv++);) {
-		if (char *p = strchr(n, '='))
+		if (n[0] == '-' && n[1]) {
+			switch (n[1]) {
+			case 'i': if (n[2]) break;
+				  G.it = 1; continue;
+			case 'o': parse_o(get_arg(n, &argv)); continue;
+			case 'g': parse_g(get_arg(n, &argv)); continue;
+			case 'c': parse_c(get_arg(n, &argv)); continue;
+			default:  if (!strchr("rnNsSbx", n[1])) break;
+				  parse_G(n, *argv++); continue;
+			}
+		} else if (char *p = strchr(n, '=')) {
 			cli_add_opt(n, p);
-		else IF (-i)
-			G.it = 1;
-		else IF (-o)
-			parse_o(ck_arg(n, *argv++));
-		else IF (-g)
-			parse_g(ck_arg(n, *argv++));
-		else IF (-c)
-			parse_c(ck_arg(n, *argv++));
-		else
-			parse_G(n, *argv++);
+			continue;
+		}
+
+		die("bad option '%s'", n);
 	}
 
 	assert(G.bs <= BUFSZ);
