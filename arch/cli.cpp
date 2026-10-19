@@ -549,17 +549,19 @@ static bool parse_G(char *n, char **argv[])
 {
 	char o = n[1], *e;
 	if (!strchr("rnNsSbx", o)) return false;
+	bool rn = (o == 'r' && n[2] == 'n');
 	union { unsigned u; double d; };
 
+	if (rn) *++n = '-';
 	char *v = get_arg(n, argv);
 
 	if (o == 'N' || o == 'S') d = strtod(v, &e);
 	else			  u = strtol(v, &e, 0);
 
-	if (e == v || *e) die("-%c: bad number: '%s'", o, v);
+	if (e == v || *e) die("-%c: bad number: '%s'", n[1], v);
 
 	switch (o) {
-	case 'r': G.sr = u; break;
+	case 'r': G.sr = u; if (!rn) break;
 	case 'n': G.nr = u; G.nr_s = 0; break;
 	case 'N': G.nr = 0; G.nr_s = d; break;
 	case 's': G.sk = u; G.sk_s = 0; break;
