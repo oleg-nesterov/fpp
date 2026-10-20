@@ -437,7 +437,7 @@ static void cli_add_opt(char *n, char *p)
 {
 	*p++ = 0;
 	char *e; FAUSTFLOAT v = strtod(p, &e);
-	if (e == p || *e) die("bad number: '%s'", p);
+	if (e == p || *e) die("%s : bad number: '%s'", n, p);
 
 	auto o = cli_get_opt(n);
 	if (!o)	eprint("WARN! unused opt '%s'\n", n);
@@ -472,13 +472,13 @@ static void parse_o(char *n)
 	else IF (fr)
 		O = &__o_ir, __o_ir.norm = 1;
 	else
-		die("bad -o name: '%s'", n);
+		die("-o: bad name: '%s'", n);
 
 	__ON = strcpy(__on, n);
 	if (!p) return;
 
 	if (!O->cli(p))
-		die("bad arg '%s' for -o %s", p, n);
+		die("-o %s: bad arg '%s'", n, p);
 
 	assert(strlen(n) + 1 + strlen(p) < sizeof(__on));
 	if (*p) sprintf(__on + strlen(n), "=%s", p);
@@ -534,7 +534,7 @@ static void parse_c(char *p)
 		}
 		if (!*e) return;
 	}
-	die("-c bad channel: '%s'", p);
+	die("-c: bad channel: '%s'", p);
 }
 
 static char *get_arg(char *n, char **argv[])
@@ -542,7 +542,7 @@ static char *get_arg(char *n, char **argv[])
 	if (n[2]) return n + 2;
 	char *arg = *(*argv)++;
 	if (arg && *arg) return arg;
-	die("%s requires an arg", n);
+	die("%s: arg missing", n);
 }
 
 static bool parse_G(char *n, char **argv[])
