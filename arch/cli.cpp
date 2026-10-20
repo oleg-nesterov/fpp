@@ -403,8 +403,8 @@ struct O_TR : public __O_pipe {
 	}
 } __o_tr;
 
-static const char *__ON = "t";
 static struct O_N *O = &__o_t;
+static char __ON[64] = "t";
 
 // ----------------------------------------------------------------------------
 static unsigned ARGC;
@@ -449,7 +449,6 @@ static void cli_add_opt(char *n, char *p)
 
 static void parse_o(char *n)
 {
-	static char __on[64];
 	char *p = strchr(n, '=');
 	if (p) *p++ = 0;
 
@@ -474,14 +473,14 @@ static void parse_o(char *n)
 	else
 		die("-o: bad name: '%s'", n);
 
-	__ON = strcpy(__on, n);
+	strcpy(__ON, n);
 	if (!p) return;
 
 	if (!O->cli(p))
 		die("-o %s: bad arg '%s'", n, p);
 
-	assert(strlen(n) + 1 + strlen(p) < sizeof(__on));
-	if (*p) sprintf(__on + strlen(n), "=%s", p);
+	assert(strlen(n) + 1 + strlen(p) < sizeof(__ON));
+	if (*p) sprintf(__ON + strlen(n), "=%s", p);
 }
 
 static struct { double g, s; } GV[NOUTS];
