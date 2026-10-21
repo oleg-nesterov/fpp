@@ -452,32 +452,21 @@ static void parse_o(char *n)
 	char *p = strchr(n, '=');
 	if (p) *p++ = 0;
 
-	IF (t)
-		O = &__o_t;
-	else IF (n)
-		O = &__o_n;
-	else IF (b)
-		O = &__o_b;
-	else IF (p)
-		O = &__o_sox, __o_sox.is_f = 0;
-	else IF (f)
-		O = &__o_sox, __o_sox.is_f = 1;
-	else IF (gp)
-		O = &__o_gp;
-	else IF (tr)
-		O = &__o_tr;
-	else IF (ir)
-		O = &__o_ir, __o_ir.norm = 0;
-	else IF (fr)
-		O = &__o_ir, __o_ir.norm = 1;
-	else
-		die("-o: bad name: '%s'", n);
+	IF (n)		O = &__o_n;
+	else IF (t)	O = &__o_t;
+	else IF (b)	O = &__o_b;
+	else IF (p)	O = &__o_sox, __o_sox.is_f = 0;
+	else IF (f)	O = &__o_sox, __o_sox.is_f = 1;
+	else IF (gp)	O = &__o_gp;
+	else IF (tr)	O = &__o_tr;
+	else IF (ir)	O = &__o_ir, __o_ir.norm = 0;
+	else IF (fr)	O = &__o_ir, __o_ir.norm = 1;
+	else die("-o: bad name: '%s'", n);
 
 	strcpy(__ON, n);
 	if (!p) return;
 
-	if (!O->cli(p))
-		die("-o %s: bad arg '%s'", n, p);
+	if (!O->cli(p)) die("-o %s: bad arg '%s'", n, p);
 
 	assert(strlen(n) + 1 + strlen(p) < sizeof(__ON));
 	if (*p) sprintf(__ON + strlen(n), "=%s", p);
