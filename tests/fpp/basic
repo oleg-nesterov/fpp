@@ -769,7 +769,7 @@ DSP
 	void instanceConstants(int sample_rate)
 	{
 		fSampleRate = sample_rate;
-		iConst0 = int(0.1f * std::min<float>(1.92e+05f, std::max<float>(1.0f, float(fSampleRate))));
+		iConst0 = int(0.1f * std::min<float>(1.92e+05f, std::max<float>(5e+01f, float(fSampleRate))));
 
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
@@ -1471,7 +1471,7 @@ DSP
 	void instanceConstants(int sample_rate)
 	{
 		fSampleRate = sample_rate;
-		fConst0 = std::min<float>(1.92e+05f, std::max<float>(1.0f, float(fSampleRate)));
+		fConst0 = std::min<float>(1.92e+05f, std::max<float>(5e+01f, float(fSampleRate)));
 
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
@@ -1617,7 +1617,7 @@ DSP
 	void instanceConstants(int sample_rate)
 	{
 		fSampleRate = sample_rate;
-		float fConst0 = std::min<float>(1.92e+05f, std::max<float>(1.0f, float(fSampleRate)));
+		float fConst0 = std::min<float>(1.92e+05f, std::max<float>(5e+01f, float(fSampleRate)));
 		float fConst1 = 0.5f * fConst0;
 		float fConst2 = 0.33333334f * fConst0;
 		init(fConst0); R__01 = exec(fConst1;)
@@ -1881,7 +1881,7 @@ DSP
 		fSampleRate = sample_rate;
 		ini(&st__01, 20);
 		fConst0 = ({ exe(&st__01, 30); });
-		ini(&st__02, std::min<float>(1.92e+05f, std::max<float>(1.0f, float(fSampleRate))));
+		ini(&st__02, std::min<float>(1.92e+05f, std::max<float>(5e+01f, float(fSampleRate))));
 		fConst1 = ({ exe(&st__02, 10); });
 		ini(&st__03, fConst1);
 		fConst2 = ({ exe(&st__03, 40); });
@@ -2121,7 +2121,7 @@ DSP
 	void instanceConstants(int sample_rate)
 	{
 		fSampleRate = sample_rate;
-		fConst0 = std::min<float>(1.92e+05f, std::max<float>(1.0f, float(fSampleRate)));
+		fConst0 = std::min<float>(1.92e+05f, std::max<float>(5e+01f, float(fSampleRate)));
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
 	{
@@ -2532,7 +2532,7 @@ DSP
 	void instanceConstants(int sample_rate)
 	{
 		fSampleRate = sample_rate;
-		float fConst0 = std::min<float>(1.92e+05f, std::max<float>(1.0f, float(fSampleRate)));
+		float fConst0 = std::min<float>(1.92e+05f, std::max<float>(5e+01f, float(fSampleRate)));
 		init_lib(lib__01, fConst0);
 		init_flt(flt__01, 123);
 	}
@@ -2562,7 +2562,7 @@ DSP
 	{
 		fSampleRate = sample_rate;
 		void * iConst0 = PTR;
-		float fConst1 = std::min<float>(1.92e+05f, std::max<float>(1.0f, float(fSampleRate)));
+		float fConst1 = std::min<float>(1.92e+05f, std::max<float>(5e+01f, float(fSampleRate)));
 		use0(iConst0) + iConst0;
 		use1(fConst1);
 	}
@@ -2579,7 +2579,7 @@ CPP
 	{
 		dsp->fSampleRate = sample_rate;
 		void * iConst0 = PTR;
-		float fConst1 = fminf(1.92e+05f, fmaxf(1.0f, (float)(dsp->fSampleRate)));
+		float fConst1 = fminf(1.92e+05f, fmaxf(5e+01f, (float)(dsp->fSampleRate)));
 		use0(iConst0) + iConst0;
 		use1(fConst1);
 	}
@@ -3097,7 +3097,7 @@ DSP
 	void instanceConstants(int sample_rate)
 	{
 		fSampleRate = sample_rate;
-		fConst0 = 0.25f * std::min<float>(1.92e+05f, std::max<float>(1.0f, float(fSampleRate)));
+		fConst0 = 0.25f * std::min<float>(1.92e+05f, std::max<float>(5e+01f, float(fSampleRate)));
 	}
 	void control()
 	{
@@ -3127,7 +3127,7 @@ CPP
 	void instanceConstants(int sample_rate)
 	{
 		dsp->fSampleRate = sample_rate;
-		dsp->fConst0 = 0.25f * fminf(1.92e+05f, fmaxf(1.0f, (float)(dsp->fSampleRate)));
+		dsp->fConst0 = 0.25f * fminf(1.92e+05f, fmaxf(5e+01f, (float)(dsp->fSampleRate)));
 	}
 	void control()
 	{
@@ -3280,7 +3280,7 @@ DSP
 	void instanceConstants(int sample_rate)
 	{
 		fSampleRate = sample_rate;
-		float fConst0 = std::min<float>(1.92e+05f, std::max<float>(1.0f, float(fSampleRate)));
+		float fConst0 = std::min<float>(1.92e+05f, std::max<float>(5e+01f, float(fSampleRate)));
 		fConst1 = 1e+02f * fConst0;
 		fConst2 = 1.0f / fConst0;
 		fConst3 = 1e+01f / fConst0;
@@ -3598,7 +3598,7 @@ DSP
 	void instanceConstants(int sample_rate)
 	{
 		fSampleRate = sample_rate;
-		fConst0 = 0.25f * std::min<float>(1.92e+05f, std::max<float>(1.0f, float(fSampleRate)));
+		fConst0 = 0.25f * std::min<float>(1.92e+05f, std::max<float>(5e+01f, float(fSampleRate)));
 		#if 1
 			foo_set_fc0(&state__01, fConst0);
 		#endif
@@ -3646,7 +3646,7 @@ DSP
 	void instanceConstants(int sample_rate)
 	{
 		fSampleRate = sample_rate;
-		float fConst0 = 0.25f * std::min<float>(1.92e+05f, std::max<float>(1.0f, float(fSampleRate)));
+		float fConst0 = 0.25f * std::min<float>(1.92e+05f, std::max<float>(5e+01f, float(fSampleRate)));
 		{ foo_set_fc0(&state__01, fConst0);  }
 	}
 	void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs)
